@@ -17,6 +17,40 @@ pnpm install
 pnpm dev
 ```
 
+## 后端服务 (Node.js + MongoDB)
+
+本项目采用 Node.js (ES Modules) + MongoDB 构建，为 EasyStay 管理系统提供 API 支持。
+
+### 1. 环境准备
+- **Node.js**: 建议 v18.0.0 或更高版本
+- **MongoDB**: 本地社区版 (默认端口 27017)
+- **包管理器**: pnpm (推荐) 或 npm
+
+### 2. 快速开始
+在 `server` 目录下执行：
+```bash
+pnpm install
+```
+
+### 第二步：配置环境变量
+复制根目录的 `.env.example` 并重命名为 `.env`：
+```bash
+cp .env.example .env
+```
+确认其中的 `MONGODB_URI` 为：`mongodb://127.0.0.1:27017/easyStay`
+
+### 第三步：启动服务
+
+```bash
+pnpm dev
+```
+
+## 3. 验证部署
+启动后，终端若显示 `✅ MongoDB Connected`，请访问：
+[http://localhost:3000/health](https://www.google.com/search?q=http://localhost:3000/health)
+
+如果看到 `{"status":"ok"}`，说明后端已成功启动。
+```
 ## 架构设计
 本项目采用 B 端分层架构，实现 UI 表现层与业务数据层的深度解耦：
 
