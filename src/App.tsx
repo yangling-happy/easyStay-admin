@@ -21,6 +21,8 @@ function App() {
             <Route path="hotels/new" element={<HotelEdit />} />
             <Route path="hotels/edit/:id" element={<HotelEdit />} />
 
+            <Route path="hotel-edit" element={<HotelEdit />} />
+
             {/* 404 页面 */}
             <Route path="*" element={<div>404 Not Found</div>} />
           </Route>

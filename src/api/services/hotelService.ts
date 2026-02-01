@@ -1,4 +1,4 @@
-import type { Hotel } from "../types/hotel";
+import type { Hotel } from "../../types/hotel";
 
 const STORAGE_KEY = "ctrip_hotels_data";
 
