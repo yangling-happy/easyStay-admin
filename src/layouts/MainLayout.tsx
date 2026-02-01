@@ -25,6 +25,13 @@ export const MainLayout = () => {
       label: "酒店录入",
       onClick: () => navigate("/hotels/new"),
     },
+    {
+      key: "/hotels/audit",
+      icon: <DatabaseOutlined />,
+      label: "酒店审核",
+      onClick: () => navigate("/hotels/audit"),
+    },
+    
   ];
 
   return (
