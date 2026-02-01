@@ -50,7 +50,7 @@ pnpm dev
 [http://localhost:3000/health](https://www.google.com/search?q=http://localhost:3000/health)
 
 如果看到 `{"status":"ok"}`，说明后端已成功启动。
-```
+
 ## 架构设计
 本项目采用 B 端分层架构，实现 UI 表现层与业务数据层的深度解耦：
 
