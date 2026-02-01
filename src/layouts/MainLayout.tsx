@@ -1,8 +1,7 @@
-// src/layouts/MainLayout.tsx
 import { Layout, theme } from "antd";
 import { Outlet } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
-
+import Navbar from "./components/Navbar";
 const { Header, Content } = Layout;
 
 export const MainLayout = () => {
@@ -16,18 +15,18 @@ export const MainLayout = () => {
       <Sidebar />
 
       <Layout style={{ background: colorBgLayout }}>
-        {/* Header 逻辑，后续你可以把 Navbar 放在这里 */}
         <Header
           style={{
             background: colorBgContainer,
-            padding: 0,
-            height: 64, // 建议恢复高度，因为后面你要放 Navbar
+            padding: "0 24px",
+            height: 64,
             display: "flex",
             alignItems: "center",
+            justifyContent: "flex-end",
             boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
           }}
         >
-           {/* 这里未来放置 <Navbar /> */}
+          <Navbar />
         </Header>
 
         <Content style={{ padding: "24px", minHeight: 280 }}>
@@ -35,7 +34,7 @@ export const MainLayout = () => {
             style={{
               padding: 24,
               background: colorBgContainer,
-              minHeight: "calc(100vh - 150px)", 
+              minHeight: "calc(100vh - 150px)",
               borderRadius: borderRadiusLG,
               boxShadow: "0 2px 8px rgba(0,0,0,0.03)",
             }}
