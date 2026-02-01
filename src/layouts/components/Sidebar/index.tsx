@@ -1,7 +1,7 @@
 import React from "react";
 import { Layout, Menu } from "antd";
 import { useNavigate, useLocation } from "react-router-dom";
-import { PlusCircleOutlined, DatabaseOutlined } from "@ant-design/icons";
+import { PlusCircleOutlined, DatabaseOutlined, AuditOutlined } from "@ant-design/icons";
 
 const { Sider } = Layout;
 
@@ -21,6 +21,12 @@ const Sidebar: React.FC = () => {
       icon: <PlusCircleOutlined />,
       label: "酒店录入",
       onClick: () => navigate("/hotels/new"),
+    },
+    {
+      key: "/hotels/audit",
+      icon: <AuditOutlined />,
+      label: "酒店审核",
+      onClick: () => navigate("/hotels/audit"),
     },
   ];
 
