@@ -1,77 +1,100 @@
+// src/pages/HotelAudit/columns.tsx
 import type { ColumnsType } from 'antd/es/table'
-import  { Tag } from 'antd'
-import { Button, Space } from 'antd'
+import { Tag, Button, Space, Tooltip } from 'antd'
+import { EyeOutlined } from '@ant-design/icons'
+import type { Hotel } from '@/types/hotel'
 
-
-export interface HotelItem {
-  hotelId: string
-  name: string
-  status: 'pending' | 'published' | 'rejected' | 'offline'
-  rejectReason?: string
-}
-const statusMap = {
-  pending: '审核中',
-  published: '已发布',
-  rejected: '未通过',
-  offline: '已下线'
+const statusMap: Record<Hotel['status'], { text: string; color: string }> = {
+  pending: { text: '待审核', color: 'orange' },
+  approved: { text: '已通过', color: 'green' },
+  rejected: { text: '已拒绝', color: 'red' }
 }
 
 export const getColumns = (
   onApprove: (id: string) => void,
-  onReject: (record: HotelItem) => void,
+  onReject: (hotel: Hotel) => void,
   onOffline: (id: string) => void,
-  onRestore: (id: string) => void
-): ColumnsType<HotelItem> => [
-  {
-    title: '酒店ID',
-    dataIndex: 'hotelId'
-  },
+  onRestore: (id: string) => void,
+  onViewDetail: (hotel: Hotel) => void
+): ColumnsType<Hotel> => [
   {
     title: '酒店名称',
-    dataIndex: 'name'
+    dataIndex: 'name',
+    width: 200,
+    ellipsis: true
+  },
+  {
+    title: '地址',
+    dataIndex: 'address',
+    width: 250,
+    ellipsis: true
+  },
+  {
+    title: '星级',
+    dataIndex: 'star',
+    width: 80,
+    render: (star) => {
+      // 处理 undefined 或 null 的情况
+      if (star === undefined || star === null) {
+        return <span style={{ color: '#999' }}>未设置</span>
+      }
+      return `${star}星`
+    }
   },
   {
     title: '状态',
-    render: (_, record) => (
-      <>
-        <Tag
-          color={
-            record.status === 'pending'
-              ? 'orange'
-              : record.status === 'published'
-              ? 'green'
-              : record.status === 'offline'
-              ? 'gray'
-              : 'red'
-          }
-        >
-         {statusMap[record.status]}
-
-        </Tag>
-  
-        {record.status === 'rejected' && record.rejectReason && (
-          <div style={{ color: '#ff4d4f', fontSize: 12 }}>
-            原因：{record.rejectReason}
-          </div>
+    dataIndex: 'status',
+    width: 150,
+    render: (status, record) => (
+      <Space direction="vertical" size={4}>
+        <Tag color={statusMap[status as keyof typeof statusMap]?.color || 'default'}>
+  {statusMap[status as keyof typeof statusMap]?.text || status}
+</Tag>
+        {record.isDeleted && (
+          <Tag color="gray">已下线</Tag>
         )}
-      </>
+        {status === 'rejected' && record.rejectReason && (
+          <Tooltip title={record.rejectReason}>
+            <div style={{ color: '#ff4d4f', fontSize: 12, cursor: 'help' }}>
+              拒绝原因
+            </div>
+          </Tooltip>
+        )}
+      </Space>
     )
   },
   {
+    title: '提交时间',
+    dataIndex: 'createTime',
+    width: 180,
+    sorter: (a, b) => new Date(a.createTime).getTime() - new Date(b.createTime).getTime()
+  },
+  {
     title: '操作',
+    width: 250,
+    fixed: 'right',
     render: (_, record) => (
       <Space>
+        <Button
+          type="link"
+          size="small"
+          icon={<EyeOutlined />}
+          onClick={() => onViewDetail(record)}
+        >
+          详情
+        </Button>
+
         {record.status === 'pending' && (
           <>
             <Button
-              type="primary"
+              type="link"
               size="small"
-              onClick={() => onApprove(record.hotelId)}
+              onClick={() => onApprove(record.id)}
             >
               通过
             </Button>
-  
             <Button
+              type="link"
               danger
               size="small"
               onClick={() => onReject(record)}
@@ -80,21 +103,23 @@ export const getColumns = (
             </Button>
           </>
         )}
-  
-        {record.status === 'published' && (
+
+        {record.status === 'approved' && !record.isDeleted && (
           <Button
+            type="link"
+            danger
             size="small"
-            onClick={() => onOffline(record.hotelId)}
+            onClick={() => onOffline(record.id)}
           >
             下线
           </Button>
         )}
-  
-        {record.status === 'offline' && (
+
+        {record.isDeleted && (
           <Button
-            type="primary"
+            type="link"
             size="small"
-            onClick={() => onRestore(record.hotelId)}
+            onClick={() => onRestore(record.id)}
           >
             恢复
           </Button>
@@ -102,6 +127,4 @@ export const getColumns = (
       </Space>
     )
   }
-  
-  
 ]
