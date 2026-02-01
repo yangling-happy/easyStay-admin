@@ -3,13 +3,12 @@ import { Card, Steps, Button } from "antd";
 import HotelSelector from "./components/HotelSelector";
 import BasicInfoForm from "./components/BasicInfoForm";
 import RoomTypeFormList from "./components/RoomTypeFormList";
-import { useHotelForm } from "./hooks/useHotelForm"; // 假设这个 hook 用于处理表单逻辑
+import { useHotelForm } from "./hooks/useHotelForm"; 
 
 const HotelEdit: React.FC = () => {
   const [current, setCurrent] = useState(0);
   const { form, handleSave } = useHotelForm();
 
-  // 这里的 onAction 让用户进入下一步填写
   const handleProceed = () => {
     setCurrent(1);
   };

@@ -4,9 +4,9 @@ import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 
 const RoomTypeFormList: React.FC<{ form: any }> = ({ form }) => {
   return (
-    // 注意：name="roomTypes" 必须和你的 Hotel 接口定义一致
+    // 注意：name="roomTypes" 必须和 Hotel 接口定义一致
     <Form form={form} layout="vertical" autoComplete="off">
-      <Divider orientation="left">房型与价格配置 (P0)</Divider>
+      <Divider orientation="left">房型与价格配置</Divider>
       
       <Form.List 
         name="roomTypes"
