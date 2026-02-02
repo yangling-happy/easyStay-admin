@@ -13,7 +13,7 @@ const Sidebar: React.FC = () => {
     {
       key: "/hotels",
       icon: <DatabaseOutlined />,
-      label: "酒店管理",
+      label: "酒店列表",
       onClick: () => navigate("/hotels"),
     },
     {

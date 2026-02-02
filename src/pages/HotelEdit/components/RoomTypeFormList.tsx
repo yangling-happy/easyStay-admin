@@ -1,10 +1,11 @@
+// RoomTypeFormList.tsx 的修改方案
 import React from 'react';
 import { Input, InputNumber, Button, Space, Card, Divider, Form } from 'antd';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
+import PhotoUploader from './PhotoUploader'; // 导入 PhotoUploader
 
-const RoomTypeFormList: React.FC = () => { // 移除 form 参数
+const RoomTypeFormList: React.FC = () => {
   return (
-    // 注意：移除了外层的 <Form> 标签
     <>
       <Divider orientation="left">房型与价格配置</Divider>
       
@@ -36,7 +37,8 @@ const RoomTypeFormList: React.FC = () => { // 移除 form 参数
                   />
                 }
               >
-                <Space direction="horizontal" size="large" wrap>
+                {/* 基本信息部分 */}
+                <Space direction="horizontal" size="large" wrap style={{ marginBottom: 16 }}>
                   <Form.Item
                     {...restField}
                     name={[name, 'name']}
@@ -68,13 +70,37 @@ const RoomTypeFormList: React.FC = () => { // 移除 form 参数
                     <InputNumber min={0} max={999} style={{ width: 120 }} />
                   </Form.Item>
                 </Space>
+
+                {/* 房型照片上传部分 */}
+                <Form.Item
+                  {...restField}
+                  name={[name, 'photos']}
+                  label="房型照片"
+                  extra="最多上传 5 张房型专属照片，展示客房内部、设施等"
+                  rules={[{ 
+                    validator: (_, value) => {
+                      //作为大图banner
+                      if (!value || value.length === 0) {
+                        return Promise.reject('请至少上传一张房型照片');
+                      }
+                      return Promise.resolve();
+                    }
+                  }]}
+                >
+                  <PhotoUploader maxCount={5} />
+                </Form.Item>
               </Card>
             ))}
 
             <Form.Item>
               <Button
                 type="dashed"
-                onClick={() => add()}
+                onClick={() => add({
+                  name: '',
+                  price: 0,
+                  stock: 0,
+                  photos: [] // 默认空数组
+                })}
                 block
                 icon={<PlusOutlined />}
                 style={{ height: 45 }}
