@@ -1,5 +1,6 @@
+// PhotoUploader.tsx 增强版
 import React, { useState } from 'react';
-import { Upload, Modal} from 'antd';
+import { Upload, Modal, Typography } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import type { UploadFile, UploadProps } from 'antd';
 
@@ -12,13 +13,25 @@ const getBase64 = (file: File): Promise<string> =>
     reader.onerror = (error) => reject(error);
   });
 
-const PhotoUploader: React.FC<{ value?: string[]; onChange?: (urls: string[]) => void }> = ({ value, onChange }) => {
+interface PhotoUploaderProps {
+  value?: string[];
+  onChange?: (urls: string[]) => void;
+  maxCount?: number;
+  label?: string;
+}
+
+const PhotoUploader: React.FC<PhotoUploaderProps> = ({ 
+  value, 
+  onChange, 
+  maxCount = 8,
+  label = '上传照片'
+}) => {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewImage, setPreviewImage] = useState('');
   
   // 将传入的 string[] 转换为 Upload 组件需要的 fileList 格式
   const fileList: UploadFile[] = (value || []).map((url, index) => ({
-    uid: `${index}`,
+    uid: `${Date.now()}-${index}`,
     name: `image-${index}.png`,
     status: 'done',
     url: url,
@@ -37,7 +50,10 @@ const PhotoUploader: React.FC<{ value?: string[]; onChange?: (urls: string[]) =>
     const urls = await Promise.all(
       newFileList.map(async (file) => {
         if (file.url) return file.url;
-        return await getBase64(file.originFileObj as File);
+        if (file.originFileObj) {
+          return await getBase64(file.originFileObj as File);
+        }
+        return file.thumbUrl || '';
       })
     );
     // 触发 Form 的自动收集机制
@@ -47,23 +63,34 @@ const PhotoUploader: React.FC<{ value?: string[]; onChange?: (urls: string[]) =>
   const uploadButton = (
     <div>
       <PlusOutlined />
-      <div style={{ marginTop: 8 }}>上传酒店照片</div>
+      <div style={{ marginTop: 8 }}>{label}</div>
     </div>
   );
 
   return (
     <>
-      <Upload
-        listType="picture-card"
-        fileList={fileList}
-        onPreview={handlePreview}
-        onChange={handleChange}
-        beforeUpload={() => false} // 阻止默认上传行为，我们手动处理
-        multiple
+      <div>
+        <Upload
+          listType="picture-card"
+          fileList={fileList}
+          onPreview={handlePreview}
+          onChange={handleChange}
+          beforeUpload={() => false} // 阻止默认上传行为，我们手动处理
+          multiple
+          accept="image/*"
+        >
+          {fileList.length >= maxCount ? null : uploadButton}
+        </Upload>
+        <Typography.Text type="secondary" style={{ display: 'block', marginTop: 8 }}>
+          支持 JPG、PNG 格式，最多 {maxCount} 张
+        </Typography.Text>
+      </div>
+      <Modal 
+        open={previewOpen} 
+        footer={null} 
+        onCancel={() => setPreviewOpen(false)}
+        title="图片预览"
       >
-        {fileList.length >= 8 ? null : uploadButton}
-      </Upload>
-      <Modal open={previewOpen} footer={null} onCancel={() => setPreviewOpen(false)}>
         <img alt="预览" style={{ width: '100%' }} src={previewImage} />
       </Modal>
     </>
