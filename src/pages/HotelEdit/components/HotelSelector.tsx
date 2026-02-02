@@ -1,51 +1,102 @@
 import React, { useState } from "react";
-import { Select, Divider, Button, Empty, Typography } from "antd";
+import { Select, Divider, Button, Empty, Typography, message } from "antd";
 import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import { hotelService } from "../../../api/services/hotelService";
 import type { Hotel } from "../../../types/hotel";
+import dayjs from "dayjs";
 
 interface Props {
   form: any;
-  onAction: () => void; // 无论选择还是新增，执行后的回调（如跳到下一步）
+  onAction: (hotelData?: any) => void;
 }
 
 const HotelSelector: React.FC<Props> = ({ form, onAction }) => {
   const [options, setOptions] = useState<
     { label: string; value: string; data: Hotel }[]
   >([]);
+  const [loading, setLoading] = useState(false);
 
   // 搜索酒店逻辑
-  const handleSearch = (value: string) => {
+  const handleSearch = async (value: string) => {
     if (value) {
-      const hotels = hotelService.getHotels();
-      // 模糊匹配名称
-      const filtered = hotels
-        .filter(
-          (h) =>
-            h.name.includes(value) ||
-            h.nameEn.toLowerCase().includes(value.toLowerCase()),
-        )
-        .map((h) => ({
-          label: `${h.name} (${h.nameEn})`,
-          value: h.id,
-          data: h,
-        }));
-      setOptions(filtered);
+      setLoading(true);
+      try {
+        const hotels = await hotelService.getMyHotels();
+        const filtered = hotels
+          .filter(
+            (h) =>
+              h.name.includes(value) ||
+              h.nameEn.toLowerCase().includes(value.toLowerCase()),
+          )
+          .map((h) => ({
+            label: `${h.name} (${h.nameEn}) - ${'★'.repeat(h.star)}`,
+            value: h.id,
+            data: h,
+          }));
+        setOptions(filtered);
+      } catch (error) {
+        console.error('搜索酒店失败:', error);
+        message.error('搜索失败');
+        setOptions([]);
+      } finally {
+        setLoading(false);
+      }
     } else {
       setOptions([]);
     }
   };
 
   // 选择酒店（认领）
-  const onSelect = (option: any) => {
-    const hotelData = option.data;
-    // 关键点：将查到的数据回填到主表单中
+  const onSelect = async ( option: any) => {
+    try {
+      const hotelData = option.data;
+      
+      if (!form) {
+        message.error('表单未初始化');
+        return;
+      }
+      
+      // 转换数据格式
+      const formattedData = {
+        ...hotelData,
+        // 关键：star 转为字符串
+        star: hotelData.star.toString(),
+        openingDate: hotelData.openingDate ? dayjs(hotelData.openingDate) : null,
+        // 确保 roomTypes 存在
+        roomTypes: hotelData.roomTypes || [],
+      };
+      
+      console.log('设置表单数据:', formattedData);
+      
+      // 设置表单值
+      form.setFieldsValue(formattedData);
+      
+      // 立即验证
+      const currentValues = form.getFieldsValue();
+      console.log('设置后的表单值:', currentValues);
+      
+      message.success('已选择酒店，请继续填写其他信息');
+      
+      // 传递给父组件
+      onAction({ type: 'select', data: formattedData });
+      
+    } catch (error) {
+      console.error('选择酒店失败:', error);
+      message.error('选择失败');
+    }
+  };
+
+  // 创建新酒店
+  const handleCreateNew = () => {
+    // 重置表单
+    form.resetFields();
+    // 设置默认值
     form.setFieldsValue({
-      ...hotelData,
-      // 注意：DatePicker 需要的是 dayjs 对象，如果存的是字符串需要转换
-      // openingDate: dayjs(hotelData.openingDate)
+      star: "3", // 默认三星级
+      roomTypes: [],
     });
-    onAction();
+    onAction({ type: 'create' });
+    message.info('开始创建新酒店');
   };
 
   return (
@@ -67,19 +118,20 @@ const HotelSelector: React.FC<Props> = ({ form, onAction }) => {
         size="large"
         placeholder="输入酒店名称搜索..."
         style={{ width: "100%" }}
-        defaultActiveFirstOption={false}
         suffixIcon={<SearchOutlined />}
         filterOption={false}
         onSearch={handleSearch}
-        onSelect={onSelect}
+        onChange={onSelect}
+        loading={loading}
         options={options}
         notFoundContent={
-          <Empty description="未找到相关酒店">
+          <Empty description={loading ? "搜索中..." : "未找到相关酒店"}>
             <Button
               type="primary"
               ghost
               icon={<PlusOutlined />}
-              onClick={onAction}
+              onClick={handleCreateNew}
+              loading={loading}
             >
               立即注册新酒店
             </Button>
@@ -89,7 +141,11 @@ const HotelSelector: React.FC<Props> = ({ form, onAction }) => {
 
       <Divider>或者</Divider>
 
-      <Button type="link" icon={<PlusOutlined />} onClick={onAction}>
+      <Button 
+        type="link" 
+        icon={<PlusOutlined />} 
+        onClick={handleCreateNew}
+      >
         没有搜到？直接开始创建新酒店
       </Button>
     </div>

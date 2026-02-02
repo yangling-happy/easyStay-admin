@@ -6,7 +6,7 @@ import RejectModal from './components/RejectModal'
 import HotelDetailDrawer from './components/HotelDetailDrawer'
 import { hotelService } from '@/api/services/hotelService'
 import { useHotelStore } from '@/store/useHotelStore'
-import type { Hotel } from '@/types/hotel'
+import type { Hotel, HotelStatus } from '@/types/hotel'
 
 const HotelAudit = () => {
   const [loading, setLoading] = useState(false)
@@ -23,10 +23,10 @@ const HotelAudit = () => {
     loadHotels()
   }, [])
 
-  const loadHotels = () => {
+  const loadHotels = async () => {
     setLoading(true)
     try {
-      const data = hotelService.getHotels()
+      const data = await hotelService.getMyHotels()
       // 确保数据格式正确，过滤掉无效数据
       const validData = data.filter(hotel => 
         hotel && 
@@ -65,10 +65,19 @@ const HotelAudit = () => {
       content: '确定要通过该酒店的审核吗？',
       onOk: async () => {
         try {
-          hotelService.auditHotel(id, 'approved')
-          updateHotel(id, { status: 'approved' })
-          message.success('审核通过成功')
+          // 注意：auditHotel方法在当前的hotelService中不存在，需要使用saveHotel方法
+          const hotel = await hotelService.getHotelById(id)
+          if (hotel) {
+            const updatedHotel: Hotel = {
+              ...hotel,
+              status: 'approved' as HotelStatus
+            };
+            await hotelService.saveHotel(updatedHotel)
+            updateHotel(id, { status: 'approved' as HotelStatus })
+            message.success('审核通过成功')
+          }
         } catch (error) {
+          console.error('审核通过失败:', error)
           message.error('操作失败')
         }
       }
@@ -80,19 +89,26 @@ const HotelAudit = () => {
     setRejectOpen(true)
   }
 
-  const submitReject = (reason: string) => {
+  const submitReject = async (reason: string) => {
     if (!currentHotel) return
     
     try {
-      hotelService.auditHotel(currentHotel.id, 'rejected', reason)
+      // 注意：auditHotel方法在当前的hotelService中不存在，需要使用saveHotel方法
+      const updatedHotel: Hotel = {
+        ...currentHotel,
+        status: 'rejected' as HotelStatus,
+        rejectReason: reason
+      };
+      await hotelService.saveHotel(updatedHotel)
       updateHotel(currentHotel.id, { 
-        status: 'rejected', 
+        status: 'rejected' as HotelStatus, 
         rejectReason: reason 
       })
       message.success('已拒绝该酒店')
       setRejectOpen(false)
       setCurrentHotel(null)
     } catch (error) {
+      console.error('拒绝酒店失败:', error)
       message.error('操作失败')
     }
   }
@@ -101,12 +117,13 @@ const HotelAudit = () => {
     Modal.confirm({
       title: '确认下线',
       content: '确定要下线该酒店吗？下线后用户将无法看到该酒店。',
-      onOk: () => {
+      onOk: async () => {
         try {
-          hotelService.deleteHotel(id)
+          await hotelService.deleteHotel(id)
           updateHotel(id, { isDeleted: true })
           message.success('酒店已下线')
         } catch (error) {
+          console.error('下线酒店失败:', error)
           message.error('操作失败')
         }
       }
@@ -117,12 +134,13 @@ const HotelAudit = () => {
     Modal.confirm({
       title: '确认恢复',
       content: '确定要恢复该酒店上线吗？',
-      onOk: () => {
+      onOk: async () => {
         try {
-            hotelService.restoreHotel(id)
+            await hotelService.restoreHotel(id)
             updateHotel(id, { isDeleted: false })
             message.success('酒店已恢复上线')
         } catch (error) {
+          console.error('恢复酒店失败:', error)
           message.error('操作失败')
         }
       }

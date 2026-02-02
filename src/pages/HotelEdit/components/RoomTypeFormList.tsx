@@ -1,11 +1,11 @@
 import React from 'react';
-import { Form, Input, InputNumber, Button, Space, Card, Divider } from 'antd';
+import { Input, InputNumber, Button, Space, Card, Divider, Form } from 'antd';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 
-const RoomTypeFormList: React.FC<{ form: any }> = ({ form }) => {
+const RoomTypeFormList: React.FC = () => { // 移除 form 参数
   return (
-    // 注意：name="roomTypes" 必须和 Hotel 接口定义一致
-    <Form form={form} layout="vertical" autoComplete="off">
+    // 注意：移除了外层的 <Form> 标签
+    <>
       <Divider orientation="left">房型与价格配置</Divider>
       
       <Form.List 
@@ -37,7 +37,6 @@ const RoomTypeFormList: React.FC<{ form: any }> = ({ form }) => {
                 }
               >
                 <Space direction="horizontal" size="large" wrap>
-                  {/* 房型名称 */}
                   <Form.Item
                     {...restField}
                     name={[name, 'name']}
@@ -47,7 +46,6 @@ const RoomTypeFormList: React.FC<{ form: any }> = ({ form }) => {
                     <Input placeholder="例如：豪华大床房" style={{ width: 200 }} />
                   </Form.Item>
 
-                  {/* 价格 */}
                   <Form.Item
                     {...restField}
                     name={[name, 'price']}
@@ -61,7 +59,6 @@ const RoomTypeFormList: React.FC<{ form: any }> = ({ form }) => {
                     />
                   </Form.Item>
 
-                  {/* 库存 */}
                   <Form.Item
                     {...restField}
                     name={[name, 'stock']}
@@ -89,7 +86,7 @@ const RoomTypeFormList: React.FC<{ form: any }> = ({ form }) => {
           </>
         )}
       </Form.List>
-    </Form>
+    </>
   );
 };
 
