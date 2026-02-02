@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import hotelRoutes from './routes/hotelRoutes.js';
-
+import uploadRoutes from './routes/uploadRoutes.js';
 dotenv.config();
 
 const app = express();
@@ -21,6 +21,9 @@ app.get('/health', (req, res) => res.send('API is running...'));
 
 // 添加酒店路由
 app.use('/api/hotels', hotelRoutes);
+// 添加上传路由
+app.use('/api/upload', uploadRoutes);
+
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
