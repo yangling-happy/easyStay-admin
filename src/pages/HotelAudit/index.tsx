@@ -102,7 +102,7 @@ const HotelAudit = () => {
       onOk: async () => {
         try {
           const result = await auditService.submitAudit(id, 'approved')
-          updateHotel(id, { status: 'approved' as HotelStatus })
+          updateHotel(id, { status: 'approved' as HotelStatus, isActive: true })
           message.success(result.message || '审核通过成功')
           loadHotels() // 重新加载数据
         } catch (error) {

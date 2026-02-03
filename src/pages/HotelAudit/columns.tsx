@@ -13,134 +13,137 @@ const statusMap: Record<Hotel['status'], { text: string; color: string }> = {
 
 // 获取表格列配置
 export const getColumns = (
-  onApprove: (id: string) => void,      // 通过审核的回调函数
-  onReject: (hotel: Hotel) => void,     // 拒绝审核的回调函数
-  onOffline: (id: string) => void,      // 下线酒店的回调函数
-  onRestore: (id: string) => void,      // 恢复酒店的回调函数
-  onViewDetail: (hotel: Hotel) => void  // 查看详情的回调函数
+  onApprove: (id: string) => void,
+  onReject: (hotel: Hotel) => void,
+  onOffline: (id: string) => void,
+  onRestore: (id: string) => void,
+  onViewDetail: (hotel: Hotel) => void
 ): ColumnsType<Hotel> => [
-  {
-    title: '酒店名称',
-    dataIndex: 'name',
-    width: 200,
-    ellipsis: true
-  },
-  {
-    title: '地址',
-    dataIndex: 'address',
-    width: 250,
-    ellipsis: true
-  },
-  {
-    title: '星级',
-    dataIndex: 'star',
-    width: 80,
-    render: (star) => {  //自定义渲染函数
-      // 处理 undefined 或 null 的情况
-      if (star === undefined || star === null) {
-        return <span style={{ color: '#999' }}>未设置</span>
+    {
+      title: '酒店名称',
+      dataIndex: 'name',
+      width: 200,
+      ellipsis: true
+    },
+    {
+      title: '地址',
+      dataIndex: 'address',
+      width: 250,
+      ellipsis: true
+    },
+    {
+      title: '星级',
+      dataIndex: 'star',
+      width: 80,
+      render: (star) => {
+        if (star === undefined || star === null) {
+          return <span style={{ color: '#999' }}>未设置</span>
+        }
+        return `${star}星`
       }
-      return `${star}星`
-    }
-  },
-  {
-    title: '状态',
-    dataIndex: 'status',
-    width: 150,
-    render: (status, record) => (    // status 是当前值，record 是整行数据
-      <Space direction="vertical" size={4}>
-         {/* 显示审核状态标签 */}
-        <Tag color={statusMap[status as keyof typeof statusMap]?.color || 'default'}>
-  {statusMap[status as keyof typeof statusMap]?.text || status}
-</Tag>
+    },
+    {
+      title: '状态',
+      dataIndex: 'status',
+      width: 150,
+      render: (status, record) => (
+        <Space direction="vertical" size={4}>
+          {/* 显示审核状态标签 */}
+          <Tag color={statusMap[status as keyof typeof statusMap]?.color || 'default'}>
+            {statusMap[status as keyof typeof statusMap]?.text || status}
+          </Tag>
 
-        {/* 显示下线状态标签 */}
-        {record.isDeleted && (
-          <Tag color="gray">已下线</Tag>
-        )}
-        {/* 显示拒绝原因 */}
-        {status === 'rejected' && record.rejectReason && (
-          <Tooltip title={record.rejectReason}>
-            <div style={{ color: '#ff4d4f', fontSize: 12, cursor: 'help' }}>
-              拒绝原因
-            </div>
-          </Tooltip>
-        )}
-      </Space>
-    )
-  },
-  {
-    title: '提交时间',
-    dataIndex: 'createTime',
-    width: 180,
-    sorter: (a, b) => {
-      if (!a.createTime && !b.createTime) return 0
-      if (!a.createTime) return 1  // 没有时间的排在后面
-      if (!b.createTime) return -1
-      return new Date(a.createTime).getTime() - new Date(b.createTime).getTime()
-    }
-  },
-  {
-    title: '操作',
-    width: 250,
-    fixed: 'right',    // 固定在右侧，横向滚动时不动
-    render: (_, record) => (
-      <Space>
-        {/* 查看详情按钮 */}
-        <Button
-          type="link"
-          size="small"
-          icon={<EyeOutlined />}
-          onClick={() => onViewDetail(record)}
-        >
-          详情
-        </Button>
-        {/* 显示审核状态按钮 */}
-        {record.status === 'pending' && (
-          <>
-            {/* 通过按钮 */}
-            <Button
-              type="link"
-              size="small"
-              onClick={() => onApprove(record.id!)}
-           >
-              通过
-            </Button>
-            {/* 拒绝按钮 */}
+          {/* 显示上线/下线状态标签 */}
+          {status === 'approved' && (
+            <Tag color={record.isActive ? 'blue' : 'gray'}>
+              {record.isActive ? '已上线' : '已下线'}
+            </Tag>
+          )}
+
+          {/* 显示拒绝原因 */}
+          {status === 'rejected' && record.rejectReason && (
+            <Tooltip title={record.rejectReason}>
+              <div style={{ color: '#ff4d4f', fontSize: 12, cursor: 'help' }}>
+                拒绝原因
+              </div>
+            </Tooltip>
+          )}
+        </Space>
+      )
+    },
+    {
+      title: '提交时间',
+      dataIndex: 'createTime',
+      width: 180,
+      sorter: (a, b) => {
+        if (!a.createTime && !b.createTime) return 0
+        if (!a.createTime) return 1
+        if (!b.createTime) return -1
+        return new Date(a.createTime).getTime() - new Date(b.createTime).getTime()
+      }
+    },
+    {
+      title: '操作',
+      width: 250,
+      fixed: 'right',
+      render: (_, record) => (
+        <Space>
+          {/* 查看详情按钮 - 所有状态都显示 */}
+          <Button
+            type="link"
+            size="small"
+            icon={<EyeOutlined />}
+            onClick={() => onViewDetail(record)}
+          >
+            详情
+          </Button>
+
+          {/* 待审核状态：显示通过和拒绝按钮 */}
+          {record.status === 'pending' && record.id && (
+            <>
+              <Button
+                type="link"
+                size="small"
+                onClick={() => onApprove(record.id!)}
+              >
+                通过
+              </Button>
+              <Button
+                type="link"
+                danger
+                size="small"
+                onClick={() => onReject(record)}
+              >
+                拒绝
+              </Button>
+            </>
+          )}
+
+          {/* 审核通过且已上线：显示下线按钮 */}
+          {record.status === 'approved' && record.isActive && record.id && (
             <Button
               type="link"
               danger
               size="small"
-              onClick={() => onReject(record)}
+              onClick={() => onOffline(record.id!)}
             >
-              拒绝
+              下线
             </Button>
-          </>
-        )}
+          )}
 
-        {/* 显示下线状态按钮 */}
-        {record.status === 'approved' && !record.isDeleted && (
-          <Button
-            type="link"
-            danger
-            size="small"
-            onClick={() => onOffline(record.id!)}
-          >
-            下线
-          </Button>
-        )}
+          {/* 审核通过但已下线：显示上线按钮 */}
+          {record.status === 'approved' && !record.isActive && record.id && (
+            <Button
+              type="link"
+              size="small"
+              onClick={() => onRestore(record.id!)}
+            >
+              上线
+            </Button>
+          )}
 
-        {/* 显示恢复状态按钮 */}
-        {record.isDeleted && (
-          <Button
-            type="link"
-            size="small"
-            onClick={() => onRestore(record.id!)}
-          >
-            恢复
-          </Button>
-        )}
-      </Space>
-    )
-  }
-]
+          {/* 已拒绝状态：不显示任何操作按钮 */}
+        </Space>
+      )
+    }
+  ]

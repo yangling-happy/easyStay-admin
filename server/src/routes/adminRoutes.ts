@@ -137,9 +137,12 @@ router.post('/hotels/:id/audit', async (req, res) => {
     };
 
     if (status === 'rejected') {
+      // 拒绝：记录拒绝原因，不修改 isActive
       updateData.rejectReason = rejectReason;
     } else {
+      // 通过：清空拒绝原因，自动设置为上线状态
       updateData.rejectReason = undefined;
+      updateData.isActive = true;  // 审核通过后自动上线
     }
 
     const updatedHotel = await HotelModel.findByIdAndUpdate(
@@ -153,7 +156,7 @@ router.post('/hotels/:id/audit', async (req, res) => {
     }
 
     res.json({ 
-      message: status === 'approved' ? '审核通过成功' : '审核拒绝成功',
+      message: status === 'approved' ? '审核通过成功，酒店已自动上线' : '审核拒绝成功',
       hotel: updatedHotel
     });
   } catch (error) {
@@ -161,7 +164,6 @@ router.post('/hotels/:id/audit', async (req, res) => {
     res.status(500).json({ message: '提交审核结果失败', error });
   }
 });
-
 // PATCH /api/admin/hotels/:id/toggle - 切换发布状态
 router.patch('/hotels/:id/toggle', async (req, res) => {
   try {
