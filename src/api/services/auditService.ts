@@ -20,6 +20,43 @@ export const auditService = {
     }
   },
 
+
+  //获取已发布酒店列表
+  getPublishedHotels: async (): Promise<Hotel[]> => {
+    try {
+      const response = await get<Hotel[]>('/admin/hotels/published');
+      return response;
+    } catch (error) {
+      console.error('获取已发布酒店列表失败:', error);
+      throw error;
+    }
+  },
+
+
+  //获取已下线酒店列表
+  getOfflineHotels: async (): Promise<Hotel[]> => {
+    try {
+      const response = await get<Hotel[]>('/admin/hotels/offline');
+      return response;
+    } catch (error) {
+      console.error('获取已下线酒店列表失败:', error);
+      throw error;
+    }
+  },
+
+
+
+  //获取已拒绝酒店列表
+  getRejectedHotels: async (): Promise<Hotel[]> => {
+    try {
+      const response = await get<Hotel[]>('/admin/hotels/rejected');
+      return response;
+    } catch (error) {
+      console.error('获取已拒绝酒店列表失败:', error);
+      throw error;
+    }
+  },
+
   /**
    * 提交审核结果
    * @param id 酒店ID

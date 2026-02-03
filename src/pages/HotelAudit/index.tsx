@@ -21,13 +21,41 @@ const HotelAudit = () => {
   // 初始化数据
   useEffect(() => {
     loadHotels()
-  }, [])
+  }, [statusFilter])
 
+  // 加载数据
   // 加载数据
   const loadHotels = async () => {
     setLoading(true)
     try {
-      const data = await auditService.getPendingHotels()
+      let data: Hotel[] = []
+
+      // 根据筛选条件调用不同的 API
+      switch (statusFilter) {
+        case 'pending':
+          data = await auditService.getPendingHotels()
+          break
+        case 'published':
+          data = await auditService.getPublishedHotels()
+          break
+        case 'rejected':
+          data = await auditService.getRejectedHotels()
+          break
+        case 'offline':
+          data = await auditService.getOfflineHotels()
+          break
+        case 'all':
+        default:
+          // 获取全部数据，需要合并多个接口
+          const [pending, published, rejected, offline] = await Promise.all([
+            auditService.getPendingHotels(),
+            auditService.getPublishedHotels(),
+            auditService.getRejectedHotels(),
+            auditService.getOfflineHotels()
+          ])
+          data = [...pending, ...published, ...rejected, ...offline]
+          break
+      }
 
       // 将 _id 转换为 id
       const normalizedData = data.map((hotel: any) => ({
@@ -38,7 +66,7 @@ const HotelAudit = () => {
       // 确保数据格式正确，过滤掉无效数据
       const validData = normalizedData.filter(hotel =>
         hotel &&
-        (hotel.id || hotel._id) &&  // 同时检查 id 和 _id
+        (hotel.id || hotel._id) &&
         hotel.name &&
         hotel.status
       )
@@ -57,8 +85,8 @@ const HotelAudit = () => {
     // 筛选状态
     const matchStatus = statusFilter === 'all' ||
       (statusFilter === 'pending' && hotel.status === 'pending') ||
-      (statusFilter === 'published' && hotel.status === 'approved' && !hotel.isDeleted) ||
-      (statusFilter === 'offline' && hotel.isDeleted) ||
+      (statusFilter === 'published' && hotel.status === 'approved' && hotel.isActive && !hotel.isDeleted) ||
+      (statusFilter === 'offline' && hotel.status === 'approved' && !hotel.isActive) ||  // 修改：使用 isActive 判断
       (statusFilter === 'rejected' && hotel.status === 'rejected')
 
     const matchSearch = !searchText ||
@@ -67,7 +95,6 @@ const HotelAudit = () => {
 
     return matchStatus && matchSearch
   })
-
   const handleApprove = (id: string) => {
     Modal.confirm({
       title: '确认通过',
