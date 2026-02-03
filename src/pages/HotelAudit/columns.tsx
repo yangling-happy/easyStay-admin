@@ -34,12 +34,19 @@ export const getColumns = (
     {
       title: '星级',
       dataIndex: 'star',
-      width: 80,
+      width: 90,
       render: (star) => {
+        // 处理 undefined 或 null 的情况
         if (star === undefined || star === null) {
           return <span style={{ color: '#999' }}>未设置</span>
         }
-        return `${star}星`
+        // 确保 star 是数字且在有效范围内
+        const starNum = Number(star)
+        if (isNaN(starNum) || starNum < 1 || starNum > 5) {
+          return <span style={{ color: '#999' }}>无效</span>
+        }
+        // 使用 ⭐ 重复显示
+        return <span style={{ fontSize: '9px' }}>{'⭐'.repeat(starNum)}</span>
       }
     },
     {
