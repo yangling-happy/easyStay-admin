@@ -3,9 +3,25 @@ import { compressImages, compressImage } from "../../utils/imageCompressor";
 
 // 创建配置好的 axios 实例
 const api = axios.create({
-  baseURL: 'http://localhost:3000',
-  timeout: 30000, // 30秒超时，图片上传可能较慢
+  baseURL: "http://localhost:3000",
+  timeout: 30000,
 });
+
+// 辅助函数：确保返回完整 URL
+const ensureFullUrl = (url: string): string => {
+  // 如果已经是完整 URL，直接返回
+  if (url.startsWith("http://") || url.startsWith("https://")) {
+    return url;
+  }
+
+  // 如果是相对路径（以 /uploads/ 开头），加上 baseURL
+  if (url.startsWith("/uploads/")) {
+    return `http://localhost:3000${url}`;
+  }
+
+  // 其他情况，直接返回（可能是文件名）
+  return url;
+};
 
 export const uploadService = {
   // 上传单张图片（带压缩）
@@ -33,14 +49,14 @@ export const uploadService = {
     const formData = new FormData();
     formData.append("image", fileToUpload);
 
-    // 使用 api 实例，路径会自动加上 baseURL
     const response = await api.post("/api/upload/single", formData, {
       headers: {
         "Content-Type": "multipart/form-data",
       },
     });
 
-    return response.data.url;
+    // 确保返回完整 URL
+    return ensureFullUrl(response.data.url);
   },
 
   // 上传酒店图片（优化版本）
@@ -61,6 +77,9 @@ export const uploadService = {
       formData.append("images", file);
     });
 
+    console.log("上传 URL:", "/api/upload/room-type");
+    console.log("type 参数:", "room");
+
     formData.append("type", "hotel");
 
     const response = await api.post("/api/upload/hotel", formData, {
@@ -73,11 +92,13 @@ export const uploadService = {
           : 0;
         console.log(`上传进度: ${percent}%`);
       },
-      timeout: 60000, // 图片上传需要更长时间
+      timeout: 60000,
     });
 
     console.log("上传成功:", response.data);
-    return response.data.data.map((item: any) => item.url);
+    console.log("后端返回:", response.data);
+    // 确保所有 URL 都是完整的
+    return response.data.data.map((item: any) => ensureFullUrl(item.url));
   },
 
   // 上传房型图片（压缩得更小）
@@ -105,10 +126,11 @@ export const uploadService = {
       },
     });
 
-    return response.data.data.map((item: any) => item.url);
+    // 确保所有 URL 都是完整的
+    return response.data.data.map((item: any) => ensureFullUrl(item.url));
   },
 
-  // 上传多张图片（带压缩） - 更新版
+  // 上传多张图片（带压缩）
   async uploadMultipleImages(
     files: File[],
     compress = true,
@@ -140,6 +162,7 @@ export const uploadService = {
       },
     });
 
-    return response.data.files.map((item: any) => item.url);
+    // 确保所有 URL 都是完整的
+    return response.data.files.map((item: any) => ensureFullUrl(item.url));
   },
 };
