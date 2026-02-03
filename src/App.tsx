@@ -3,8 +3,9 @@ import { ConfigProvider } from "antd";
 import zhCN from "antd/locale/zh_CN";
 import { MainLayout } from "./layouts/MainLayout";
 import HotelAudit from "./pages/HotelAudit";
-import HotelEdit from "./pages/HotelEdit"; 
-// 临时占位组件 
+import HotelEdit from "./pages/HotelEdit";
+import AuditStatusPage from "./pages/AuditStatus";
+// 临时占位组件
 const HotelList = () => <div>酒店管理列表页</div>;
 
 function App() {
@@ -24,7 +25,10 @@ function App() {
               <Route path="edit/:id" element={<HotelEdit />} />
               <Route path="audit" element={<HotelAudit />} />
             </Route>
-
+            <Route
+              path="/audit-status/:hotelId"
+              element={<AuditStatusPage />}
+            />
             {/* 404 页面 */}
             <Route path="*" element={<div>404 Not Found</div>} />
           </Route>
