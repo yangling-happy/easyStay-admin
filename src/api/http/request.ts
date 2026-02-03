@@ -20,9 +20,18 @@ export const del = <T>(url: string, params?: Record<string, any>): Promise<T> =>
   return axiosInstance.delete(url, { params });
 };
 
+
+// 封装PATCH请求
+export const patch = <T>(url: string, data?: Record<string, any>): Promise<T> => {
+  return axiosInstance.patch(url, data);
+};
+
+
+
 export default {
   get,
   post,
   put,
-  delete: del
+  delete: del,
+  patch 
 };

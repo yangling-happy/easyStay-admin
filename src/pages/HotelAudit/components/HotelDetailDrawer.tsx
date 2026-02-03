@@ -28,8 +28,8 @@ const HotelDetailDrawer = ({ open, hotel, onClose }: Props) => {
         <Descriptions.Item label="状态">
           <Space>
             <Tag color={hotel.status === 'approved' ? 'green' : 'orange'}>
-              {hotel.status === 'pending' ? '待审核' : 
-               hotel.status === 'approved' ? '已通过' : '已拒绝'}
+              {hotel.status === 'pending' ? '待审核' :
+                hotel.status === 'approved' ? '已通过' : '已拒绝'}
             </Tag>
             {hotel.isDeleted && <Tag color="gray">已下线</Tag>}
           </Space>
@@ -39,18 +39,22 @@ const HotelDetailDrawer = ({ open, hotel, onClose }: Props) => {
             <div style={{ color: '#ff4d4f' }}>{hotel.rejectReason}</div>
           </Descriptions.Item>
         )}
-        <Descriptions.Item label="创建时间">{hotel.createTime}</Descriptions.Item>
+        <Descriptions.Item label="创建时间">
+          {hotel.createTime
+            ? new Date(hotel.createTime).toLocaleString('zh-CN')
+            : '未设置'}
+        </Descriptions.Item>
       </Descriptions>
 
       <Divider>房型信息</Divider>
-      
+
       {hotel.roomTypes && hotel.roomTypes.length > 0 ? (
         <Space direction="vertical" style={{ width: '100%' }}>
           {hotel.roomTypes.map((room) => (
-            <div key={room.id} style={{ 
-              padding: 12, 
-              background: '#f5f5f5', 
-              borderRadius: 4 
+            <div key={room.id} style={{
+              padding: 12,
+              background: '#f5f5f5',
+              borderRadius: 4
             }}>
               <div><strong>{room.name}</strong></div>
               <div>价格: ¥{room.price}/晚</div>

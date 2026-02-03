@@ -2,8 +2,8 @@ import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import hotelRoutes from './routes/hotelRoutes.js';
-import uploadRoutes from './routes/uploadRoutes.js';
+
+import adminRoutes from './routes/adminRoutes.js';
 dotenv.config();
 
 const app = express();
@@ -19,11 +19,12 @@ mongoose.connect(MONGODB_URI)
 // 基础路由测试
 app.get('/health', (req, res) => res.send('API is running...'));
 
-// 添加酒店路由
-app.use('/api/hotels', hotelRoutes);
+//添加酒店路由
+//app.use('/api/hotels', hotelRoutes);
 // 添加上传路由
-app.use('/api/upload', uploadRoutes);
+//app.use('/api/upload', uploadRoutes);
 
+app.use('/api/admin', adminRoutes); 
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

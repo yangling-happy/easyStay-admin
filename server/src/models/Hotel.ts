@@ -106,5 +106,26 @@ const hotelSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  
 });
+
+hotelSchema.set('toJSON', {
+  virtuals: true,
+  transform: function(doc, ret: any) {
+    // 将 _id 转换为 id
+    if (ret._id) {
+      ret.id = ret._id.toString();
+      delete ret._id;
+    }
+    // 删除 MongoDB 版本号字段
+    if (ret.__v !== undefined) {
+      delete ret.__v;
+    }
+    return ret;
+  }
+});
+
+
+
+
 export const HotelModel = mongoose.model("Hotel", hotelSchema);

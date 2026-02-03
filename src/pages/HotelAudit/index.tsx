@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { getColumns } from './columns'
 import RejectModal from './components/RejectModal'
 import HotelDetailDrawer from './components/HotelDetailDrawer'
-import { hotelService } from '@/api/services/hotelService'
+import { auditService } from '@/api/services/auditService'
 import { useHotelStore } from '@/store/useHotelStore'
 import type { Hotel, HotelStatus } from '@/types/hotel'
 
@@ -15,7 +15,7 @@ const HotelAudit = () => {
   const [currentHotel, setCurrentHotel] = useState<Hotel | null>(null)
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [searchText, setSearchText] = useState('')
-  
+
   const { hotels, setHotels, updateHotel } = useHotelStore()
 
   // 初始化数据
@@ -23,15 +23,23 @@ const HotelAudit = () => {
     loadHotels()
   }, [])
 
+  // 加载数据
   const loadHotels = async () => {
     setLoading(true)
     try {
-      const data = await hotelService.getMyHotels()
+      const data = await auditService.getPendingHotels()
+
+      // 将 _id 转换为 id
+      const normalizedData = data.map((hotel: any) => ({
+        ...hotel,
+        id: hotel.id || hotel._id?.toString() || hotel._id
+      }))
+
       // 确保数据格式正确，过滤掉无效数据
-      const validData = data.filter(hotel => 
-        hotel && 
-        hotel.id && 
-        hotel.name && 
+      const validData = normalizedData.filter(hotel =>
+        hotel &&
+        (hotel.id || hotel._id) &&  // 同时检查 id 和 _id
+        hotel.name &&
         hotel.status
       )
       setHotels(validData)
@@ -46,16 +54,17 @@ const HotelAudit = () => {
 
   // 筛选后的数据
   const filteredData = hotels.filter(hotel => {
-    const matchStatus = statusFilter === 'all' || 
+    // 筛选状态
+    const matchStatus = statusFilter === 'all' ||
       (statusFilter === 'pending' && hotel.status === 'pending') ||
       (statusFilter === 'published' && hotel.status === 'approved' && !hotel.isDeleted) ||
       (statusFilter === 'offline' && hotel.isDeleted) ||
       (statusFilter === 'rejected' && hotel.status === 'rejected')
-    
-    const matchSearch = !searchText || 
+
+    const matchSearch = !searchText ||
       hotel.name.toLowerCase().includes(searchText.toLowerCase()) ||
       hotel.address.toLowerCase().includes(searchText.toLowerCase())
-    
+
     return matchStatus && matchSearch
   })
 
@@ -65,17 +74,10 @@ const HotelAudit = () => {
       content: '确定要通过该酒店的审核吗？',
       onOk: async () => {
         try {
-          // 注意：auditHotel方法在当前的hotelService中不存在，需要使用saveHotel方法
-          const hotel = await hotelService.getHotelById(id)
-          if (hotel) {
-            const updatedHotel: Hotel = {
-              ...hotel,
-              status: 'approved' as HotelStatus
-            };
-            await hotelService.saveHotel(updatedHotel)
-            updateHotel(id, { status: 'approved' as HotelStatus })
-            message.success('审核通过成功')
-          }
+          const result = await auditService.submitAudit(id, 'approved')
+          updateHotel(id, { status: 'approved' as HotelStatus })
+          message.success(result.message || '审核通过成功')
+          loadHotels() // 重新加载数据
         } catch (error) {
           console.error('审核通过失败:', error)
           message.error('操作失败')
@@ -84,29 +86,25 @@ const HotelAudit = () => {
     })
   }
 
+  // 拒绝审核
   const handleReject = (hotel: Hotel) => {
-    setCurrentHotel(hotel)
-    setRejectOpen(true)
+    setCurrentHotel(hotel)   // 设置当前酒店
+    setRejectOpen(true)   // 设置拒绝模态框显示
   }
 
   const submitReject = async (reason: string) => {
-    if (!currentHotel) return
-    
+    if (!currentHotel || !currentHotel.id) return
+
     try {
-      // 注意：auditHotel方法在当前的hotelService中不存在，需要使用saveHotel方法
-      const updatedHotel: Hotel = {
-        ...currentHotel,
+      const result = await auditService.submitAudit(currentHotel.id, 'rejected', reason)
+      updateHotel(currentHotel.id, {
         status: 'rejected' as HotelStatus,
         rejectReason: reason
-      };
-      await hotelService.saveHotel(updatedHotel)
-      updateHotel(currentHotel.id, { 
-        status: 'rejected' as HotelStatus, 
-        rejectReason: reason 
       })
-      message.success('已拒绝该酒店')
+      message.success(result.message || '已拒绝该酒店')
       setRejectOpen(false)
       setCurrentHotel(null)
+      loadHotels() // 重新加载数据
     } catch (error) {
       console.error('拒绝酒店失败:', error)
       message.error('操作失败')
@@ -119,9 +117,10 @@ const HotelAudit = () => {
       content: '确定要下线该酒店吗？下线后用户将无法看到该酒店。',
       onOk: async () => {
         try {
-          await hotelService.deleteHotel(id)
-          updateHotel(id, { isDeleted: true })
-          message.success('酒店已下线')
+          const result = await auditService.toggleHotelStatus(id)
+          updateHotel(id, { isActive: false })
+          message.success(result.message || '酒店已下线')
+          loadHotels() // 重新加载数据
         } catch (error) {
           console.error('下线酒店失败:', error)
           message.error('操作失败')
@@ -136,9 +135,10 @@ const HotelAudit = () => {
       content: '确定要恢复该酒店上线吗？',
       onOk: async () => {
         try {
-            await hotelService.restoreHotel(id)
-            updateHotel(id, { isDeleted: false })
-            message.success('酒店已恢复上线')
+          const result = await auditService.toggleHotelStatus(id)
+          updateHotel(id, { isActive: true })
+          message.success(result.message || '酒店已恢复上线')
+          loadHotels() // 重新加载数据
         } catch (error) {
           console.error('恢复酒店失败:', error)
           message.error('操作失败')
@@ -156,7 +156,7 @@ const HotelAudit = () => {
     <div>
       <div style={{ marginBottom: 16, display: 'flex', gap: 16, alignItems: 'center' }}>
         <h2 style={{ margin: 0 }}>酒店审核管理</h2>
-        
+
         <Space>
           <Select
             value={statusFilter}
@@ -170,7 +170,7 @@ const HotelAudit = () => {
               { label: '已下线', value: 'offline' }
             ]}
           />
-          
+
           <Input.Search
             placeholder="搜索酒店名称或地址"
             value={searchText}
@@ -192,12 +192,12 @@ const HotelAudit = () => {
         )}
         dataSource={filteredData}
         loading={loading}
-        pagination={{ 
+        pagination={{
           pageSize: 10,
           showTotal: (total) => `共 ${total} 条记录`
         }}
       />
-      
+
       <RejectModal
         open={rejectOpen}
         onCancel={() => {
