@@ -1,4 +1,4 @@
-import adminRoutes from './routes/adminRoutes.js';
+import adminRoutes from "./routes/adminRoutes.js";
 import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
@@ -7,21 +7,37 @@ import path from "path";
 import { fileURLToPath } from "url";
 import hotelRoutes from "./routes/hotelRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
+import authRoutes from "./routes/authRoutes.js";
 import fs from "fs";
+
 dotenv.config();
 
 // ES Module 兼容的 __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const app = express();
+
+// 1. CORS（最先）
 app.use(cors());
-// 解析请求体
+
+// 2. JSON解析（必须在路由之前）
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
+
 const publicDir = path.join(__dirname, "../public");
 console.log("静态文件目录:", publicDir);
-
-// 提供 /uploads 路径的静态文件访问
+// 在 JSON 解析之后，路由之前添加
+app.use((req, res, next) => {
+  console.log(`=== 请求日志 ===`);
+  console.log(`时间: ${new Date().toISOString()}`);
+  console.log(`方法: ${req.method}`);
+  console.log(`路径: ${req.url}`);
+  console.log(`Content-Type: ${req.headers['content-type']}`);
+  console.log(`请求体:`, req.body);
+  console.log(`=== 结束日志 ===\n`);
+  next();
+});
+// 3. 静态文件中间件
 app.use("/uploads", express.static(path.join(publicDir, "uploads")));
 
 // 确保 uploads 目录及其子目录存在
@@ -100,20 +116,16 @@ app.get("/api/uploads/list", (req, res) => {
   }
 });
 
-//添加酒店路由
-//app.use('/api/hotels', hotelRoutes);
-// 添加上传路由
-//app.use('/api/upload', uploadRoutes);
-
-app.use('/api/admin', adminRoutes); 
-// 添加酒店路由
+// ✅ 关键：路由放在所有中间件之后
+app.use("/api/auth", authRoutes);
+app.use("/api/admin", adminRoutes);
 app.use("/api/hotels", hotelRoutes);
-// 添加上传路由
 app.use("/api/upload", uploadRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Server ready at http://localhost:${PORT}`);
-  console.log(`上传目录: ${uploadsDir}`);
-  console.log(`静态文件访问: http://localhost:${PORT}/uploads/`);
+  console.log(`✅ 服务器启动: http://localhost:${PORT}`);
+  console.log(`📁 上传目录: ${uploadsDir}`);
+  console.log(`🖼️  静态文件: http://localhost:${PORT}/uploads/`);
+  console.log(`🔐 认证接口: http://localhost:${PORT}/api/auth/register`);
 });
