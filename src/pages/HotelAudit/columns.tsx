@@ -3,6 +3,7 @@ import type { ColumnsType } from 'antd/es/table'
 import { Tag, Button, Space, Tooltip } from 'antd'
 import { EyeOutlined } from '@ant-design/icons'
 import type { Hotel } from '@/types/hotel'
+import dayjs from 'dayjs'
 
 //将状态值映射为显示文本和颜色
 const statusMap: Record<Hotel['status'], { text: string; color: string }> = {
@@ -82,11 +83,10 @@ export const getColumns = (
       title: '提交时间',
       dataIndex: 'createTime',
       width: 180,
+      render: (time) =>
+        time ? dayjs(time).format('YYYY-MM-DD HH:mm:ss') : '-',
       sorter: (a, b) => {
-        if (!a.createTime && !b.createTime) return 0
-        if (!a.createTime) return 1
-        if (!b.createTime) return -1
-        return new Date(a.createTime).getTime() - new Date(b.createTime).getTime()
+        return new Date(a.createTime!).getTime() - new Date(b.createTime!).getTime()
       }
     },
     {

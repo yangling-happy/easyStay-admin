@@ -15,7 +15,7 @@
     "@types/multer": "^2.0.0",
     "antd": "^5.0.0",
     "axios": "^1.6.0",
-    "dayjs": "^1.11.0",
+    "dayjs": "^1.11.19",
     "multer": "^2.0.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -30,9 +30,9 @@
     "eslint": "^8.53.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.4",
+    "husky": "^8.0.0",
     "less": "^4.2.0",
     "typescript": "^5.2.0",
-    "vite": "^5.0.0",
-    "husky": "^8.0.0"
+    "vite": "^5.0.0"
   }
 }

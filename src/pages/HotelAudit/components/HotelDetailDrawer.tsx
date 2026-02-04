@@ -78,6 +78,7 @@ const HotelDetailDrawer = ({ open, hotel, onClose }: Props) => {
           <Image.PreviewGroup>
             <Carousel
               autoplay={true}
+              autoplaySpeed={2000}
               dots={true}
               style={{
                 background: '#f5f5f5',
