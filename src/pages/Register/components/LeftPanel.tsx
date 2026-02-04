@@ -37,7 +37,8 @@ const LeftPanel: React.FC = () => {
             lineHeight: 1.6,
           }}
         >
-          专业的酒店管理系统，为酒店商户和管理员提供全方位的业务支持
+          专业的酒店管理系统
+          <br></br>为酒店商户和管理员提供全方位的业务支持
         </Text>
 
         <Row gutter={[0, 20]} style={{ marginTop: 40 }}>
@@ -60,7 +61,7 @@ const LeftPanel: React.FC = () => {
               </div>
               <div>
                 <Text strong style={{ fontSize: 16, color: "#fff" }}>
-                  商户功能   
+                  商户功能
                 </Text>
                 <Text
                   style={{ color: "rgba(255, 255, 255, 0.8)", fontSize: 14 }}

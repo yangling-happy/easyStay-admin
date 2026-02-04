@@ -7,6 +7,7 @@ import {
   LockOutlined,
   PhoneOutlined,
   ShopOutlined,
+  ApartmentOutlined,
 } from "@ant-design/icons";
 import { ArrowLeftOutlined } from "@ant-design/icons";
 import type { RegisterStepProps } from "../types";
@@ -28,6 +29,7 @@ const RegisterForm: React.FC<RegisterStepProps> = ({
       size="middle"
     >
       <Row gutter={[16, 8]}>
+        {/* 第1行：用户名和邮箱 */}
         <Col span={12}>
           <Form.Item
             name="username"
@@ -69,6 +71,7 @@ const RegisterForm: React.FC<RegisterStepProps> = ({
           </Form.Item>
         </Col>
 
+        {/* 第2行：密码和确认密码 */}
         <Col span={12}>
           <Form.Item
             name="password"
@@ -114,6 +117,7 @@ const RegisterForm: React.FC<RegisterStepProps> = ({
           </Form.Item>
         </Col>
 
+        {/* 第3行：根据角色显示特定字段 */}
         {selectedRole === "merchant" && (
           <>
             <Col span={12}>
@@ -153,6 +157,34 @@ const RegisterForm: React.FC<RegisterStepProps> = ({
               </Form.Item>
             </Col>
           </>
+        )}
+
+        {selectedRole === "admin" && (
+          <Col span={12}>
+            <Form.Item
+              name="department"
+              label="所属部门"
+              rules={[
+                { required: true, message: "请输入所属部门" },
+                { min: 2, message: "部门名称至少2个字符" },
+                { max: 30, message: "部门名称不能超过30个字符" },
+              ]}
+            >
+              <Input
+                prefix={<ApartmentOutlined style={{ color: "#1890ff" }} />}
+                placeholder="请输入所属部门"
+                allowClear
+                size="middle"
+              />
+            </Form.Item>
+          </Col>
+        )}
+
+        {/* 为了保持布局对齐，当是管理员时添加一个空列占位 */}
+        {selectedRole === "admin" && (
+          <Col span={12}>
+            {/* 空列，仅用于占位对齐 */}
+          </Col>
         )}
       </Row>
 
