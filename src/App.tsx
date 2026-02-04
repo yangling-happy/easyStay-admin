@@ -16,12 +16,12 @@ import { MainLayout } from "./layouts/MainLayout";
 import HotelAudit from "./pages/HotelAudit";
 import HotelEdit from "./pages/HotelEdit";
 import AuditStatusPage from "./pages/AuditStatus";
+import ProfilePage from "./pages/Profile/ProfilePage";
 
 // 占位组件（稍后实现）
 const HotelList = () => <div>酒店管理列表页</div>;
 const MerchantDashboard = () => <div>商户仪表盘</div>;
 const AdminDashboard = () => <div>管理员仪表盘</div>;
-const ProfilePage = () => <div>个人资料</div>;
 const SettingsPage = () => <div>设置</div>;
 
 // 路由守卫组件

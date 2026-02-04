@@ -301,6 +301,7 @@ router.get("/me", async (req, res) => {
       email: user.email,
       role: user.role,
       isActive: user.isActive,
+      createdAt: user.createdAt,
     };
 
     if (user.role === "merchant") {
@@ -315,6 +316,224 @@ router.get("/me", async (req, res) => {
     res.json({
       success: true,
       data: { user: userResponse },
+    });
+  } catch (error: any) {
+    if (error.name === "JsonWebTokenError") {
+      return res.status(401).json({
+        success: false,
+        message: "Token无效",
+      });
+    }
+
+    if (error.name === "TokenExpiredError") {
+      return res.status(401).json({
+        success: false,
+        message: "Token已过期",
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: "服务器内部错误",
+    });
+  }
+});
+
+// 4. 更新当前用户资料
+router.put("/me", async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({
+        success: false,
+        message: "请先登录",
+      });
+    }
+
+    const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+
+    const user = await User.findById(decoded.userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "用户不存在",
+      });
+    }
+
+    const { username, email, hotelName, contactPhone, department } = req.body;
+
+    if (email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({
+          success: false,
+          message: "邮箱格式不正确",
+        });
+      }
+    }
+
+    if (typeof username === "string" && username !== user.username) {
+      const existing = await User.findOne({
+        username,
+        _id: { $ne: user._id },
+      });
+      if (existing) {
+        return res.status(400).json({
+          success: false,
+          message: "用户名已存在",
+        });
+      }
+      user.username = username;
+    }
+
+    if (typeof email === "string" && email !== user.email) {
+      const existing = await User.findOne({
+        email,
+        _id: { $ne: user._id },
+      });
+      if (existing) {
+        return res.status(400).json({
+          success: false,
+          message: "邮箱已存在",
+        });
+      }
+      user.email = email;
+    }
+
+    if (user.role === "merchant") {
+      if (hotelName !== undefined) user.hotelName = hotelName;
+      if (contactPhone !== undefined) user.contactPhone = contactPhone;
+
+      if (!user.hotelName || !user.contactPhone) {
+        return res.status(400).json({
+          success: false,
+          message: "商户必须提供公司/酒店名称和联系电话",
+        });
+      }
+    }
+
+    if (user.role === "admin") {
+      if (department !== undefined) user.department = department;
+
+      if (!user.department) {
+        return res.status(400).json({
+          success: false,
+          message: "管理员必须提供部门",
+        });
+      }
+    }
+
+    const saved = await user.save();
+
+    const userResponse: any = {
+      id: saved._id,
+      username: saved.username,
+      email: saved.email,
+      role: saved.role,
+      isActive: saved.isActive,
+      createdAt: saved.createdAt,
+    };
+
+    if (saved.role === "merchant") {
+      userResponse.hotelName = saved.hotelName;
+      userResponse.contactPhone = saved.contactPhone;
+    }
+
+    if (saved.role === "admin") {
+      userResponse.department = saved.department;
+    }
+
+    res.json({
+      success: true,
+      message: "更新成功",
+      data: { user: userResponse },
+    });
+  } catch (error: any) {
+    if (error.name === "JsonWebTokenError") {
+      return res.status(401).json({
+        success: false,
+        message: "Token无效",
+      });
+    }
+
+    if (error.name === "TokenExpiredError") {
+      return res.status(401).json({
+        success: false,
+        message: "Token已过期",
+      });
+    }
+
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyPattern)[0];
+      return res.status(400).json({
+        success: false,
+        message: `${field === "username" ? "用户名" : "邮箱"}已存在`,
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: "服务器内部错误",
+    });
+  }
+});
+
+// 5. 修改密码
+router.put("/password", async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({
+        success: false,
+        message: "请先登录",
+      });
+    }
+
+    const { oldPassword, newPassword } = req.body;
+
+    if (!oldPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "原密码和新密码不能为空",
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: "新密码至少6位",
+      });
+    }
+
+    const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+
+    const user = await User.findById(decoded.userId).select("+password");
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "用户不存在",
+      });
+    }
+
+    const isValid = await bcrypt.compare(oldPassword, user.password);
+    if (!isValid) {
+      return res.status(400).json({
+        success: false,
+        message: "原密码不正确",
+      });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+    await user.save();
+
+    res.json({
+      success: true,
+      message: "密码修改成功",
     });
   } catch (error: any) {
     if (error.name === "JsonWebTokenError") {
