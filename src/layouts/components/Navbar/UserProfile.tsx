@@ -137,22 +137,6 @@ const UserProfile: React.FC = () => {
               color: "#fff",
             }}
           />
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "flex-start",
-            }}
-          >
-            <span style={{ fontSize: "14px", fontWeight: 500 }}>
-              {username}
-            </span>
-            {roleText && (
-              <span style={{ fontSize: "12px", color: "#999" }}>
-                {roleText}
-              </span>
-            )}
-          </div>
         </Space>
       </div>
     </Dropdown>
