@@ -1,7 +1,11 @@
 import React from "react";
 import { Layout, Menu } from "antd";
 import { useNavigate, useLocation } from "react-router-dom";
-import { PlusCircleOutlined, DatabaseOutlined, AuditOutlined } from "@ant-design/icons";
+import {
+  PlusCircleOutlined,
+  DatabaseOutlined,
+  AuditOutlined,
+} from "@ant-design/icons";
 
 const { Sider } = Layout;
 
@@ -9,26 +13,62 @@ const Sidebar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const menuItems = [
+  const getUserRole = (): "merchant" | "admin" | "" => {
+    try {
+      const userStr = localStorage.getItem("user");
+      const user = userStr ? JSON.parse(userStr) : null;
+      return user?.role || "";
+    } catch (error) {
+      console.error("获取用户角色失败:", error);
+      return "";
+    }
+  };
+
+  const role = getUserRole();
+
+  const merchantMenuItems = [
     {
       key: "/hotels",
       icon: <DatabaseOutlined />,
-      label: "酒店列表",
+      label: "酒店管理",
       onClick: () => navigate("/hotels"),
     },
     {
       key: "/hotels/new",
       icon: <PlusCircleOutlined />,
-      label: "酒店录入",
+      label: "房型发布",
       onClick: () => navigate("/hotels/new"),
     },
+    {
+      key: "/orders",
+      icon: <DatabaseOutlined />,
+      label: "订单处理",
+      onClick: () => navigate("/orders"),
+    },
+  ];
+
+  const adminMenuItems = [
     {
       key: "/hotels/audit",
       icon: <AuditOutlined />,
       label: "酒店审核",
       onClick: () => navigate("/hotels/audit"),
     },
+    {
+      key: "/users",
+      icon: <DatabaseOutlined />,
+      label: "平台监控",
+      onClick: () => navigate("/users"),
+    },
+    {
+      key: "/users/audit",
+      icon: <AuditOutlined />,
+      label: "数据统计",
+      onClick: () => navigate("/users/audit"),
+    },
   ];
+
+  const menuItems = role === "admin" ? adminMenuItems : merchantMenuItems;
 
   return (
     <Sider
