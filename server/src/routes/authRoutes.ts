@@ -24,7 +24,6 @@ router.post("/register", async (req, res) => {
       role = "merchant",
       hotelName, // 商户的公司名称
       contactPhone, // 联系电话
-      department, // 管理员部门
     } = req.body;
 
     console.log("注册请求:", { username, email, role });
@@ -70,14 +69,6 @@ router.post("/register", async (req, res) => {
       }
     }
 
-    if (role === "admin") {
-      if (!department) {
-        return res.status(400).json({
-          success: false,
-          message: "管理员必须提供部门信息",
-        });
-      }
-    }
 
     // 检查重复用户
     const existingUser = await User.findOne({
@@ -116,10 +107,6 @@ router.post("/register", async (req, res) => {
     if (role === "merchant") {
       userData.hotelName = hotelName;
       userData.contactPhone = contactPhone;
-    }
-
-    if (role === "admin") {
-      userData.department = department;
     }
 
     // 保存到数据库
