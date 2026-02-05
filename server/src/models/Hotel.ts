@@ -65,7 +65,7 @@ const hotelSchema = new mongoose.Schema({
   },
   ownerId: {
     type: String,
-    required: true,
+    required: false,
   },
 
   // 房型配置
@@ -106,12 +106,11 @@ const hotelSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
-  
 });
 
-hotelSchema.set('toJSON', {
+hotelSchema.set("toJSON", {
   virtuals: true,
-  transform: function(doc, ret: any) {
+  transform: function (doc, ret: any) {
     // 将 _id 转换为 id
     if (ret._id) {
       ret.id = ret._id.toString();
@@ -122,10 +121,7 @@ hotelSchema.set('toJSON', {
       delete ret.__v;
     }
     return ret;
-  }
+  },
 });
-
-
-
 
 export const HotelModel = mongoose.model("Hotel", hotelSchema);
