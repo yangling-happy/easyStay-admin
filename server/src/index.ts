@@ -8,6 +8,7 @@ import { fileURLToPath } from "url";
 import hotelRoutes from "./routes/hotelRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
+import feedbackRoutes from "./routes/feedbackRoutes.js";
 import fs from "fs";
 
 dotenv.config();
@@ -121,6 +122,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/hotels", hotelRoutes);
 app.use("/api/upload", uploadRoutes);
+app.use("/api/feedback", feedbackRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

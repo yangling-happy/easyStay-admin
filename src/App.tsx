@@ -17,7 +17,7 @@ import HotelAudit from "./pages/HotelAudit";
 import HotelEdit from "./pages/HotelEdit";
 import AuditStatusPage from "./pages/AuditStatus";
 import ProfilePage from "./pages/Profile/ProfilePage";
-
+import FeedbackManager from "./layouts/components/Navbar/FeedbackManager";
 // 占位组件（稍后实现）
 const HotelList = () => <div>酒店管理列表页</div>;
 const MerchantDashboard = () => <div>商户仪表盘</div>;
@@ -183,6 +183,14 @@ function App() {
                 element={
                   <PrivateRoute requiredRole="admin">
                     <SettingsPage />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="feedback"
+                element={
+                  <PrivateRoute requiredRole="admin">
+                    <FeedbackManager />
                   </PrivateRoute>
                 }
               />
