@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, Steps, Button, message, Form } from "antd";
 import HotelSelector from "./components/HotelSelector";
 import BasicInfoForm from "./components/BasicInfoForm";
@@ -6,28 +6,88 @@ import RoomTypeFormList from "./components/RoomTypeFormList";
 import { useHotelForm } from "./hooks/useHotelForm";
 
 const HotelEdit: React.FC = () => {
-  const [current, setCurrent] = useState(0);
-  const { form, handleSave } = useHotelForm();
+  // 加载保存的步骤
+  const loadSavedStep = () => {
+    try {
+      const step = localStorage.getItem("hotel_edit_current_step");
+      return step ? parseInt(step, 10) : 0;
+    } catch {
+      return 0;
+    }
+  };
+
+  const [current, setCurrent] = useState(loadSavedStep());
+  const { form, handleSave, saveFormData } = useHotelForm();
+
+  //保存当前步骤
+  const saveStep = (step: number) => {
+    localStorage.setItem("hotel_edit_current_step", step.toString());
+    setCurrent(step);
+  };
+
+  //自动保存：每3秒保存一次表单数据
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const values = form.getFieldsValue();
+      saveFormData(values);
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [form, saveFormData]);
+
+  // 页面离开前提示
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      const values = form.getFieldsValue();
+      const hasData = Object.values(values).some(
+        (val) => val !== undefined && val !== null && val !== "",
+      );
+
+      if (hasData) {
+        e.preventDefault();
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [form]);
 
   const handleProceed = () => {
-    setCurrent(1);
+    saveStep(1);
   };
 
   // 分步骤验证
   const handleNext = async () => {
     try {
       if (current === 1) {
-        // 验证基本信息
-        await form.validateFields(['name', 'nameEn', 'address', 'star', 'openingDate']);
+        await form.validateFields([
+          "name",
+          "nameEn",
+          "address",
+          "star",
+          "openingDate",
+        ]);
       } else if (current === 2) {
-        // 验证房型
-        await form.validateFields(['roomTypes']);
+        await form.validateFields(["roomTypes"]);
       }
-      setCurrent(current + 1);
+
+      // 保存当前数据
+      const values = form.getFieldsValue();
+      saveFormData(values);
+
+      // 切换到下一步
+      saveStep(current + 1);
     } catch (errorInfo) {
       console.log("表单校验未通过:", errorInfo);
       message.error("请完善当前页面的必填信息");
     }
+  };
+
+  // 上一步处理
+  const handlePrev = () => {
+    const values = form.getFieldsValue();
+    saveFormData(values);
+    saveStep(current - 1);
   };
 
   return (
@@ -37,40 +97,65 @@ const HotelEdit: React.FC = () => {
         items={[
           { title: "认领/选择" },
           { title: "基本信息" },
-          { title: "房型配置" }
+          { title: "房型配置" },
         ]}
         style={{ marginBottom: 40 }}
       />
 
-      {/* 关键：一个Form包裹所有内容 */}
-      <Form form={form} layout="vertical">
+      {/*关键：监听表单变化自动保存 */}
+      <Form
+        form={form}
+        layout="vertical"
+        onValuesChange={(changedValues, allValues) => {
+          // 表单变化时自动保存（防抖在 saveFormData 中实现）
+          saveFormData(allValues);
+        }}
+      >
         {/* 第0步 */}
-        <div style={{ display: current === 0 ? 'block' : 'none' }}>
+        <div style={{ display: current === 0 ? "block" : "none" }}>
           <HotelSelector form={form} onAction={handleProceed} />
         </div>
-        
-        {/* 第1步：BasicInfoForm - 不传递form参数 */}
-        <div style={{ display: current === 1 ? 'block' : 'none' }}>
+
+        {/* 第1步：子组件不需要传递 form */}
+        <div style={{ display: current === 1 ? "block" : "none" }}>
           <BasicInfoForm />
         </div>
-        
-        {/* 第2步：RoomTypeFormList - 不传递form参数 */}
-        <div style={{ display: current === 2 ? 'block' : 'none' }}>
+
+        {/* 第2步：子组件不需要传递 form */}
+        <div style={{ display: current === 2 ? "block" : "none" }}>
           <RoomTypeFormList />
         </div>
       </Form>
 
-      {/* 添加调试按钮
-      <div style={{ marginTop: 10, textAlign: 'center' }}>
+      {/*调试工具 */}
+      {/* <div style={{ marginTop: 10, textAlign: 'center' }}>
         <Button 
           size="small" 
           onClick={() => {
             const values = form.getFieldsValue();
-            console.log('当前步骤表单值:', values);
+            console.log('当前表单值:', values);
             console.log('当前步骤:', current);
+            console.log('localStorage表单数据:', localStorage.getItem('hotel_edit_form_data'));
+            console.log('localStorage当前步骤:', localStorage.getItem('hotel_edit_current_step'));
           }}
         >
-          调试表单状态
+          调试状态
+        </Button>
+        
+        <Button 
+          size="small" 
+          onClick={() => {
+            // 清除所有保存的数据
+            localStorage.removeItem('hotel_edit_form_data');
+            localStorage.removeItem('hotel_edit_current_step');
+            form.resetFields();
+            setCurrent(0);
+            message.success('已清除所有保存的数据');
+          }}
+          style={{ marginLeft: 10 }}
+          danger
+        >
+          清除数据
         </Button>
       </div> */}
 
@@ -79,15 +164,11 @@ const HotelEdit: React.FC = () => {
         style={{
           marginTop: 30,
           textAlign: "center",
-          borderTop: "1px solid #f0f0f0",
           paddingTop: 20,
         }}
       >
         {current > 0 && (
-          <Button
-            style={{ margin: "0 8px" }}
-            onClick={() => setCurrent(current - 1)}
-          >
+          <Button style={{ margin: "0 8px" }} onClick={handlePrev}>
             上一步
           </Button>
         )}

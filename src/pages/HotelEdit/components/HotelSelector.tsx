@@ -30,7 +30,7 @@ const HotelSelector: React.FC<Props> = ({ form, onAction }) => {
           )
           .map((h) => ({
             label: `${h.name} (${h.nameEn}) - ${'★'.repeat(h.star)}`,
-            value: h.id,
+            value: h.id ??'',
             data: h,
           }));
         setOptions(filtered);
