@@ -20,10 +20,10 @@ import ProfilePage from "./pages/Profile/ProfilePage";
 import FeedbackManager from "./layouts/components/Navbar/FeedbackManager";
 import AuditRecords from "./pages/AuditRecords";
 import HotelList from "./pages/HotelList";
+import MerchantDashboard from "./pages/Dashboard/MerchantDashboard";
+import AdminDashboard from "./pages/Dashboard/AdminDashboard";
 
-const MerchantDashboard = () => <div>商户仪表盘</div>;
-const AdminDashboard = () => <div>管理员仪表盘</div>;
-const SettingsPage = () => <div>设置</div>;
+
 
 // 路由守卫组件
 interface PrivateRouteProps {
@@ -160,14 +160,7 @@ function App() {
                 }
               />
 
-              <Route
-                path="settings"
-                element={
-                  <PrivateRoute requiredRole="merchant">
-                    <SettingsPage />
-                  </PrivateRoute>
-                }
-              />
+
             </Route>
 
             {/* 管理员专属路由 */}
@@ -188,14 +181,7 @@ function App() {
                   </PrivateRoute>
                 }
               />
-              <Route
-                path="settings"
-                element={
-                  <PrivateRoute requiredRole="admin">
-                    <SettingsPage />
-                  </PrivateRoute>
-                }
-              />
+
               <Route
                 path="feedback"
                 element={

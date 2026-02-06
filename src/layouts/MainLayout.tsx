@@ -14,7 +14,6 @@ export const MainLayout = () => {
 
   return (
     <Layout style={{ minHeight: "100vh", background: colorBgLayout }}>
-      {/* 使用提取后的 Sidebar 组件 */}
       <Sidebar />
 
       <Layout style={{ background: colorBgLayout }}>
