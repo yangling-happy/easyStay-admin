@@ -133,7 +133,7 @@ const AuditStatusPage: React.FC = () => {
           >
             返回酒店列表
           </Button>,
-          <Button key="records" onClick={() => navigate("/hotel/records")}>
+          <Button key="records" onClick={() => navigate("/merchant/records")}>
             查看申请记录
           </Button>,
           hotelId && (
