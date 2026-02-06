@@ -36,7 +36,7 @@ const RejectModal = ({ open, onCancel, onSubmit }: Props) => {
       cancelText="取消"   // 取消按钮文本
       okButtonProps={{ danger: true }}   // 确认按钮样式
     >
-      <Form form={form} layout="vertical">   // 表单组件
+      <Form form={form} layout="vertical">
         <Form.Item
           label="拒绝原因"   // 标签文本
           name="reason"   // 表单项名称
@@ -46,8 +46,8 @@ const RejectModal = ({ open, onCancel, onSubmit }: Props) => {
           ]}
         >
           <Input.TextArea  // 文本域组件
-            rows={4} 
-            placeholder="请输入拒绝原因，此原因将显示给商户（至少10个字符）" 
+            rows={4}
+            placeholder="请输入拒绝原因，此原因将显示给商户（至少10个字符）"
             showCount
             maxLength={200}
           />
