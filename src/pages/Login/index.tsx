@@ -4,6 +4,7 @@ import { UserOutlined, LockOutlined } from "@ant-design/icons";
 import { Link, useNavigate } from "react-router-dom";
 import { authApi } from "../../api/auth";
 import type { LoginParams } from "../../api/auth/types";
+import "./LoginPage.css"; // 导入样式文件
 
 const { Title, Text } = Typography;
 
@@ -42,23 +43,42 @@ const LoginPage: React.FC = () => {
     }
   };
 
-  return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "#f0f2f5",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "20px",
-      }}
-    >
-      <Card style={{ width: 400 }}>
-        <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <Title level={2}>易宿酒店平台</Title>
-          <Text type="secondary">请登录您的账号</Text>
-        </div>
+  const BubbleBackground = () => (
+    <div className="bubbles-container">
+      <div className="bubble bubble-1"></div>
+      <div className="bubble bubble-2"></div>
+      <div className="bubble bubble-3"></div>
+      <div className="bubble bubble-4"></div>
+      <div className="bubble bubble-5"></div>
+    </div>
+  );
 
+  const LoginHeader = () => (
+    <div className="login-header">
+      <Title level={3} className="login-title">
+        易宿酒店平台
+      </Title>
+      <Text type="secondary" className="login-subtitle">
+        请登录您的账号
+      </Text>
+    </div>
+  );
+
+  const LoginFooter = () => (
+    <div className="login-footer">
+      <Text>还没有账号？</Text>
+      <Link to="/register" className="register-link">
+        立即注册
+      </Link>
+    </div>
+  );
+
+  return (
+    <div className="login-page">
+      <BubbleBackground />
+      <Card className="login-card">
+        <LoginHeader />
+        
         <Form
           form={form}
           name="login"
@@ -78,6 +98,7 @@ const LoginPage: React.FC = () => {
               prefix={<UserOutlined />}
               placeholder="请输入用户名"
               size="large"
+              className="login-input"
             />
           </Form.Item>
 
@@ -90,6 +111,7 @@ const LoginPage: React.FC = () => {
               prefix={<LockOutlined />}
               placeholder="请输入密码"
               size="large"
+              className="login-input"
             />
           </Form.Item>
 
@@ -100,18 +122,14 @@ const LoginPage: React.FC = () => {
               loading={loading}
               block
               size="large"
+              className="login-button"
             >
               登录
             </Button>
           </Form.Item>
         </Form>
 
-        <div style={{ textAlign: "center", marginTop: 24 }}>
-          <Text>还没有账号？</Text>
-          <Link to="/register" style={{ marginLeft: 8 }}>
-            立即注册
-          </Link>
-        </div>
+        <LoginFooter />
       </Card>
     </div>
   );

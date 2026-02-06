@@ -67,23 +67,55 @@ const LeftPanel: React.FC = () => {
       <style>{`
         .left-panel-container {
           flex: 0 0 40%;
-          background: linear-gradient(135deg, #e6f7ff 0%, #bae7ff 100%);
+          background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
           padding: 40px;
           display: flex;
           flex-direction: column;
           justify-content: center;
           align-items: center;
-          color: #0050b3;
+          color: #262626;
           position: relative;
           overflow: hidden;
           animation: fadeInLeft 0.8s ease-out;
+        }
+
+        .background-text {
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          top: 0;
+          left: 0;
+          pointer-events: none;
+          z-index: 1;
+        }
+
+        .text-left, .text-right {
+          position: absolute;
+          font-size: 160px;
+          font-weight: 300;
+          color: rgba(0, 0, 0, 0.02);
+          letter-spacing: 15px;
+          opacity: 0.8;
+          user-select: none;
+        }
+
+        .text-left {
+          top: 50%;
+          left: 10%;
+          transform: translateY(-50%) rotate(-10deg);
+        }
+
+        .text-right {
+          top: 50%;
+          right: 10%;
+          transform: translateY(-50%) rotate(10deg);
         }
 
         .panel-content {
           text-align: center;
           max-width: 500px;
           position: relative;
-          z-index: 1;
+          z-index: 2;
           animation: contentAppear 0.6s ease-out 0.3s both;
         }
 
@@ -94,22 +126,24 @@ const LeftPanel: React.FC = () => {
         .main-icon {
           font-size: 64px;
           color: #1890ff;
-          animation: float 4s ease-in-out infinite;
         }
 
         .main-title {
-          color: #0050b3 !important;
+          color: #262626 !important;
           margin-bottom: 16px !important;
-          font-weight: 600 !important;
+          font-weight: 300 !important;
           font-size: 32px !important;
+          letter-spacing: -0.5px;
         }
 
         .subtitle {
-          color: rgba(0, 80, 179, 0.9);
+          color: #8c8c8c;
           font-size: 16px;
           display: block;
           margin-bottom: 32px;
           line-height: 1.6;
+          font-weight: 400;
+          letter-spacing: 0.5px;
         }
 
         .features-section {
@@ -120,19 +154,19 @@ const LeftPanel: React.FC = () => {
         .feature-item {
           display: flex;
           align-items: center;
-          padding: 16px;
+          padding: 20px;
           border-radius: 16px;
-          background: rgba(255, 255, 255, 0.6);
-          backdrop-filter: blur(10px);
-          border: 1px solid rgba(255, 255, 255, 0.3);
-          transition: all 0.3s ease;
+          background: #ffffff;
+          border: 1px solid #f0f0f0;
+          transition: all 0.2s ease;
           animation: slideInRight 0.5s ease-out both;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
         }
 
         .feature-item:hover {
-          transform: translateX(5px);
-          border-color: #91d5ff;
-          box-shadow: 0 4px 12px rgba(24, 144, 255, 0.15);
+          border-color: #40a9ff;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(24, 144, 255, 0.1);
         }
 
         .feature-item:nth-child(2) {
@@ -140,16 +174,16 @@ const LeftPanel: React.FC = () => {
         }
 
         .feature-icon-wrapper {
-          width: 40px;
-          height: 40px;
-          border-radius: 50%;
-          background: rgba(24, 144, 255, 0.1);
+          width: 44px;
+          height: 44px;
+          border-radius: 12px;
+          background: #e6f7ff;
           display: flex;
           align-items: center;
           justify-content: center;
           margin-right: 16px;
           flex-shrink: 0;
-          border: 1px solid rgba(24, 144, 255, 0.2);
+          border: 1px solid #bae7ff;
         }
 
         .feature-icon {
@@ -163,13 +197,14 @@ const LeftPanel: React.FC = () => {
 
         .feature-title {
           font-size: 16px !important;
-          color: #0050b3 !important;
+          color: #262626 !important;
           display: block;
           margin-bottom: 4px;
+          font-weight: 500;
         }
 
         .feature-description {
-          color: rgba(0, 80, 179, 0.7);
+          color: #8c8c8c;
           font-size: 14px;
         }
 
@@ -181,13 +216,14 @@ const LeftPanel: React.FC = () => {
           top: 0;
           left: 0;
           pointer-events: none;
+          z-index: 1;
         }
 
         .circle {
           position: absolute;
           border-radius: 50%;
-          background: rgba(255, 255, 255, 0.2);
-          animation: float 6s ease-in-out infinite;
+          background: rgba(24, 144, 255, 0.03);
+          animation: float 12s ease-in-out infinite;
         }
 
         .circle-1 {
@@ -203,7 +239,7 @@ const LeftPanel: React.FC = () => {
           height: 80px;
           bottom: 20%;
           left: 10%;
-          animation-delay: 2s;
+          animation-delay: 4s;
         }
 
         .circle-3 {
@@ -211,7 +247,7 @@ const LeftPanel: React.FC = () => {
           height: 60px;
           top: 50%;
           right: 20%;
-          animation-delay: 4s;
+          animation-delay: 8s;
         }
 
         /* 动画定义 */
@@ -248,10 +284,34 @@ const LeftPanel: React.FC = () => {
 
         @keyframes float {
           0%, 100% {
-            transform: translateY(0);
+            transform: translateY(0) scale(1);
           }
           50% {
-            transform: translateY(-10px);
+            transform: translateY(-40px) scale(1.05);
+          }
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+          .text-left, .text-right {
+            font-size: 100px;
+            letter-spacing: 10px;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .left-panel-container {
+            padding: 32px 24px;
+          }
+          
+          .main-title {
+            font-size: 24px !important;
+          }
+          
+          .text-left, .text-right {
+            font-size: 70px;
+            letter-spacing: 5px;
+            opacity: 0.03;
           }
         }
       `}</style>
