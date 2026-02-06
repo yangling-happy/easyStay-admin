@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Table, Tag, Button, Modal, Input, message } from "antd";
 import axiosInstance from "../../../api/http/axiosConfig";
-
+import { feedbackService } from "../../../api/services/feedbackService";
 const FeedbackManager: React.FC = () => {
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(false);
