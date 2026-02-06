@@ -163,7 +163,7 @@ const HotelList: React.FC = () => {
         title={
           <Space size="middle">
             <span style={{ fontSize: "18px", fontWeight: 600 }}>
-              酒店列表管理 (已上线)
+              酒店列表管理
             </span>
             <Tag color="cyan" style={{ fontSize: "14px", padding: "0 8px" }}>
               共 {activeCount} 家
@@ -238,9 +238,9 @@ const HotelList: React.FC = () => {
                 {selectedHotel.isActive ? "销售中" : "已下线"}
               </Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="核准日期">
+            {/* <Descriptions.Item label="核准日期">
               {new Date(selectedHotel.updatedAt).toLocaleString()}
-            </Descriptions.Item>
+            </Descriptions.Item> */}
           </Descriptions>
         )}
       </Modal>
