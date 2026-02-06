@@ -11,7 +11,7 @@ router.post("/", auth, async (req: any, res) => {
     const hotelData = {
       ...req.body,
       ownerId: req.user.userId, // 这里就是中间件里挂载的信息
-      status: 'pending',        // 强制初始状态为审核中
+      status: "pending", // 强制初始状态为审核中
       createTime: new Date(),
       updateTime: new Date(),
     };
@@ -29,9 +29,9 @@ router.post("/", auth, async (req: any, res) => {
 router.get("/records", auth, async (req: any, res) => {
   try {
     // 关键改动：直接查“我”的记录
-    const query = { 
+    const query = {
       ownerId: req.user.userId, // 从 Token 拿 ID，别人查不了你的数据
-      isDeleted: false 
+      isDeleted: false,
     };
 
     const hotels = await HotelModel.find(query).sort({ createTime: -1 });
@@ -41,5 +41,44 @@ router.get("/records", auth, async (req: any, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 });
+// 3. PATCH /api/hotels/:id/offline - 商户自主下线 (无需审核)
+router.patch("/:id/offline", auth, async (req: any, res) => {
+  try {
+    const hotel = await HotelModel.findOneAndUpdate(
+      { _id: req.params.id, ownerId: req.user.userId }, // 权限校验：只能改自己的
+      {
+        isActive: false,
+        updateTime: new Date(),
+      },
+      { new: true },
+    );
 
+    if (!hotel)
+      return res.status(404).json({ success: false, message: "未找到酒店" });
+    res.json({ success: true, message: "酒店已成功下线", data: hotel });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 4. POST /api/hotels/:id/re-apply - 恢复上线 (重置为待审核)
+router.post("/:id/re-apply", auth, async (req: any, res) => {
+  try {
+    const hotel = await HotelModel.findOneAndUpdate(
+      { _id: req.params.id, ownerId: req.user.userId },
+      {
+        status: "pending", // 💡 关键：状态回滚，管理员的“待审核”列表会自动刷出这条记录
+        isActive: false, // 确保在管理员点“通过”之前，前端依然是关闭状态
+        updateTime: new Date(),
+      },
+      { new: true },
+    );
+
+    if (!hotel)
+      return res.status(404).json({ success: false, message: "未找到酒店" });
+    res.json({ success: true, message: "已提交重新上线申请", data: hotel });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
 export default router;

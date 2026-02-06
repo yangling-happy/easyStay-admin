@@ -106,7 +106,7 @@ const HotelEdit: React.FC = () => {
       <Form
         form={form}
         layout="vertical"
-        onValuesChange={(changedValues, allValues) => {
+        onValuesChange={(_, allValues) => {
           // 表单变化时自动保存（防抖在 saveFormData 中实现）
           saveFormData(allValues);
         }}

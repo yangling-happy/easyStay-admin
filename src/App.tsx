@@ -19,8 +19,8 @@ import AuditStatusPage from "./pages/AuditStatus";
 import ProfilePage from "./pages/Profile/ProfilePage";
 import FeedbackManager from "./layouts/components/Navbar/FeedbackManager";
 import AuditRecords from "./pages/AuditRecords";
-// 占位组件（稍后实现）
-const HotelList = () => <div>酒店管理列表页</div>;
+import HotelList from "./pages/HotelList";
+
 const MerchantDashboard = () => <div>商户仪表盘</div>;
 const AdminDashboard = () => <div>管理员仪表盘</div>;
 const SettingsPage = () => <div>设置</div>;
@@ -144,7 +144,7 @@ function App() {
                 }
               />
               <Route
-                path="records" 
+                path="records"
                 element={
                   <PrivateRoute requiredRole="merchant">
                     <AuditRecords />
