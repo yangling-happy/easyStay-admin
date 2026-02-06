@@ -60,17 +60,23 @@ const Feedback: React.FC = () => {
       }
 
       setSubmitting(true);
-      const res = await axiosInstance.post("/feedback", {
+      const res = (await axiosInstance.post("/feedback", {
         hotelId,
         ownerId,
         content,
         // notificationId: 可选字段，这里不需要就先不传
-      });
+      })) as {
+        success: boolean;
+        message?: string;
+        data?: any;
+      };
       // 4. 调用后端反馈接口
-      if (res.status === 200) {
+      if (res.success) {
         message.success("提交成功！感谢您的反馈！");
         form.resetFields();
         setIsModalOpen(false);
+      } else {
+        message.error(res.message || "提交失败，请稍后重试");
       }
     } catch (err: any) {
       if (err?.errorFields) {

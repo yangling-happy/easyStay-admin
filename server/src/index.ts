@@ -9,6 +9,7 @@ import hotelRoutes from "./routes/hotelRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import feedbackRoutes from "./routes/feedbackRoutes.js";
+import notificationRoutes from "./routes/notificationRoutes.js";
 import fs from "fs";
 
 dotenv.config();
@@ -123,7 +124,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/hotels", hotelRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/feedback", feedbackRoutes);
-
+app.use("/api/notification", notificationRoutes);
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`✅ 服务器启动: http://localhost:${PORT}`);
