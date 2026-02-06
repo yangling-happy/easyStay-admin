@@ -56,7 +56,7 @@ const LoginPage: React.FC = () => {
   const LoginHeader = () => (
     <div className="login-header">
       <Title level={3} className="login-title">
-        易宿酒店平台
+        易宿酒店管理平台
       </Title>
       <Text type="secondary" className="login-subtitle">
         请登录您的账号
