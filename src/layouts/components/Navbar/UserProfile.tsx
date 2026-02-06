@@ -78,19 +78,6 @@ const UserProfile: React.FC = () => {
       },
     },
     {
-      key: "settings",
-      label: "系统设置",
-      icon: <SettingOutlined />,
-      onClick: () => {
-        const role = userInfo?.role;
-        if (role === "merchant") {
-          navigate("/merchant/settings");
-        } else if (role === "admin") {
-          navigate("/admin/settings");
-        }
-      },
-    },
-    {
       type: "divider",
     },
     {

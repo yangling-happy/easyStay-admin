@@ -227,11 +227,6 @@ const ProfilePage: React.FC = () => {
                   ? new Date(userInfo.createdAt).toLocaleDateString()
                   : "未知"}
               </Descriptions.Item>
-              <Descriptions.Item label="最后登录">
-                {userInfo.lastLogin
-                  ? new Date(userInfo.lastLogin).toLocaleString()
-                  : "从未登录"}
-              </Descriptions.Item>
               <Descriptions.Item label="账户状态">
                 <Tag color="success">正常</Tag>
               </Descriptions.Item>
