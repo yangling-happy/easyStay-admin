@@ -1,6 +1,6 @@
 // src/pages/AuditRecords/hooks/useAuditData.ts
 import { useState, useEffect } from "react";
-import {get} from "../../../api/http/request";
+import { get } from "../../../api/http/request";
 import { message } from "antd";
 
 export const useAuditData = () => {
@@ -12,7 +12,6 @@ export const useAuditData = () => {
     try {
       // 这里的路径要对应后端路由，后端现在是通过 Token 自动识别 ownerId 的
       const res: any = await get("/hotels/records");
-      console.log("API Response:", res);
       if (res.success) {
         setData(res.data);
       } else {
