@@ -10,7 +10,7 @@ import {
   Tooltip,
   Modal,
   Typography,
-  Descriptions, // 💡 新增
+  Descriptions,
 } from "antd";
 import { useNavigate } from "react-router-dom";
 import {
@@ -19,30 +19,26 @@ import {
   ReloadOutlined,
   ExclamationCircleOutlined,
 } from "@ant-design/icons";
-import { useAuditData } from "../AuditRecords/hooks/useAuditData";
 import { patch, post } from "@/api/http/request";
+import { useActiveHotels } from "./hooks/useActiveHotels";
 
 const { Text } = Typography;
 
 const HotelList: React.FC = () => {
   const navigate = useNavigate();
-  const { data, loading, refresh } = useAuditData();
 
-  // --- 💡 详情弹窗相关状态 ---
+  // 直接从 Hook 获取数据和刷新方法
+  const { activeHotels, activeCount, loading, refresh } = useActiveHotels();
+
   const [isDetailVisible, setIsDetailVisible] = useState(false);
   const [selectedHotel, setSelectedHotel] = useState<any>(null);
 
-  // 严格过滤：只显示已通过审核的正式资产
-  const activeHotels =
-    data?.filter((item: any) => item.status === "approved") || [];
-
-  // --- 💡 处理详情展示 ---
   const showDetail = (record: any) => {
     setSelectedHotel(record);
     setIsDetailVisible(true);
   };
 
-  // 处理上下架逻辑
+  // --- 处理上下线逻辑 ---
   const handleToggle = (record: any) => {
     const hotelId = record._id || record.id;
 
@@ -56,9 +52,8 @@ const HotelList: React.FC = () => {
           try {
             await patch(`/hotels/${hotelId}/offline`);
             message.success("酒店已下线");
-            refresh();
+            refresh(); // 刷新数据
           } catch (error: any) {
-            console.error("下线操作详情错误:", error);
             message.error("下线失败");
           }
         },
@@ -81,7 +76,6 @@ const HotelList: React.FC = () => {
     }
   };
 
-  // 处理编辑跳转
   const handleEdit = (record: any) => {
     Modal.confirm({
       title: "修改确认",
@@ -90,7 +84,7 @@ const HotelList: React.FC = () => {
         "修改酒店关键信息后，系统将撤回当前在线状态并重新发起审核。确定要修改吗？",
       okText: "去修改",
       onOk: () => {
-        navigate(`/hotels/edit/${record._id}`);
+        navigate(`/hotels/edit/${record._id || record.id}`);
       },
     });
   };
@@ -101,7 +95,7 @@ const HotelList: React.FC = () => {
       dataIndex: "name",
       key: "name",
       render: (text: string) => (
-        <Text strong style={{ color: '#1890ff' }}>
+        <Text strong style={{ color: "#1890ff" }}>
           {text}
         </Text>
       ),
@@ -154,7 +148,7 @@ const HotelList: React.FC = () => {
           <Button
             type="link"
             icon={<EyeOutlined />}
-            onClick={() => showDetail(record)} // 💡 改为触发弹窗
+            onClick={() => showDetail(record)}
           >
             查看详情
           </Button>
@@ -165,23 +159,23 @@ const HotelList: React.FC = () => {
 
   return (
     <div style={{ padding: "24px" }}>
-<Card
+      <Card
         title={
           <Space size="middle">
-            {/* 这里的文字可以稍微加粗放大 */}
-            <span style={{ fontSize: '18px', fontWeight: 600 }}>酒店列表管理 (已上线)</span>
-            <Tag color="cyan" style={{ fontSize: '14px', padding: '0 8px' }}>
-              共 {activeHotels.length} 家
+            <span style={{ fontSize: "18px", fontWeight: 600 }}>
+              酒店列表管理 (已上线)
+            </span>
+            <Tag color="cyan" style={{ fontSize: "14px", padding: "0 8px" }}>
+              共 {activeCount} 家
             </Tag>
           </Space>
         }
         extra={
-          <Button 
-            type="primary" // 改为蓝底色更醒目
-            icon={<ReloadOutlined />} 
-            onClick={refresh} 
+          <Button
+            type="primary"
+            icon={<ReloadOutlined />}
+            onClick={refresh}
             loading={loading}
-            style={{ borderRadius: '4px' }}
           >
             同步数据
           </Button>
@@ -193,15 +187,15 @@ const HotelList: React.FC = () => {
           rowKey={(record) => record._id || record.id}
           loading={loading}
           pagination={{ pageSize: 8 }}
-          // --- 优化 Footer 字体 ---
           footer={() => (
-            <div style={{ padding: '8px 0' }}>
-              <Text 
-                strong // 加粗
-                type="secondary" 
-                style={{ fontSize: '15px', color: '#555' }}
+            <div style={{ padding: "8px 0" }}>
+              <Text
+                strong
+                type="secondary"
+                style={{ fontSize: "14px", color: "#555" }}
               >
-                * 注：所有涉及“修改”或“恢复上线”的操作均需经过平台管理方二次人工审核。
+                *
+                注：所有涉及“修改”或“恢复上线”的操作均需经过平台管理方二次人工审核。
               </Text>
             </div>
           )}
@@ -243,9 +237,6 @@ const HotelList: React.FC = () => {
               <Tag color={selectedHotel.isActive ? "green" : "orange"}>
                 {selectedHotel.isActive ? "销售中" : "已下线"}
               </Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="附近信息">
-              {selectedHotel.nearbyInfo || "无"}
             </Descriptions.Item>
             <Descriptions.Item label="核准日期">
               {new Date(selectedHotel.updatedAt).toLocaleString()}
