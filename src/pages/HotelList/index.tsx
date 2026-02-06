@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Table,
   Tag,
@@ -10,6 +10,7 @@ import {
   Tooltip,
   Modal,
   Typography,
+  Descriptions, // 💡 新增
 } from "antd";
 import { useNavigate } from "react-router-dom";
 import {
@@ -27,9 +28,19 @@ const HotelList: React.FC = () => {
   const navigate = useNavigate();
   const { data, loading, refresh } = useAuditData();
 
-  // 💡 严格过滤：只显示已通过审核的正式资产
+  // --- 💡 详情弹窗相关状态 ---
+  const [isDetailVisible, setIsDetailVisible] = useState(false);
+  const [selectedHotel, setSelectedHotel] = useState<any>(null);
+
+  // 严格过滤：只显示已通过审核的正式资产
   const activeHotels =
     data?.filter((item: any) => item.status === "approved") || [];
+
+  // --- 💡 处理详情展示 ---
+  const showDetail = (record: any) => {
+    setSelectedHotel(record);
+    setIsDetailVisible(true);
+  };
 
   // 处理上下架逻辑
   const handleToggle = (record: any) => {
@@ -47,6 +58,7 @@ const HotelList: React.FC = () => {
             message.success("酒店已下线");
             refresh();
           } catch (error: any) {
+            console.error("下线操作详情错误:", error);
             message.error("下线失败");
           }
         },
@@ -69,7 +81,7 @@ const HotelList: React.FC = () => {
     }
   };
 
-  // 处理编辑跳转（带重审风险提示）
+  // 处理编辑跳转
   const handleEdit = (record: any) => {
     Modal.confirm({
       title: "修改确认",
@@ -89,7 +101,7 @@ const HotelList: React.FC = () => {
       dataIndex: "name",
       key: "name",
       render: (text: string) => (
-        <Text strong color="blue">
+        <Text strong style={{ color: '#1890ff' }}>
           {text}
         </Text>
       ),
@@ -105,17 +117,15 @@ const HotelList: React.FC = () => {
       key: "isActive",
       width: 180,
       render: (_: unknown, record: any) => (
-        <Space direction="vertical" size={0}>
-          <Space>
-            <Switch
-              checked={record.isActive}
-              onChange={() => handleToggle(record)}
-              size="small"
-            />
-            <Tag color={record.isActive ? "green" : "orange"}>
-              {record.isActive ? "销售中" : "已下线/待重审"}
-            </Tag>
-          </Space>
+        <Space>
+          <Switch
+            checked={record.isActive}
+            onChange={() => handleToggle(record)}
+            size="small"
+          />
+          <Tag color={record.isActive ? "green" : "orange"}>
+            {record.isActive ? "销售中" : "已下线/待重审"}
+          </Tag>
         </Space>
       ),
     },
@@ -144,7 +154,7 @@ const HotelList: React.FC = () => {
           <Button
             type="link"
             icon={<EyeOutlined />}
-            onClick={() => navigate(`/audit-status/${record._id}`)}
+            onClick={() => showDetail(record)} // 💡 改为触发弹窗
           >
             查看详情
           </Button>
@@ -155,15 +165,24 @@ const HotelList: React.FC = () => {
 
   return (
     <div style={{ padding: "24px" }}>
-      <Card
+<Card
         title={
-          <Space>
-            <span>酒店列表管理 (已上线)</span>
-            <Tag color="cyan">共 {activeHotels.length} 家</Tag>
+          <Space size="middle">
+            {/* 这里的文字可以稍微加粗放大 */}
+            <span style={{ fontSize: '18px', fontWeight: 600 }}>酒店列表管理 (已上线)</span>
+            <Tag color="cyan" style={{ fontSize: '14px', padding: '0 8px' }}>
+              共 {activeHotels.length} 家
+            </Tag>
           </Space>
         }
         extra={
-          <Button icon={<ReloadOutlined />} onClick={refresh} loading={loading}>
+          <Button 
+            type="primary" // 改为蓝底色更醒目
+            icon={<ReloadOutlined />} 
+            onClick={refresh} 
+            loading={loading}
+            style={{ borderRadius: '4px' }}
+          >
             同步数据
           </Button>
         }
@@ -174,14 +193,66 @@ const HotelList: React.FC = () => {
           rowKey={(record) => record._id || record.id}
           loading={loading}
           pagination={{ pageSize: 8 }}
+          // --- 优化 Footer 字体 ---
           footer={() => (
-            <Text type="secondary">
-              *
-              注：所有涉及“修改”或“恢复上线”的操作均需经过平台管理方二次人工审核。
-            </Text>
+            <div style={{ padding: '8px 0' }}>
+              <Text 
+                strong // 加粗
+                type="secondary" 
+                style={{ fontSize: '15px', color: '#555' }}
+              >
+                * 注：所有涉及“修改”或“恢复上线”的操作均需经过平台管理方二次人工审核。
+              </Text>
+            </div>
           )}
         />
       </Card>
+
+      {/* --- 💡 详情展示弹窗 --- */}
+      <Modal
+        title="酒店详细资产信息"
+        open={isDetailVisible}
+        onCancel={() => setIsDetailVisible(false)}
+        footer={[
+          <Button key="close" onClick={() => setIsDetailVisible(false)}>
+            关闭
+          </Button>,
+        ]}
+        width={700}
+      >
+        {selectedHotel && (
+          <Descriptions bordered column={1} size="small">
+            <Descriptions.Item label="系统编号">
+              <code style={{ color: "#1890ff" }}>
+                {selectedHotel._id || selectedHotel.id}
+              </code>
+            </Descriptions.Item>
+            <Descriptions.Item label="酒店名称">
+              {selectedHotel.name}
+            </Descriptions.Item>
+            <Descriptions.Item label="英文名称">
+              {selectedHotel.nameEn || "-"}
+            </Descriptions.Item>
+            <Descriptions.Item label="酒店地址">
+              {selectedHotel.address}
+            </Descriptions.Item>
+            <Descriptions.Item label="星级">
+              {selectedHotel.star} 星
+            </Descriptions.Item>
+            <Descriptions.Item label="当前销售状态">
+              <Tag color={selectedHotel.isActive ? "green" : "orange"}>
+                {selectedHotel.isActive ? "销售中" : "已下线"}
+              </Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="附近信息">
+              {selectedHotel.nearbyInfo || "无"}
+            </Descriptions.Item>
+            <Descriptions.Item label="核准日期">
+              {new Date(selectedHotel.updatedAt).toLocaleString()}
+            </Descriptions.Item>
+          </Descriptions>
+        )}
+      </Modal>
     </div>
   );
 };
