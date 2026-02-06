@@ -6,44 +6,52 @@ import { post, get } from "../http/request";
  * 作用：统一管理数据的增删改查，屏蔽存储细节
  */
 export const hotelService = {
-  // 1. 获取当前登录用户的所有酒店
+  // 1. 修改这个基础方法，确保它返回的是数组
   getMyHotels: async (): Promise<Hotel[]> => {
     try {
-      return await get<Hotel[]>('/my/hotels');
+      // 这里的 res 结构是 { success: true, data: Hotel[] }
+      const res = await get<any>("/hotels/records");
+
+      // 返回 res.data 而不是 res
+      return Array.isArray(res.data) ? res.data : Array.isArray(res) ? res : [];
     } catch (error) {
-      console.error('获取酒店列表失败:', error);
+      console.error("获取酒店列表失败:", error);
       return [];
     }
   },
 
-  // 2. 根据 ID 获取单个酒店
-  getHotelById: async (id: string): Promise<Hotel | undefined> => {
+  // 2. 这里的过滤逻辑就正常了
+  getOnlineHotels: async (): Promise<Hotel[]> => {
     try {
       const hotels = await hotelService.getMyHotels();
-      return hotels.find((h) => h.id === id);
+
+      console.log("现在获取到的数组:", hotels);
+
+      // 现在 hotels 是数组了，可以安全使用 .filter
+      return hotels.filter((h) => {
+        // 建议打印一下，看看你的酒店状态到底是 'approved' 还是 'pending'
+        // console.log(`酒店 ${h.name} 的状态是: ${h.status}`);
+        return h.status === "approved" && h.isActive === true;
+      });
     } catch (error) {
-      console.error('获取酒店详情失败:', error);
-      return undefined;
+      console.error("获取在线酒店失败:", error);
+      return [];
     }
   },
 
   // 3. 保存/新增酒店
   saveHotel: async (hotel: Hotel): Promise<Hotel> => {
     try {
-      // 确保酒店数据符合后端要求
       const hotelData = {
         ...hotel,
-        status: hotel.status || "pending", // 默认为pending状态
-        ownerId: localStorage.getItem('userId') || "", // 从localStorage获取当前用户ID
-        createTime: hotel.createTime || new Date().toISOString(),
+        status: "pending", // 强制设为待审核
+        // 提示：ownerId 已经在后端通过 Token 自动挂载了，前端可以不用传
         updateTime: new Date().toISOString(),
-        isActive: hotel.isActive !== false, // 默认为true
-        isDeleted: hotel.isDeleted || false // 默认为false
       };
 
-      return await post<Hotel>('/hotels', hotelData);
+      return await post<Hotel>("/hotels", hotelData);
     } catch (error) {
-      console.error('保存酒店失败:', error);
+      console.error("保存酒店失败:", error);
       throw error;
     }
   },
@@ -53,9 +61,9 @@ export const hotelService = {
     try {
       // 这里应该调用后端的删除接口
       // 假设后端提供了DELETE /api/hotels/:id接口
-      await post('/hotels/delete', { id });
+      await post("/hotels/delete", { id });
     } catch (error) {
-      console.error('删除酒店失败:', error);
+      console.error("删除酒店失败:", error);
       throw error;
     }
   },
@@ -65,9 +73,9 @@ export const hotelService = {
     try {
       // 这里应该调用后端的恢复接口
       // 假设后端提供了POST /api/hotels/restore接口
-      await post('/hotels/restore', { id });
+      await post("/hotels/restore", { id });
     } catch (error) {
-      console.error('恢复酒店失败:', error);
+      console.error("恢复酒店失败:", error);
       throw error;
     }
   },
@@ -78,7 +86,7 @@ export const hotelService = {
       const hotels = await hotelService.getMyHotels();
       return hotels.filter((h) => h.status === status);
     } catch (error) {
-      console.error('按状态获取酒店失败:', error);
+      console.error("按状态获取酒店失败:", error);
       return [];
     }
   },
@@ -86,12 +94,10 @@ export const hotelService = {
   // 7. 获取待审核酒店
   getPendingHotels: async (): Promise<Hotel[]> => {
     try {
-      return await hotelService.getHotelsByStatus('pending');
+      return await hotelService.getHotelsByStatus("pending");
     } catch (error) {
-      console.error('获取待审核酒店失败:', error);
+      console.error("获取待审核酒店失败:", error);
       return [];
     }
   },
 };
-
-

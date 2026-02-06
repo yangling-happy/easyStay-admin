@@ -18,71 +18,74 @@ const HotelSelector: React.FC<Props> = ({ form, onAction }) => {
 
   // 搜索酒店逻辑
   const handleSearch = async (value: string) => {
-    if (value) {
-      setLoading(true);
-      try {
-        const hotels = await hotelService.getMyHotels();
-        const filtered = hotels
-          .filter(
-            (h) =>
-              h.name.includes(value) ||
-              h.nameEn.toLowerCase().includes(value.toLowerCase()),
-          )
-          .map((h) => ({
-            label: `${h.name} (${h.nameEn}) - ${'★'.repeat(h.star)}`,
-            value: h.id ??'',
-            data: h,
-          }));
-        setOptions(filtered);
-      } catch (error) {
-        console.error('搜索酒店失败:', error);
-        message.error('搜索失败');
-        setOptions([]);
-      } finally {
-        setLoading(false);
-      }
-    } else {
+    if (!value.trim()) {
       setOptions([]);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // 1. 只获取已经审核通过并上线的酒店
+      const onlineHotels = await hotelService.getOnlineHotels();
+
+      // 2. 在这些酒店里进行名称匹配
+      const filtered = onlineHotels
+        .filter(
+          (h) =>
+            h.name.includes(value) ||
+            h.nameEn?.toLowerCase().includes(value.toLowerCase()),
+        )
+        .map((h) => ({
+          label: `${h.name} (${h.nameEn})`,
+          value: h.id ?? "",
+          data: h, // 挂载原始数据供 onSelect 使用
+        }));
+
+      setOptions(filtered);
+    } catch (error) {
+      message.error("搜索已上线酒店失败");
+    } finally {
+      setLoading(false);
     }
   };
-
   // 选择酒店（认领）
-  const onSelect = async ( option: any) => {
+  const onSelect = async (option: any) => {
     try {
       const hotelData = option.data;
-      
+
       if (!form) {
-        message.error('表单未初始化');
+        message.error("表单未初始化");
         return;
       }
-      
+
       // 转换数据格式
       const formattedData = {
         ...hotelData,
         // 关键：star 转为字符串
         star: hotelData.star.toString(),
-        openingDate: hotelData.openingDate ? dayjs(hotelData.openingDate) : null,
+        openingDate: hotelData.openingDate
+          ? dayjs(hotelData.openingDate)
+          : null,
         // 确保 roomTypes 存在
         roomTypes: hotelData.roomTypes || [],
       };
-      
-      console.log('设置表单数据:', formattedData);
-      
+
+      console.log("设置表单数据:", formattedData);
+
       // 设置表单值
       form.setFieldsValue(formattedData);
-      
+
       // 立即验证
       const currentValues = form.getFieldsValue();
-      console.log('设置后的表单值:', currentValues);
-      
-      message.success('已选择酒店，请继续填写其他信息');
-      
+      console.log("设置后的表单值:", currentValues);
+
+      message.success("已选择酒店，请继续填写其他信息");
+
       // 传递给父组件
-      onAction({ type: 'select', data: formattedData });
-      
+      onAction({ type: "select", data: formattedData });
     } catch (error) {
-      console.error('选择酒店失败:', error);
-      message.error('选择失败');
+      console.error("选择酒店失败:", error);
+      message.error("选择失败");
     }
   };
 
@@ -95,8 +98,8 @@ const HotelSelector: React.FC<Props> = ({ form, onAction }) => {
       star: "3", // 默认三星级
       roomTypes: [],
     });
-    onAction({ type: 'create' });
-    message.info('开始创建新酒店');
+    onAction({ type: "create" });
+    message.info("开始创建新酒店");
   };
 
   return (
@@ -121,9 +124,12 @@ const HotelSelector: React.FC<Props> = ({ form, onAction }) => {
         suffixIcon={<SearchOutlined />}
         filterOption={false}
         onSearch={handleSearch}
-        onChange={onSelect}
+        // 关键修改：antd 的 onSelect 第二个参数才是我们存了 data 的那个对象
+        onSelect={(_, option) => onSelect(option)}
         loading={loading}
         options={options}
+        // 建议加上这个，选中后清空搜索文字，干净利落
+        searchValue={undefined}
         notFoundContent={
           <Empty description={loading ? "搜索中..." : "未找到相关酒店"}>
             <Button
@@ -141,11 +147,7 @@ const HotelSelector: React.FC<Props> = ({ form, onAction }) => {
 
       <Divider>或者</Divider>
 
-      <Button 
-        type="link" 
-        icon={<PlusOutlined />} 
-        onClick={handleCreateNew}
-      >
+      <Button type="link" icon={<PlusOutlined />} onClick={handleCreateNew}>
         没有搜到？直接开始创建新酒店
       </Button>
     </div>
