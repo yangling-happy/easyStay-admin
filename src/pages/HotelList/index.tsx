@@ -202,7 +202,7 @@ const HotelList: React.FC = () => {
         />
       </Card>
 
-      {/* --- 💡 详情展示弹窗 --- */}
+      {/* --- 详情展示弹窗 --- */}
       <Modal
         title="酒店详细资产信息"
         open={isDetailVisible}

@@ -1,17 +1,27 @@
 import express from "express";
+import type { Request } from "express";
+import type { Response } from "express";
 import { HotelModel } from "../models/Hotel.js";
-import { auth } from "../middleware/authMiddleware.js"; // 引入中间件
+import { auth } from "../middleware/authMiddleware.js";
+
+//扩展 Express 的 Request 类型定义
+interface AuthRequest extends Request {
+  user?: {
+    userId: string;
+    role?: string;
+    // 根据你 Token 中存放的信息添加字段
+  };
+}
 
 const router = express.Router();
 
-// 1. POST /api/hotels - 创建酒店 (加上 auth 中间件)
-router.post("/", auth, async (req: any, res) => {
+// 1. POST /api/hotels - 创建酒店
+router.post("/", auth, async (req: AuthRequest, res: Response) => {
   try {
-    // 💡 关键改动：ownerId 不再依赖前端传参，而是从 Token 中解析
     const hotelData = {
       ...req.body,
-      ownerId: req.user.userId, // 这里就是中间件里挂载的信息
-      status: "pending", // 强制初始状态为审核中
+      ownerId: req.user?.userId, // 使用可选链，安全获取
+      status: "pending",
       createTime: new Date(),
       updateTime: new Date(),
     };
@@ -20,32 +30,35 @@ router.post("/", auth, async (req: any, res) => {
     const savedHotel = await hotel.save();
 
     res.status(201).json({ success: true, data: savedHotel });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "未知错误";
+    res.status(500).json({ success: false, message: errorMessage });
   }
 });
 
-// 2. GET /api/hotels - 获取我的申请记录 (加上 auth 中间件)
-router.get("/records", auth, async (req: any, res) => {
+// 2. GET /api/hotels/records - 获取我的申请记录
+router.get("/records", auth, async (req: AuthRequest, res: Response) => {
   try {
-    // 关键改动：直接查“我”的记录
     const query = {
-      ownerId: req.user.userId, // 从 Token 拿 ID，别人查不了你的数据
+      ownerId: req.user?.userId,
       isDeleted: false,
     };
 
-    const hotels = await HotelModel.find(query).sort({ createTime: -1 });
+    // 排序逻辑：按 updateTime 倒序，解决“申请恢复后找不到”的问题
+    const hotels = await HotelModel.find(query).sort({ updateTime: -1 });
 
     res.json({ success: true, data: hotels });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "未知错误";
+    res.status(500).json({ success: false, message: errorMessage });
   }
 });
-// 3. PATCH /api/hotels/:id/offline - 商户自主下线 (无需审核)
-router.patch("/:id/offline", auth, async (req: any, res) => {
+
+// 3. PATCH /api/hotels/:id/offline - 商户自主下线
+router.patch("/:id/offline", auth, async (req: AuthRequest, res: Response) => {
   try {
     const hotel = await HotelModel.findOneAndUpdate(
-      { _id: req.params.id, ownerId: req.user.userId }, // 权限校验：只能改自己的
+      { _id: req.params.id, ownerId: req.user?.userId },
       {
         isActive: false,
         updateTime: new Date(),
@@ -53,32 +66,38 @@ router.patch("/:id/offline", auth, async (req: any, res) => {
       { new: true },
     );
 
-    if (!hotel)
+    if (!hotel) {
       return res.status(404).json({ success: false, message: "未找到酒店" });
+    }
     res.json({ success: true, message: "酒店已成功下线", data: hotel });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "未知错误";
+    res.status(500).json({ success: false, message: errorMessage });
   }
 });
 
-// 4. POST /api/hotels/:id/re-apply - 恢复上线 (重置为待审核)
-router.post("/:id/re-apply", auth, async (req: any, res) => {
+// 4. POST /api/hotels/:id/re-apply - 恢复上线申请
+router.post("/:id/re-apply", auth, async (req: AuthRequest, res: Response) => {
   try {
     const hotel = await HotelModel.findOneAndUpdate(
-      { _id: req.params.id, ownerId: req.user.userId },
+      { _id: req.params.id, ownerId: req.user?.userId },
       {
-        status: "pending", // 💡 关键：状态回滚，管理员的“待审核”列表会自动刷出这条记录
-        isActive: false, // 确保在管理员点“通过”之前，前端依然是关闭状态
-        updateTime: new Date(),
+        status: "pending",
+        isActive: false,
+        rejectReason: "", // 清空旧的拒绝原因
+        updateTime: new Date(), // 更新时间，确保排序置顶
       },
       { new: true },
     );
 
-    if (!hotel)
+    if (!hotel) {
       return res.status(404).json({ success: false, message: "未找到酒店" });
+    }
     res.json({ success: true, message: "已提交重新上线申请", data: hotel });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "未知错误";
+    res.status(500).json({ success: false, message: errorMessage });
   }
 });
+
 export default router;

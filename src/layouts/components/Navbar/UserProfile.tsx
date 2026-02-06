@@ -1,9 +1,5 @@
 import React from "react";
-import {
-  UserOutlined,
-  SettingOutlined,
-  LogoutOutlined,
-} from "@ant-design/icons";
+import { UserOutlined, LogoutOutlined } from "@ant-design/icons";
 import { Dropdown, Avatar, Space, message } from "antd";
 import type { MenuProps } from "antd";
 import { useNavigate } from "react-router-dom";
