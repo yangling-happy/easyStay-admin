@@ -34,10 +34,10 @@ const Sidebar: React.FC = () => {
       onClick: () => navigate("/hotels"),
     },
     {
-      key: "/hotels/audit",
+      key: "/hotels/records", // 统一 key
       icon: <AuditOutlined />,
       label: "申请记录",
-      onClick: () => navigate("/hotels/audit"),
+      onClick: () => navigate("/hotels/records"), // 修改这里：指向商户记录页
     },
     {
       key: "/hotels/new",

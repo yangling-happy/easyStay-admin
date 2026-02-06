@@ -1,16 +1,17 @@
 import express from "express";
 import { HotelModel } from "../models/Hotel.js";
+import { auth } from "../middleware/authMiddleware.js"; // 引入中间件
 
 const router = express.Router();
 
-// POST /api/hotels - 创建酒店
-router.post("/", async (req, res) => {
+// 1. POST /api/hotels - 创建酒店 (加上 auth 中间件)
+router.post("/", auth, async (req: any, res) => {
   try {
-    console.log("收到创建酒店请求:", req.body);
-
+    // 💡 关键改动：ownerId 不再依赖前端传参，而是从 Token 中解析
     const hotelData = {
       ...req.body,
-      // 确保时间格式
+      ownerId: req.user.userId, // 这里就是中间件里挂载的信息
+      status: 'pending',        // 强制初始状态为审核中
       createTime: new Date(),
       updateTime: new Date(),
     };
@@ -18,55 +19,26 @@ router.post("/", async (req, res) => {
     const hotel = new HotelModel(hotelData);
     const savedHotel = await hotel.save();
 
-    console.log("酒店保存成功:", savedHotel._id);
-
-    res.status(201).json({
-      success: true,
-      data: savedHotel,
-    });
+    res.status(201).json({ success: true, data: savedHotel });
   } catch (error: any) {
-    console.error("保存酒店失败:", error);
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 });
-// GET /api/hotels - 获取酒店列表/申请记录
-router.get("/", async (req, res) => {
+
+// 2. GET /api/hotels - 获取我的申请记录 (加上 auth 中间件)
+router.get("/records", auth, async (req: any, res) => {
   try {
-    // 1. 从 URL 的问号后面拿参数 (req.query)
-    // 前端调用可能是: /api/hotels?ownerId=用户ID
-    const { ownerId, status } = req.query;
+    // 关键改动：直接查“我”的记录
+    const query = { 
+      ownerId: req.user.userId, // 从 Token 拿 ID，别人查不了你的数据
+      isDeleted: false 
+    };
 
-    // 2. 默认查询条件：没被删除的
-    const query: Record<string, any> = { isDeleted: false };
+    const hotels = await HotelModel.find(query).sort({ createTime: -1 });
 
-    // 3. 如果传了商户ID，就只查这个商户的（这就是申请记录的关键）
-    if (ownerId) {
-      query.ownerId = ownerId;
-    }
-
-    // 4. 如果传了状态（比如只想看审核通过的），就加上状态过滤
-    if (status) {
-      query.status = status;
-    }
-
-    // 5. 去数据库查
-    const hotels = await HotelModel.find(query)
-      .sort({ createTime: -1 }) // 新申请的排在最前面
-      .lean();
-
-    res.json({
-      success: true,
-      data: hotels,
-    });
-  } catch (error) {
-    if (error instanceof Error) {
-      res.status(500).json({ success: false, message: error.message });
-    } else {
-      res.status(500).json({ success: false, message: "未知错误" });
-    }
+    res.json({ success: true, data: hotels });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 
