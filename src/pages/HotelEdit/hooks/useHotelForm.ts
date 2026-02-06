@@ -2,6 +2,7 @@ import { Form, message } from "antd";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useCallback } from "react";
 import { hotelService } from "../../../api/services/hotelService";
+import dayjs from "dayjs";
 
 // 简单防抖函数
 const debounce = (func: Function, wait: number) => {
@@ -45,12 +46,16 @@ export const useHotelForm = () => {
     [],
   );
 
-  // 新增：组件加载时恢复数据
+  // 组件加载时恢复数据
   useEffect(() => {
     const savedData = localStorage.getItem("hotel_edit_form_data");
     if (savedData) {
       try {
         const parsedData = JSON.parse(savedData);
+        if (parsedData.openingDate) {
+          parsedData.openingDate = dayjs(parsedData.openingDate);
+        }
+
         form.setFieldsValue(parsedData);
         console.log("✅ 已恢复表单数据");
       } catch (error) {
