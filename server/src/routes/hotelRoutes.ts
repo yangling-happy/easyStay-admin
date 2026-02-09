@@ -100,4 +100,35 @@ router.post("/:id/re-apply", auth, async (req: AuthRequest, res: Response) => {
   }
 });
 
+// 5. GET /api/hotels/detail/:id - 获取酒店详情（跳过认证，因移动端没注册用户）
+router.get("/detail/:id", async (req: Request, res: Response) => {
+  try {
+    const hotel = await HotelModel.findById(req.params.id);
+
+    if (!hotel) {
+      return res.status(404).json({ success: false, message: "未找到酒店" });
+    }
+
+    // 只返回部分信息
+    const publicHotelData = {
+      id: hotel._id.toString(),
+      name: hotel.name,
+      nameEn: hotel.nameEn,
+      address: hotel.address,
+      star: hotel.star,
+      openingDate: hotel.openingDate,
+      photos: hotel.photos,
+      nearbyInfo: hotel.nearbyInfo,
+      roomTypes: hotel.roomTypes,
+      status: hotel.status,
+      isActive: hotel.isActive,
+    };
+
+    res.json({ success: true, data: publicHotelData });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "未知错误";
+    res.status(500).json({ success: false, message: errorMessage });
+  }
+});
+
 export default router;
