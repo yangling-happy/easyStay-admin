@@ -81,8 +81,6 @@ const HotelSelector: React.FC<Props> = ({ form, onAction }) => {
 
       form.setFieldsValue(formattedData);
 
-      const currentValues = form.getFieldsValue();
-
       message.success("已选择酒店，请继续填写其他信息");
 
       onAction({ type: "select", data: formattedData });
