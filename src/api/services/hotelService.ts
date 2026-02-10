@@ -1,5 +1,5 @@
 import type { Hotel } from "../../types/hotel";
-import { post, get } from "../http/request";
+import { post, get, del } from "../http/request";
 
 /**
  * 酒店业务逻辑封装 (Service 层)
@@ -59,9 +59,7 @@ export const hotelService = {
   // 4. 逻辑删除酒店
   deleteHotel: async (id: string): Promise<void> => {
     try {
-      // 这里应该调用后端的删除接口
-      // 假设后端提供了DELETE /api/hotels/:id接口
-      await post("/hotels/delete", { id });
+      await del(`/hotels/${id}`);
     } catch (error) {
       console.error("删除酒店失败:", error);
       throw error;
@@ -71,8 +69,6 @@ export const hotelService = {
   // 5. 恢复酒店
   restoreHotel: async (id: string): Promise<void> => {
     try {
-      // 这里应该调用后端的恢复接口
-      // 假设后端提供了POST /api/hotels/restore接口
       await post("/hotels/restore", { id });
     } catch (error) {
       console.error("恢复酒店失败:", error);

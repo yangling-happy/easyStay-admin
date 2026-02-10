@@ -1,32 +1,33 @@
 import React from "react";
 import { Input, Select, DatePicker, Space, Divider, Form } from "antd";
 
-const BasicInfoForm: React.FC = () => { // 移除 form 参数
+const BasicInfoForm: React.FC = () => {
+  // 移除 form 参数
   return (
     // 注意：移除了外层的 <Form> 标签
     <>
       <Divider orientation="left">基本信息</Divider>
       <Space size="large" style={{ display: "flex" }}>
-        <Form.Item 
-          name="name" 
-          label="酒店中文名" 
-          rules={[{ required: true, message: '请输入酒店中文名' }]}
+        <Form.Item
+          name="name"
+          label="酒店中文名"
+          rules={[{ required: true, message: "请输入酒店中文名" }]}
         >
           <Input placeholder="输入酒店名称" />
         </Form.Item>
         <Form.Item
           name="nameEn"
           label="酒店英文名"
-          rules={[{ required: true, message: '请输入酒店英文名' }]}
+          rules={[{ required: true, message: "请输入酒店英文名" }]}
         >
           <Input placeholder="Hotel English Name" />
         </Form.Item>
       </Space>
 
-      <Form.Item 
-        name="address" 
-        label="酒店地址" 
-        rules={[{ required: true, message: '请输入酒店地址' }]}
+      <Form.Item
+        name="address"
+        label="酒店地址"
+        rules={[{ required: true, message: "请输入酒店地址" }]}
       >
         <Input.TextArea placeholder="请输入详细地址" />
       </Form.Item>
@@ -35,22 +36,24 @@ const BasicInfoForm: React.FC = () => { // 移除 form 参数
         <Form.Item
           name="star"
           label="酒店星级"
-          rules={[{ required: true, message: '请选择酒店星级' }]}
+          rules={[{ required: true, message: "请选择酒店星级" }]}
           style={{ width: 200 }}
         >
           <Select
             placeholder="请选择星级"
             options={[
-              { value: "5", label: "五星级/豪华" },
-              { value: "4", label: "四星级/高档" },
+              { value: "1", label: "一星级/基础" },
+              { value: "2", label: "二星级/普通" },
               { value: "3", label: "三星级/舒适" },
+              { value: "4", label: "四星级/高档" },
+              { value: "5", label: "五星级/豪华" },
             ]}
           />
         </Form.Item>
         <Form.Item
           name="openingDate"
           label="开业时间"
-          rules={[{ required: true, message: '请选择开业时间' }]}
+          rules={[{ required: true, message: "请选择开业时间" }]}
         >
           <DatePicker style={{ width: 200 }} format="YYYY-MM-DD" />
         </Form.Item>
