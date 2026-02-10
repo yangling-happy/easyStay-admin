@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Select, Divider, Button, Empty, Typography, message } from "antd";
 import { PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import { hotelService } from "../../../api/services/hotelService";
@@ -15,40 +15,52 @@ const HotelSelector: React.FC<Props> = ({ form, onAction }) => {
     { label: string; value: string; data: Hotel }[]
   >([]);
   const [loading, setLoading] = useState(false);
-
-  // 搜索酒店逻辑
-  const handleSearch = async (value: string) => {
-    if (!value.trim()) {
-      setOptions([]);
-      return;
-    }
-
+  const [rawHotels, setRawHotels] = useState<Hotel[]>([]);
+  const fetchInitialData = async () => {
     setLoading(true);
     try {
-      // 1. 只获取已经审核通过并上线的酒店
-      const onlineHotels = await hotelService.getOnlineHotels();
-
-      // 2. 在这些酒店里进行名称匹配
-      const filtered = onlineHotels
-        .filter(
-          (h) =>
-            h.name.includes(value) ||
-            h.nameEn?.toLowerCase().includes(value.toLowerCase()),
-        )
+      const data = await hotelService.getOnlineHotels();
+      setRawHotels(data);
+      const validOptions = data
+        .filter((h) => h.id !== undefined)
         .map((h) => ({
-          label: `${h.name} (${h.nameEn})`,
-          value: h.id ?? "",
-          data: h, // 挂载原始数据供 onSelect 使用
+          label: h.nameEn ? `${h.name} (${h.nameEn})` : h.name,
+          value: h.id!,
+          data: h,
         }));
 
-      setOptions(filtered);
-    } catch (error) {
-      message.error("搜索已上线酒店失败");
+      setOptions(validOptions);
     } finally {
       setLoading(false);
     }
   };
-  // 选择酒店（认领）
+  useEffect(() => {
+    fetchInitialData();
+  }, []); //空数组代表只在加载时运行一次
+
+  const handleSearch = (value: string) => {
+    const keyword = value.toLowerCase().trim();
+
+    const filtered = rawHotels
+      .filter((h) => {
+        if (h.id === undefined) return false;
+
+        if (!keyword) return true;
+
+        const name = h.name || "";
+        const nameEn = h.nameEn || "";
+
+        return name.includes(keyword) || nameEn.toLowerCase().includes(keyword);
+      })
+      .map((h) => ({
+        label: h.nameEn ? `${h.name} (${h.nameEn})` : h.name,
+        value: h.id!,
+        data: h,
+      }));
+
+    setOptions(filtered);
+  };
+
   const onSelect = async (option: any) => {
     try {
       const hotelData = option.data;
@@ -58,33 +70,23 @@ const HotelSelector: React.FC<Props> = ({ form, onAction }) => {
         return;
       }
 
-      // 转换数据格式
       const formattedData = {
         ...hotelData,
-        // 关键：star 转为字符串
         star: hotelData.star.toString(),
         openingDate: hotelData.openingDate
           ? dayjs(hotelData.openingDate)
           : null,
-        // 确保 roomTypes 存在
         roomTypes: hotelData.roomTypes || [],
       };
 
-      console.log("设置表单数据:", formattedData);
-
-      // 设置表单值
       form.setFieldsValue(formattedData);
 
-      // 立即验证
       const currentValues = form.getFieldsValue();
-      console.log("设置后的表单值:", currentValues);
 
       message.success("已选择酒店，请继续填写其他信息");
 
-      // 传递给父组件
       onAction({ type: "select", data: formattedData });
     } catch (error) {
-      console.error("选择酒店失败:", error);
       message.error("选择失败");
     }
   };
@@ -124,11 +126,9 @@ const HotelSelector: React.FC<Props> = ({ form, onAction }) => {
         suffixIcon={<SearchOutlined />}
         filterOption={false}
         onSearch={handleSearch}
-        // 关键修改：antd 的 onSelect 第二个参数才是我们存了 data 的那个对象
         onSelect={(_, option) => onSelect(option)}
         loading={loading}
         options={options}
-        // 建议加上这个，选中后清空搜索文字，干净利落
         searchValue={undefined}
         notFoundContent={
           <Empty description={loading ? "搜索中..." : "未找到相关酒店"}>
