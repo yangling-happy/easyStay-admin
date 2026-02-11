@@ -18,7 +18,7 @@ const AuditStatusPage: React.FC = () => {
     const loadHotelData = async () => {
       if (!hotelId) {
         message.error("未找到申请信息");
-        navigate("/hotel/list");
+        navigate("/hotels");
         return;
       }
 
@@ -129,7 +129,7 @@ const AuditStatusPage: React.FC = () => {
           <Button
             type="primary"
             key="list"
-            onClick={() => navigate("/hotel/list")}
+            onClick={() => navigate("/hotels")}
           >
             返回酒店列表
           </Button>,
