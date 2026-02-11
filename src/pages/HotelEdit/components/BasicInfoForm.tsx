@@ -1,10 +1,16 @@
 import React from "react";
-import { Input, Select, DatePicker, Space, Divider, Form } from "antd";
-
+import {
+  Input,
+  Select,
+  DatePicker,
+  Space,
+  Divider,
+  Form,
+  Cascader,
+} from "antd";
+import { cityOptions } from "../../../utils/addressData";
 const BasicInfoForm: React.FC = () => {
-  // 移除 form 参数
   return (
-    // 注意：移除了外层的 <Form> 标签
     <>
       <Divider orientation="left">基本信息</Divider>
       <Space size="large" style={{ display: "flex" }}>
@@ -24,13 +30,29 @@ const BasicInfoForm: React.FC = () => {
         </Form.Item>
       </Space>
 
-      <Form.Item
-        name="address"
-        label="酒店地址"
-        rules={[{ required: true, message: "请输入酒店地址" }]}
-      >
-        <Input.TextArea placeholder="请输入详细地址" />
-      </Form.Item>
+      <Space size="large" align="start">
+        <Form.Item
+          name="location"
+          label="所在地区"
+          rules={[{ required: true, message: "请选择省市区" }]}
+          style={{ width: 300 }}
+        >
+          <Cascader
+            options={cityOptions}
+            placeholder="请选择省/市/区"
+            showSearch // 允许用户搜索，提升体验
+          />
+        </Form.Item>
+
+        <Form.Item
+          name="address"
+          label="详细地址"
+          rules={[{ required: true, message: "请输入详细地址" }]}
+          style={{ width: 400 }}
+        >
+          <Input.TextArea placeholder="请输入街道、门牌号" autoSize />
+        </Form.Item>
+      </Space>
 
       <Space size="large">
         <Form.Item

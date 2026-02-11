@@ -233,20 +233,6 @@ const ProfilePage: React.FC = () => {
             </Descriptions>
           </Card>
 
-          {/* 角色相关统计信息 */}
-          {userRole === "merchant" && userInfo.hotelName && (
-            <Card title="酒店信息">
-              <Descriptions column={2}>
-                <Descriptions.Item label="酒店名称">
-                  {userInfo.hotelName}
-                </Descriptions.Item>
-                <Descriptions.Item label="联系电话">
-                  {userInfo.contactPhone || "未设置"}
-                </Descriptions.Item>
-              </Descriptions>
-            </Card>
-          )}
-
           {userRole === "admin" && userInfo.department && (
             <Card title="管理信息">
               <Descriptions column={2}>

@@ -21,6 +21,7 @@ import {
 } from "@ant-design/icons";
 import { patch, post } from "@/api/http/request";
 import { useActiveHotels } from "./hooks/useActiveHotels";
+import { getFullAddress } from "../../utils/addressData";
 
 const { Text } = Typography;
 
@@ -228,7 +229,7 @@ const HotelList: React.FC = () => {
               {selectedHotel.nameEn || "-"}
             </Descriptions.Item>
             <Descriptions.Item label="酒店地址">
-              {selectedHotel.address}
+              {getFullAddress(selectedHotel.location, selectedHotel.address)}
             </Descriptions.Item>
             <Descriptions.Item label="星级">
               {selectedHotel.star} 星
