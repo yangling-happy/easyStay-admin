@@ -1,12 +1,8 @@
-// src/pages/AuditStatus/index.tsx
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Result, Button, Typography, Spin, message } from "antd";
+import { Result, Button, Spin, message } from "antd";
 import { hotelService } from "../../api/services/hotelService";
 import type { Hotel } from "../../types/hotel";
-
-const { Text } = Typography;
-
 const AuditStatusPage: React.FC = () => {
   const { hotelId } = useParams<{ hotelId: string }>();
   const navigate = useNavigate();
@@ -79,24 +75,6 @@ const AuditStatusPage: React.FC = () => {
         title={statusConfig.title}
         subTitle={
           <div>
-            {/* 酒店编号 */}
-            {hotelId && (
-              <div style={{ marginBottom: 16 }}>
-                <Text strong>酒店编号：</Text>
-                <Text code copyable={{ text: hotelId }}>
-                  {hotelId}
-                </Text>
-              </div>
-            )}
-
-            {/* 酒店名称 */}
-            {hotel && (
-              <div style={{ marginBottom: 16 }}>
-                <Text strong>酒店名称：</Text>
-                <Text>{hotel.name}</Text>
-              </div>
-            )}
-
             {/* 状态信息 */}
             <div>
               {hotel?.status === "pending" && (
@@ -126,11 +104,7 @@ const AuditStatusPage: React.FC = () => {
           </div>
         }
         extra={[
-          <Button
-            type="primary"
-            key="list"
-            onClick={() => navigate("/hotels")}
-          >
+          <Button type="primary" key="list" onClick={() => navigate("/hotels")}>
             返回酒店列表
           </Button>,
           <Button key="records" onClick={() => navigate("/merchant/records")}>

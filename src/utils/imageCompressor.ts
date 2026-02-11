@@ -175,19 +175,7 @@ export async function compressImages(
       );
 
       compressedFiles.push(compressedFile);
-
-      // 输出压缩信息
-      console.log(`图片压缩: ${file.name}`);
-      console.log(`  原始大小: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
-      console.log(
-        `  压缩大小: ${(compressedBlob.size / 1024 / 1024).toFixed(2)} MB`,
-      );
-      console.log(
-        `  压缩比率: ${((1 - compressedBlob.size / file.size) * 100).toFixed(1)}%`,
-      );
     } catch (error) {
-      console.error(`压缩失败: ${file.name}`, error);
-      // 压缩失败时使用原文件
       compressedFiles.push(file);
     }
   }

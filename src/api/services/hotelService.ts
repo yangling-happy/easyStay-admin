@@ -1,5 +1,5 @@
 import type { Hotel } from "../../types/hotel";
-import { post, get, del } from "../http/request";
+import { post, get} from "../http/request";
 
 /**
  * 酒店业务逻辑封装 (Service 层)
@@ -43,9 +43,9 @@ export const hotelService = {
     }
   },
 
-  deleteHotel: async (id: string): Promise<void> => {
+  deleteHotel: async (): Promise<void> => {
     try {
-      await del(`/hotels/${id}`);
+      await get<any>("/hotels/records");
     } catch (error) {
       console.error("删除酒店失败:", error);
       throw error;
@@ -83,13 +83,13 @@ export const hotelService = {
     signal?: AbortSignal,
   ): Promise<Hotel | null> => {
     try {
-      const res = await get<any>(`/hotels/${id}`, { signal });
+      const res = await get<any>(`/hotels/detail/${id}`, { signal });
       return res?.data || null;
     } catch (error: any) {
       if (error.name === "CanceledError" || error.name === "AbortError") {
-        console.warn("请求已安全取消");
         return null;
       }
+      console.error("无法获取酒店详情，请检查 ID 是否正确");
       throw error;
     }
   },
