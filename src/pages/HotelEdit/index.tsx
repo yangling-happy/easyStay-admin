@@ -127,38 +127,6 @@ const HotelEdit: React.FC = () => {
         </div>
       </Form>
 
-      {/*调试工具 */}
-      {/* <div style={{ marginTop: 10, textAlign: 'center' }}>
-        <Button 
-          size="small" 
-          onClick={() => {
-            const values = form.getFieldsValue();
-            console.log('当前表单值:', values);
-            console.log('当前步骤:', current);
-            console.log('localStorage表单数据:', localStorage.getItem('hotel_edit_form_data'));
-            console.log('localStorage当前步骤:', localStorage.getItem('hotel_edit_current_step'));
-          }}
-        >
-          调试状态
-        </Button>
-        
-        <Button 
-          size="small" 
-          onClick={() => {
-            // 清除所有保存的数据
-            localStorage.removeItem('hotel_edit_form_data');
-            localStorage.removeItem('hotel_edit_current_step');
-            form.resetFields();
-            setCurrent(0);
-            message.success('已清除所有保存的数据');
-          }}
-          style={{ marginLeft: 10 }}
-          danger
-        >
-          清除数据
-        </Button>
-      </div> */}
-
       <div
         className="step-actions"
         style={{

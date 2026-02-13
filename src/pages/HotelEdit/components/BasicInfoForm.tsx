@@ -73,7 +73,19 @@ const BasicInfoForm: React.FC = () => {
             ]}
           />
         </Form.Item>
-
+        <Form.Item
+          name="phone"
+          label="联系电话"
+          rules={[
+            { required: true, message: "请输入联系电话" },
+            { pattern: /^[0-9+-\s()]+$/, message: "请输入有效的电话号码" },
+          ]}
+        >
+          <Input
+            placeholder="如：021-12345678 或 138..."
+            style={{ width: 200 }}
+          />
+        </Form.Item>
         <Form.Item
           name="openingDate"
           label="开业时间"
