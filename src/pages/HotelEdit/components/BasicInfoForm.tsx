@@ -9,6 +9,7 @@ import {
   Cascader,
 } from "antd";
 import { cityOptions } from "../../../utils/addressData";
+import PhotoUploader from "./PhotoUploader";
 const BasicInfoForm: React.FC = () => {
   return (
     <>
@@ -72,6 +73,7 @@ const BasicInfoForm: React.FC = () => {
             ]}
           />
         </Form.Item>
+
         <Form.Item
           name="openingDate"
           label="开业时间"
@@ -80,7 +82,13 @@ const BasicInfoForm: React.FC = () => {
           <DatePicker style={{ width: 200 }} format="YYYY-MM-DD" />
         </Form.Item>
       </Space>
-
+      <Form.Item
+        name="photos"
+        label="酒店整体照片"
+        extra="建议上传 3-8 张大堂或外景图"
+      >
+        <PhotoUploader maxCount={8} />
+      </Form.Item>
       <Divider orientation="left">扩展信息 (可选)</Divider>
       <Form.Item name="nearbyInfo" label="周边景点/交通">
         <Input.TextArea placeholder="如：距离外滩 500 米" />

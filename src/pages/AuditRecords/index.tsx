@@ -6,14 +6,13 @@ import {
   Typography,
   Input,
   Modal,
-  Descriptions,
   Button,
   Space,
   Tooltip,
 } from "antd";
 import { EyeOutlined, InfoCircleOutlined } from "@ant-design/icons";
 import { useAuditData } from "./hooks/useAuditData";
-import { getFullAddress } from "../../utils/addressData";
+import HotelDetailView from "@/components/HotelDetailView";
 
 const { Title } = Typography;
 const { Search } = Input;
@@ -136,64 +135,13 @@ const AuditRecords: React.FC = () => {
 
       {/* 详情展示弹窗 */}
       <Modal
-        title="酒店申请详细信息"
+        title="申请记录详情"
         open={isDetailVisible}
         onCancel={() => setIsDetailVisible(false)}
-        footer={[
-          <Button key="close" onClick={() => setIsDetailVisible(false)}>
-            关闭
-          </Button>,
-        ]}
-        width={700}
+        footer={null}
+        width={800}
       >
-        {selectedHotel && (
-          <Descriptions bordered column={1} size="small">
-            <Descriptions.Item label="系统编号">
-              {selectedHotel._id || selectedHotel.id}
-            </Descriptions.Item>
-            <Descriptions.Item label="酒店名称">
-              {selectedHotel.name}
-            </Descriptions.Item>
-            <Descriptions.Item label="英文名称">
-              {selectedHotel.nameEn}
-            </Descriptions.Item>
-
-            <Descriptions.Item label="酒店地址">
-              {getFullAddress(selectedHotel.location, selectedHotel.address)}
-            </Descriptions.Item>
-            
-            <Descriptions.Item label="星级">
-              {selectedHotel.star} 星
-            </Descriptions.Item>
-            <Descriptions.Item label="审核状态">
-              <Tag
-                color={
-                  selectedHotel.status === "approved"
-                    ? "green"
-                    : selectedHotel.status === "rejected"
-                      ? "red"
-                      : "orange"
-                }
-              >
-                {selectedHotel.status === "approved"
-                  ? "已通过"
-                  : selectedHotel.status === "rejected"
-                    ? "已拒绝"
-                    : "审核中"}
-              </Tag>
-            </Descriptions.Item>
-            {selectedHotel.status === "rejected" && (
-              <Descriptions.Item label="驳回原因">
-                <span style={{ color: "#ff4d4f", fontWeight: "bold" }}>
-                  {selectedHotel.rejectReason || "未填写"}
-                </span>
-              </Descriptions.Item>
-            )}
-            <Descriptions.Item label="附近信息">
-              {selectedHotel.nearbyInfo || "无"}
-            </Descriptions.Item>
-          </Descriptions>
-        )}
+        <HotelDetailView data={selectedHotel} type="audit" />
       </Modal>
     </div>
   );

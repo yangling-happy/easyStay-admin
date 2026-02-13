@@ -1,11 +1,11 @@
 export type HotelStatus = "pending" | "approved" | "rejected";
-
+export interface HotelImage { url: string; isPrimary?: boolean; alt?: string; }
 export interface RoomType {
   id?: string;
   name: string; // 房型名，如：经典双床房
   price: number; // 价格
   stock: number; // 库存
-  photos: string[]; // 房型专属照片（新增）
+  photos:HotelImage[];// 房型专属照片（新增）
 }
 
 export interface Hotel {
@@ -16,8 +16,7 @@ export interface Hotel {
   address: string;
   star: 1 | 2 | 3 | 4 | 5;
   openingDate: string; // 格式：YYYY-MM-DD
-  photos: string[]; // 房型照片
-  images: string[]; // 酒店整体照片
+  photos: HotelImage[]; // 酒店整体照片
   description: string; // 酒店描述
   nearbyInfo?: string;
   
@@ -41,12 +40,12 @@ export interface HotelFormData {
   address: string;
   star: string; // 注意：前端可能是字符串 "3"，后端是数字 3
   openingDate: any; // Dayjs 对象或字符串
-  photos: string[];
+  photos: HotelImage[];
   nearbyInfo?: string;
   roomTypes: Array<{
     name: string;
     price: number;
     stock: number;
-    photos: string[];
+    photos: HotelImage[];
   }>;
 }

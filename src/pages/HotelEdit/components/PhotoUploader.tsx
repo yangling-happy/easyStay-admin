@@ -7,10 +7,11 @@ import {
   compressImage,
   previewCompression,
 } from "../../../utils/imageCompressor";
+import type { HotelImage } from "../../../types/hotel"; // 假设类型定义在此路径
 
 interface PhotoUploaderProps {
-  value?: string[];
-  onChange?: (urls: string[]) => void;
+  value?: HotelImage[];
+  onChange?: (urls: HotelImage[]) => void;
   maxCount?: number;
   label?: string;
   type?: "hotel" | "room";
@@ -61,7 +62,10 @@ const PhotoUploader: React.FC<PhotoUploaderProps> = ({
       }
 
       // 合并新图片
-      const newValue = [...value, ...uploadedUrls];
+      const newValue = [
+        ...value,
+        ...uploadedUrls.map((url) => ({ url, isPrimary: false })),
+      ];
       onChange?.(newValue);
 
       message.success(`成功上传 ${uploadedUrls.length} 张图片`);
@@ -92,17 +96,17 @@ const PhotoUploader: React.FC<PhotoUploaderProps> = ({
   };
 
   const handleRemove = (file: UploadFile) => {
-    const newUrls = value.filter((url) => url !== file.url);
+    const newUrls = value.filter((img) => img.url !== file.url);
     onChange?.(newUrls);
     return true; // 返回 true 允许删除
   };
 
   // 转换现有 URL 为 UploadFile 格式
-  const fileList: UploadFile[] = value.map((url, index) => ({
+  const fileList: UploadFile[] = (value || []).map((img, index) => ({
     uid: `existing-${index}`,
     name: `image-${index}.jpg`,
     status: "done",
-    url: url,
+    url: img.url,
   }));
 
   return (

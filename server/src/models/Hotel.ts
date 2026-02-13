@@ -1,4 +1,8 @@
 import mongoose from "mongoose";
+const ImageSchema = new mongoose.Schema(
+  { url: String, isPrimary: Boolean, alt: String },
+  { _id: false },
+);
 
 const hotelSchema = new mongoose.Schema({
   // 基本信息
@@ -30,12 +34,7 @@ const hotelSchema = new mongoose.Schema({
   },
 
   // 酒店整体照片（新增）
-  photos: [
-    {
-      type: String,
-      default: [],
-    },
-  ],
+  photos: [ImageSchema],
 
   // 扩展信息
   nearbyInfo: {
@@ -88,12 +87,7 @@ const hotelSchema = new mongoose.Schema({
         default: 0,
       },
       // 房型专属照片
-      photos: [
-        {
-          type: String,
-          default: [],
-        },
-      ],
+      photos: [ImageSchema],
     },
   ],
 

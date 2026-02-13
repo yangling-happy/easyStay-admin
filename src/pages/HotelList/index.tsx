@@ -22,6 +22,7 @@ import {
 import { patch, post } from "@/api/http/request";
 import { useActiveHotels } from "./hooks/useActiveHotels";
 import { getFullAddress } from "../../utils/addressData";
+import HotelDetailView from "@/components/HotelDetailView";
 
 const { Text } = Typography;
 
@@ -208,42 +209,10 @@ const HotelList: React.FC = () => {
         title="酒店详细资产信息"
         open={isDetailVisible}
         onCancel={() => setIsDetailVisible(false)}
-        footer={[
-          <Button key="close" onClick={() => setIsDetailVisible(false)}>
-            关闭
-          </Button>,
-        ]}
-        width={700}
+        footer={null}
+        width={800}
       >
-        {selectedHotel && (
-          <Descriptions bordered column={1} size="small">
-            <Descriptions.Item label="系统编号">
-              <code style={{ color: "#1890ff" }}>
-                {selectedHotel._id || selectedHotel.id}
-              </code>
-            </Descriptions.Item>
-            <Descriptions.Item label="酒店名称">
-              {selectedHotel.name}
-            </Descriptions.Item>
-            <Descriptions.Item label="英文名称">
-              {selectedHotel.nameEn || "-"}
-            </Descriptions.Item>
-            <Descriptions.Item label="酒店地址">
-              {getFullAddress(selectedHotel.location, selectedHotel.address)}
-            </Descriptions.Item>
-            <Descriptions.Item label="星级">
-              {selectedHotel.star} 星
-            </Descriptions.Item>
-            <Descriptions.Item label="当前销售状态">
-              <Tag color={selectedHotel.isActive ? "green" : "orange"}>
-                {selectedHotel.isActive ? "销售中" : "已下线"}
-              </Tag>
-            </Descriptions.Item>
-            {/* <Descriptions.Item label="核准日期">
-              {new Date(selectedHotel.updatedAt).toLocaleString()}
-            </Descriptions.Item> */}
-          </Descriptions>
-        )}
+        <HotelDetailView data={selectedHotel} type="list" />
       </Modal>
     </div>
   );
