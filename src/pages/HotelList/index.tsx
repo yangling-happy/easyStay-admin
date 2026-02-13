@@ -10,7 +10,6 @@ import {
   Tooltip,
   Modal,
   Typography,
-  Descriptions,
 } from "antd";
 import { useNavigate } from "react-router-dom";
 import {
@@ -21,7 +20,6 @@ import {
 } from "@ant-design/icons";
 import { patch, post } from "@/api/http/request";
 import { useActiveHotels } from "./hooks/useActiveHotels";
-import { getFullAddress } from "../../utils/addressData";
 import HotelDetailView from "@/components/HotelDetailView";
 
 const { Text } = Typography;

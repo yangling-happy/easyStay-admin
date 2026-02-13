@@ -89,9 +89,22 @@ const BasicInfoForm: React.FC = () => {
       >
         <PhotoUploader maxCount={8} />
       </Form.Item>
-      <Divider orientation="left">扩展信息 (可选)</Divider>
-      <Form.Item name="nearbyInfo" label="周边景点/交通">
-        <Input.TextArea placeholder="如：距离外滩 500 米" />
+      <Form.Item name="amenities" label="酒店设施">
+        <Select
+          mode="tags" // 允许用户自己输入新标签
+          style={{ width: "100%" }}
+          placeholder="请选择或输入酒店设施"
+          options={[
+            { value: "WiFi", label: "WiFi" },
+            { value: "Parking", label: "停车场" },
+            { value: "Breakfast", label: "早餐" },
+            { value: "Family", label: "亲子友好" },
+            { value: "Gym", label: "健身房" },
+            { value: "Pool", label: "泳池" },
+            { value: "Pets", label: "可带宠物" },
+            { value: "Airport", label: "机场接送" },
+          ]}
+        />
       </Form.Item>
     </>
   );
