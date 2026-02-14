@@ -15,6 +15,16 @@ import {
 import { PlusOutlined, DeleteOutlined } from "@ant-design/icons";
 import PhotoUploader from "./PhotoUploader";
 
+export const ROOM_TYPE_FIELD = "roomTypes";
+
+export const ROOM_TYPE_FIELDS = [
+  ["roomTypes", "name"],
+  ["roomTypes", "price"],
+  ["roomTypes", "stock"],
+  ["roomTypes", "capacity"],
+  ["roomTypes", "bedType"],
+  ["roomTypes", "photos"],
+];
 const RoomTypeFormList: React.FC = () => {
   return (
     <>

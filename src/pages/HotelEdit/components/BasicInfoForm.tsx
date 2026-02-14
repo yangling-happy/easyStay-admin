@@ -10,6 +10,17 @@ import {
 } from "antd";
 import { cityOptions } from "../../../utils/addressData";
 import PhotoUploader from "./PhotoUploader";
+export const BASIC_INFO_FIELDS = [
+  "name",
+  "nameEn",
+  "location",
+  "address",
+  "phone",
+  "openingDate",
+  "star",
+  "photos",
+  "amenities",
+];
 const BasicInfoForm: React.FC = () => {
   return (
     <>
