@@ -60,13 +60,7 @@ const HotelEdit: React.FC = () => {
   const handleNext = async () => {
     try {
       if (current === 1) {
-        await form.validateFields([
-          "name",
-          "nameEn",
-          "address",
-          "star",
-          "openingDate",
-        ]);
+        await form.validateFields();
       } else if (current === 2) {
         await form.validateFields(["roomTypes"]);
       }
@@ -89,7 +83,6 @@ const HotelEdit: React.FC = () => {
     saveFormData(values);
     saveStep(current - 1);
   };
-
   return (
     <Card className="hotel-edit-container">
       <Steps
