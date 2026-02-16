@@ -22,6 +22,7 @@ export const BASIC_INFO_FIELDS = [
   "amenities",
 ];
 const BasicInfoForm: React.FC = () => {
+  const [form] = Form.useForm();
   return (
     <>
       <Divider orientation="left">基本信息</Divider>
@@ -47,15 +48,17 @@ const BasicInfoForm: React.FC = () => {
           name="location"
           label="所在地区"
           rules={[{ required: true, message: "请选择省市区" }]}
-          style={{ width: 300 }}
         >
           <Cascader
             options={cityOptions}
             placeholder="请选择省/市/区"
-            showSearch // 允许用户搜索，提升体验
+            showSearch
+            onChange={(value) => {
+              // 将选中的值转换为数组格式
+              form.setFieldsValue({ location: value });
+            }}
           />
         </Form.Item>
-
         <Form.Item
           name="address"
           label="详细地址"

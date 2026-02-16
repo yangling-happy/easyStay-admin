@@ -118,7 +118,6 @@ router.get("/detail/:id", async (req: Request, res: Response) => {
       star: hotel.star,
       openingDate: hotel.openingDate,
       photos: hotel.photos,
-      nearbyInfo: hotel.nearbyInfo,
       roomTypes: hotel.roomTypes,
       status: hotel.status,
       isActive: hotel.isActive,

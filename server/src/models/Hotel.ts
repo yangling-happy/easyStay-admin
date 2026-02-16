@@ -36,10 +36,18 @@ const hotelSchema = new mongoose.Schema({
   // 酒店整体照片（新增）
   photos: [ImageSchema],
 
-  // 扩展信息
-  nearbyInfo: {
+  // 酒店位置信息
+  location: {
+    type: [String],
+    default: [],
+  },
+  phone: {
     type: String,
-    default: "",
+    required: false,
+  },
+  amenities: {
+    type: [String],
+    default: [],
   },
 
   // 审核状态
@@ -85,6 +93,18 @@ const hotelSchema = new mongoose.Schema({
         required: true,
         min: 0, // 库存不能为负数
         default: 0,
+      },
+      capacity: {
+        type: Number,
+        required: false,
+      },
+      bedType: {
+        type: String,
+        required: false,
+      },
+      tags: {
+        type: [String],
+        default: [],
       },
       // 房型专属照片
       photos: [ImageSchema],

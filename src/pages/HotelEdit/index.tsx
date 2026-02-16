@@ -4,7 +4,7 @@ import HotelSelector from "./components/HotelSelector";
 import BasicInfoForm from "./components/BasicInfoForm";
 import RoomTypeFormList from "./components/RoomTypeFormList";
 import { useHotelForm } from "./hooks/useHotelForm";
-import{ BASIC_INFO_FIELDS} from "./components/BasicInfoForm";
+import { BASIC_INFO_FIELDS } from "./components/BasicInfoForm";
 import { ROOM_TYPE_FIELDS } from "./components/RoomTypeFormList";
 const HotelEdit: React.FC = () => {
   // 加载保存的步骤
@@ -63,7 +63,7 @@ const HotelEdit: React.FC = () => {
       if (current === 1) {
         await form.validateFields(BASIC_INFO_FIELDS);
       } else if (current === 2) {
-        await form.validateFields( ROOM_TYPE_FIELDS );
+        await form.validateFields(ROOM_TYPE_FIELDS);
       }
 
       // 保存当前数据

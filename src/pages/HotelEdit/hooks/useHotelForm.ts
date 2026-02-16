@@ -74,6 +74,9 @@ export const useHotelForm = () => {
         name: values.name?.trim() || "",
         nameEn: values.nameEn?.trim() || "",
         address: values.address?.trim() || "",
+        phone: values.phone?.trim() || "",
+        location: values.location || [],
+        amenities: values.amenities || [],
         star:
           typeof values.star === "string"
             ? parseInt(values.star, 10)
@@ -81,7 +84,15 @@ export const useHotelForm = () => {
         openingDate: openingDateStr,
         status: "pending" as const,
         ownerId: localStorage.getItem("userId") || "user_001",
-        roomTypes: values.roomTypes || [],
+        roomTypes: (values.roomTypes || []).map((room: any) => ({
+          name: room.name?.trim() || "",
+          price: room.price || 0,
+          stock: room.stock || 0,
+          capacity: room.capacity !== undefined ? room.capacity : null,
+          bedType: room.bedType || "",
+          tags: room.tags || [],
+          photos: room.photos || [],
+        })),
         photos: values.photos || [],
         createTime: new Date().toISOString(),
         updateTime: new Date().toISOString(),
