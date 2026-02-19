@@ -239,51 +239,7 @@ const PhotoUploader: React.FC<PhotoUploaderProps> = ({
         </div>
       )}
 
-      {/* 压缩效果预览 Modal */}
-      <Modal
-        open={!!compressPreview}
-        title="压缩效果对比"
-        onCancel={() => setCompressPreview(null)}
-        footer={null}
-        width={800}
-      >
-        {compressPreview && (
-          <div style={{ display: "flex", gap: 20, marginTop: 16 }}>
-            <div style={{ flex: 1 }}>
-              <Typography.Title level={5} style={{ textAlign: "center" }}>
-                原始图片
-              </Typography.Title>
-              <img
-                src={compressPreview.original}
-                alt="原始"
-                style={{ width: "100%", border: "2px solid #f5222d" }}
-              />
-              <Typography.Text
-                type="secondary"
-                style={{ display: "block", textAlign: "center" }}
-              >
-                文件较大，加载较慢
-              </Typography.Text>
-            </div>
-            <div style={{ flex: 1 }}>
-              <Typography.Title level={5} style={{ textAlign: "center" }}>
-                压缩后图片
-              </Typography.Title>
-              <img
-                src={compressPreview.compressed}
-                alt="压缩后"
-                style={{ width: "100%", border: "2px solid #52c41a" }}
-              />
-              <Typography.Text
-                type="success"
-                style={{ display: "block", textAlign: "center" }}
-              >
-                压缩优化，快速加载
-              </Typography.Text>
-            </div>
-          </div>
-        )}
-      </Modal>
+
 
       {/* 图片预览 Modal */}
       <Modal
