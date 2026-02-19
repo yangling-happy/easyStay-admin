@@ -7,7 +7,7 @@ import {
   compressImage,
   previewCompression,
 } from "../../../utils/imageCompressor";
-import type { HotelImage } from "../../../types/hotel"; // 假设类型定义在此路径
+import type { HotelImage } from "../../../types/hotel"; 
 
 interface PhotoUploaderProps {
   value?: HotelImage[];
@@ -29,11 +29,10 @@ const PhotoUploader: React.FC<PhotoUploaderProps> = ({
   const [uploadProgress, setUploadProgress] = useState(0);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewImage, setPreviewImage] = useState("");
-  const [compressPreview, setCompressPreview] = useState<{
+  const [,setCompressPreview] = useState<{
     original: string;
     compressed: string;
   } | null>(null);
-
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 处理文件选择
