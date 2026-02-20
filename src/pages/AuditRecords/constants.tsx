@@ -1,5 +1,6 @@
 import { Tag, Tooltip } from 'antd';
 import { InfoCircleOutlined } from '@ant-design/icons';
+import { formatDateTime } from '@/utils/dateUtils';
 
 export const getAuditColumns = () => [
   {
@@ -10,7 +11,7 @@ export const getAuditColumns = () => [
   {
     title: '申请时间',
     dataIndex: 'createTime',
-    render: (time: string) => new Date(time).toLocaleString(),
+    render: (time: string) => formatDateTime(time),
   },
   {
     title: '审核状态',

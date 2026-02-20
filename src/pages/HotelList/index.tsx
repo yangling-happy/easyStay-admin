@@ -22,6 +22,7 @@ import { patch, post } from "@/api/http/request";
 import { useActiveHotels } from "./hooks/useActiveHotels";
 import HotelDetailView from "@/components/HotelDetailView";
 import { getFullAddress } from "@/utils/addressData";
+import { formatDateTime } from "@/utils/dateUtils";
 
 const { Text } = Typography;
 
@@ -128,10 +129,11 @@ const HotelList: React.FC = () => {
     },
     {
       title: "最后核准日期",
-      dataIndex: "updatedAt",
-      key: "updatedAt",
-      render: (date: string) =>
-        date ? new Date(date).toLocaleDateString() : "-",
+      key: "updateTime",
+      render: (_: unknown, record: any) => {
+        const date = record.updateTime || record.updatedAt;
+        return formatDateTime(date);
+      },
     },
     {
       title: "资产操作",

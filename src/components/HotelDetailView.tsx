@@ -10,6 +10,7 @@ import {
   Timeline,
 } from "antd";
 import { getFullAddress } from "../utils/addressData";
+import { formatDateTime } from "../utils/dateUtils";
 const { Text } = Typography;
 
 interface Props {
@@ -282,7 +283,7 @@ const HotelDetailView: React.FC<Props> = ({ data, type }) => {
                     <div
                       style={{ marginTop: 8, fontSize: "12px", color: "#999" }}
                     >
-                      {new Date(record.timestamp).toLocaleString()}
+                      {formatDateTime(record.timestamp)}
                     </div>
                   </div>
                 ),

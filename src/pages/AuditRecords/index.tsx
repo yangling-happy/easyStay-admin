@@ -13,6 +13,7 @@ import {
 import { EyeOutlined, InfoCircleOutlined } from "@ant-design/icons";
 import { useAuditData } from "./hooks/useAuditData";
 import HotelDetailView from "@/components/HotelDetailView";
+import { formatDateTime } from "@/utils/dateUtils";
 
 const { Title } = Typography;
 const { Search } = Input;
@@ -61,7 +62,7 @@ const AuditRecords: React.FC = () => {
       title: "申请时间",
       dataIndex: "createTime",
       key: "createTime",
-      render: (time: string) => new Date(time).toLocaleString(),
+      render: (time: string) => formatDateTime(time),
     },
     {
       title: "审核状态",

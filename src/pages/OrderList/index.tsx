@@ -11,6 +11,7 @@ import {
   Typography,
   Descriptions,
 } from "antd";
+import { formatDateTime, formatDate } from "@/utils/dateUtils";
 import { ReloadOutlined, EyeOutlined } from "@ant-design/icons";
 import { orderService } from "@/api/services/orderService";
 import { useActiveHotels } from "@/pages/HotelList/hooks/useActiveHotels";
@@ -98,13 +99,13 @@ const OrderList: React.FC = () => {
       title: "入住日期",
       dataIndex: "checkInDate",
       key: "checkInDate",
-      render: (date: string | Date) => new Date(date).toLocaleDateString(),
+      render: (date: string | Date) => formatDate(date),
     },
     {
       title: "退房日期",
       dataIndex: "checkOutDate",
       key: "checkOutDate",
-      render: (date: string | Date) => new Date(date).toLocaleDateString(),
+      render: (date: string | Date) => formatDate(date),
     },
     {
       title: "联系人",
@@ -240,10 +241,10 @@ const OrderList: React.FC = () => {
               {selectedOrder.roomTypeName}
             </Descriptions.Item>
             <Descriptions.Item label="入住日期">
-              {new Date(selectedOrder.checkInDate).toLocaleDateString()}
+              {formatDate(selectedOrder.checkInDate)}
             </Descriptions.Item>
             <Descriptions.Item label="退房日期">
-              {new Date(selectedOrder.checkOutDate).toLocaleDateString()}
+              {formatDate(selectedOrder.checkOutDate)}
             </Descriptions.Item>
             <Descriptions.Item label="入住人数">
               {selectedOrder.guestCount}人
@@ -285,7 +286,7 @@ const OrderList: React.FC = () => {
               </Tag>
             </Descriptions.Item>
             <Descriptions.Item label="创建时间">
-              {new Date(selectedOrder.createTime || "").toLocaleString()}
+              {formatDateTime(selectedOrder.createTime)}
             </Descriptions.Item>
           </Descriptions>
         )}
