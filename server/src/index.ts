@@ -10,6 +10,7 @@ import uploadRoutes from "./routes/uploadRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import feedbackRoutes from "./routes/feedbackRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
+import orderRoutes from "./routes/orderRoutes.js";
 import fs from "fs";
 
 dotenv.config();
@@ -34,7 +35,7 @@ app.use((req, res, next) => {
   console.log(`时间: ${new Date().toISOString()}`);
   console.log(`方法: ${req.method}`);
   console.log(`路径: ${req.url}`);
-  console.log(`Content-Type: ${req.headers['content-type']}`);
+  console.log(`Content-Type: ${req.headers["content-type"]}`);
   console.log(`请求体:`, req.body);
   console.log(`=== 结束日志 ===\n`);
   next();
@@ -125,6 +126,7 @@ app.use("/api/hotels", hotelRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/feedback", feedbackRoutes);
 app.use("/api/notification", notificationRoutes);
+app.use("/api/orders", orderRoutes);
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`✅ 服务器启动: http://localhost:${PORT}`);

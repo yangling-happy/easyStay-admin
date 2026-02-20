@@ -22,8 +22,7 @@ import AuditRecords from "./pages/AuditRecords";
 import HotelList from "./pages/HotelList";
 import MerchantDashboard from "./pages/Dashboard/MerchantDashboard";
 import AdminDashboard from "./pages/Dashboard/AdminDashboard";
-
-
+import OrderList from "./pages/OrderList";
 
 // 路由守卫组件
 interface PrivateRouteProps {
@@ -159,8 +158,6 @@ function App() {
                   </PrivateRoute>
                 }
               />
-
-
             </Route>
 
             {/* 管理员专属路由 */}
@@ -227,6 +224,16 @@ function App() {
                 }
               />
             </Route>
+
+            {/* 订单管理路由 */}
+            <Route
+              path="orders"
+              element={
+                <PrivateRoute requiredRole="merchant">
+                  <OrderList />
+                </PrivateRoute>
+              }
+            />
 
             <Route
               path="/audit-status/:hotelId"
