@@ -61,10 +61,6 @@ export const useHotelForm = () => {
     try {
       const values = await form.validateFields();
 
-      console.log("📝 表单值 (values):", values);
-      console.log("🔍 检查 ID:", values.id);
-      console.log("🔍 检查 version:", values.version);
-
       let openingDateStr = "";
       if (values.openingDate) {
         openingDateStr =
@@ -75,8 +71,6 @@ export const useHotelForm = () => {
 
       const isUpdate =
         values.id !== undefined && values.id !== null && values.id !== "";
-
-      console.log("🔄 操作类型:", isUpdate ? "UPDATE (更新)" : "CREATE (创建)");
 
       const payload: any = {
         ...values,
@@ -114,22 +108,16 @@ export const useHotelForm = () => {
         payload.version = values.version;
       }
 
-      console.log("📤 请求数据 (payload):", payload);
-
       let res;
       let hotelId;
 
       if (isUpdate) {
-        console.log("📡 调用 updateHotel API, ID:", values.id);
         res = await hotelService.updateHotel(values.id, payload);
         hotelId = values.id;
       } else {
-        console.log("📡 调用 saveHotel API (创建新酒店)");
         res = await hotelService.saveHotel(payload);
         hotelId = (res as any)?.data?.id;
       }
-
-      console.log("✅ 后端返回响应:", res);
 
       if (!hotelId) {
         throw new Error("后端未返回有效的酒店 ID");

@@ -4,7 +4,6 @@ import type { Response } from "express";
 import { HotelModel } from "../models/Hotel.js";
 import { auth } from "../middleware/authMiddleware.js";
 
-//扩展 Express 的 Request 类型定义
 interface AuthRequest extends Request {
   user?: {
     userId: string;
@@ -14,7 +13,6 @@ interface AuthRequest extends Request {
 
 const router = express.Router();
 
-// 1. POST /api/hotels - 创建酒店
 router.post("/", auth, async (req: AuthRequest, res: Response) => {
   try {
     const hotelData = {
@@ -44,7 +42,6 @@ router.post("/", auth, async (req: AuthRequest, res: Response) => {
   }
 });
 
-// 2. GET /api/hotels/records - 获取我的申请记录
 router.get("/records", auth, async (req: AuthRequest, res: Response) => {
   try {
     const query = {
@@ -61,7 +58,6 @@ router.get("/records", auth, async (req: AuthRequest, res: Response) => {
   }
 });
 
-// 3. PATCH /api/hotels/:id/offline - 商户自主下线
 router.patch("/:id/offline", auth, async (req: AuthRequest, res: Response) => {
   try {
     const hotel = await HotelModel.findOneAndUpdate(
@@ -83,7 +79,6 @@ router.patch("/:id/offline", auth, async (req: AuthRequest, res: Response) => {
   }
 });
 
-// 4. POST /api/hotels/:id/re-apply - 恢复上线申请
 router.post("/:id/re-apply", auth, async (req: AuthRequest, res: Response) => {
   try {
     const hotel = await HotelModel.findOneAndUpdate(
@@ -107,18 +102,12 @@ router.post("/:id/re-apply", auth, async (req: AuthRequest, res: Response) => {
   }
 });
 
-// 5. PUT /api/hotels/:id - 更新酒店信息
 router.put("/:id", auth, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const { version, ...updateData } = req.body;
 
-    console.log("🔧 [PUT /api/hotels/:id] 收到更新请求");
-    console.log("🔧 酒店 ID:", id);
-    console.log("🔧 请求数据:", req.body);
-
     if (updateData.id && updateData.id !== id) {
-      console.log("❌ ID不一致，拒绝更新");
       return res.status(400).json({
         success: false,
         message: "不允许修改酒店 ID",
@@ -129,11 +118,6 @@ router.put("/:id", auth, async (req: AuthRequest, res: Response) => {
       _id: id,
       ownerId: req.user?.userId,
     });
-
-    console.log(
-      "🔧 找到的现有酒店:",
-      existingHotel ? existingHotel._id : "未找到",
-    );
 
     if (!existingHotel) {
       return res.status(404).json({
@@ -202,7 +186,6 @@ router.put("/:id", auth, async (req: AuthRequest, res: Response) => {
       },
     };
 
-    console.log("🔧 执行更新操作...");
     const updatedHotel = await HotelModel.findOneAndUpdate(
       {
         _id: id,
@@ -213,20 +196,13 @@ router.put("/:id", auth, async (req: AuthRequest, res: Response) => {
       { new: true },
     );
 
-    console.log(
-      "🔧 更新后的酒店:",
-      updatedHotel ? updatedHotel._id : "更新失败",
-    );
-
     if (!updatedHotel) {
-      console.log("❌ 更新失败，可能是版本冲突");
       return res.status(409).json({
         success: false,
         message: "数据已被其他用户修改，请刷新后重试",
       });
     }
 
-    console.log("✅ 更新成功，返回响应");
     res.json({
       success: true,
       data: updatedHotel,
@@ -239,7 +215,6 @@ router.put("/:id", auth, async (req: AuthRequest, res: Response) => {
   }
 });
 
-// 6. GET /api/hotels/detail/:id - 获取酒店详情
 router.get("/detail/:id", async (req: Request, res: Response) => {
   try {
     const hotel = await HotelModel.findById(req.params.id);
