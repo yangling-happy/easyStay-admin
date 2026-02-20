@@ -21,6 +21,7 @@ import {
 import { patch, post } from "@/api/http/request";
 import { useActiveHotels } from "./hooks/useActiveHotels";
 import HotelDetailView from "@/components/HotelDetailView";
+import { getFullAddress } from "@/utils/addressData";
 
 const { Text } = Typography;
 
@@ -102,9 +103,11 @@ const HotelList: React.FC = () => {
     },
     {
       title: "地区",
-      dataIndex: "city",
-      key: "city",
-      width: 120,
+      key: "location",
+      width: 200,
+      render: (_: unknown, record: any) => {
+        return getFullAddress(record.location) || "未设置";
+      },
     },
     {
       title: "当前状态",
