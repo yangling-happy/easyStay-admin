@@ -1,185 +1,207 @@
-import express from 'express';
-import { HotelModel } from '../models/Hotel.js';
-import { NotificationModel } from '../models/Notification.js';
+import express from "express";
+import { HotelModel } from "../models/Hotel.js";
+import { NotificationModel } from "../models/Notification.js";
 
 const router = express.Router();
 
 // GET /api/admin/hotels/pending - 获取待审核列表
-router.get('/hotels/pending', async (req, res) => {
+router.get("/hotels/pending", async (req, res) => {
   try {
     const hotels = await HotelModel.find({
-      status: 'pending',
-      isDeleted: false
+      status: "pending",
+      isDeleted: false,
     }).sort({ createTime: -1 });
 
-    const hotelsWithId = hotels.map(hotel => {
+    const hotelsWithId = hotels.map((hotel) => {
       const hotelObj = hotel.toObject();
       return {
         ...hotelObj,
         id: hotelObj._id.toString(),
-        _id: undefined
+        _id: undefined,
       };
     });
 
     res.json(hotelsWithId);
   } catch (error) {
-    console.error('获取待审核列表失败:', error);
+    console.error("获取待审核列表失败:", error);
     res.status(500).json({
-      message: '获取待审核列表失败',
-      error
+      message: "获取待审核列表失败",
+      error,
     });
   }
 });
 
 // GET /api/admin/hotels/published - 获取已发布酒店列表
-router.get('/hotels/published', async (req, res) => {
+router.get("/hotels/published", async (req, res) => {
   try {
     const hotels = await HotelModel.find({
-      status: 'approved',
+      status: "approved",
       isDeleted: false,
-      isActive: true
+      isActive: true,
     }).sort({ createTime: -1 });
 
-    const hotelsWithId = hotels.map(hotel => {
+    const hotelsWithId = hotels.map((hotel) => {
       const hotelObj = hotel.toObject();
       return {
         ...hotelObj,
         id: hotelObj._id.toString(),
-        _id: undefined
+        _id: undefined,
       };
     });
 
     res.json(hotelsWithId);
   } catch (error) {
-    console.error('获取已发布酒店列表失败:', error);
+    console.error("获取已发布酒店列表失败:", error);
     res.status(500).json({
-      message: '获取已发布酒店列表失败',
-      error
+      message: "获取已发布酒店列表失败",
+      error,
     });
   }
 });
 
 // GET /api/admin/hotels/rejected - 获取已拒绝酒店列表
-router.get('/hotels/rejected', async (req, res) => {
+router.get("/hotels/rejected", async (req, res) => {
   try {
     const hotels = await HotelModel.find({
-      status: 'rejected',
-      isDeleted: false
+      status: "rejected",
+      isDeleted: false,
     }).sort({ createTime: -1 });
 
-    const hotelsWithId = hotels.map(hotel => {
+    const hotelsWithId = hotels.map((hotel) => {
       const hotelObj = hotel.toObject();
       return {
         ...hotelObj,
         id: hotelObj._id.toString(),
-        _id: undefined
+        _id: undefined,
       };
     });
 
     res.json(hotelsWithId);
   } catch (error) {
-    console.error('获取已拒绝酒店列表失败:', error);
+    console.error("获取已拒绝酒店列表失败:", error);
     res.status(500).json({
-      message: '获取已拒绝酒店列表失败',
-      error
+      message: "获取已拒绝酒店列表失败",
+      error,
     });
   }
 });
 
 // GET /api/admin/hotels/offline - 获取已下线酒店列表
-router.get('/hotels/offline', async (req, res) => {
+router.get("/hotels/offline", async (req, res) => {
   try {
     const hotels = await HotelModel.find({
-      status: 'approved',
-      isActive: false,  // 使用 isActive: false 判断下线
-      isDeleted: false
+      status: "approved",
+      isActive: false, // 使用 isActive: false 判断下线
+      isDeleted: false,
     }).sort({ createTime: -1 });
 
-    const hotelsWithId = hotels.map(hotel => {
+    const hotelsWithId = hotels.map((hotel) => {
       const hotelObj = hotel.toObject();
       return {
         ...hotelObj,
         id: hotelObj._id.toString(),
-        _id: undefined
+        _id: undefined,
       };
     });
 
     res.json(hotelsWithId);
   } catch (error) {
-    console.error('获取已下线酒店列表失败:', error);
+    console.error("获取已下线酒店列表失败:", error);
     res.status(500).json({
-      message: '获取已下线酒店列表失败',
-      error
+      message: "获取已下线酒店列表失败",
+      error,
     });
   }
 });
 
 // POST /api/admin/hotels/:id/audit - 提交审核结果
-router.post('/hotels/:id/audit', async (req, res) => {
+router.post("/hotels/:id/audit", async (req, res) => {
   try {
     const { id } = req.params;
     const { status, rejectReason } = req.body;
 
-    if (!['approved', 'rejected'].includes(status)) {
+    console.log("🔍 [审核接口] 收到审核请求");
+    console.log("🔍 酒店 ID:", id);
+    console.log("🔍 审核状态:", status);
+    console.log("🔍 拒绝原因:", rejectReason);
+
+    if (!["approved", "rejected"].includes(status)) {
+      console.log("❌ 无效的审核状态");
       return res.status(400).json({
-        message: '无效的审核状态，只能是 approved 或 rejected'
+        message: "无效的审核状态，只能是 approved 或 rejected",
       });
     }
 
-    if (status === 'rejected' && !rejectReason) {
+    if (status === "rejected" && !rejectReason) {
+      console.log("❌ 拒绝审核但未提供原因");
       return res.status(400).json({
-        message: '拒绝审核时必须提供拒绝原因'
+        message: "拒绝审核时必须提供拒绝原因",
       });
     }
 
-    // ✅ 先查找酒店，获取 ownerId 和酒店名称
     const hotel = await HotelModel.findById(id);
+    console.log("🔍 找到的酒店:", hotel ? hotel._id : "未找到");
+
     if (!hotel) {
-      return res.status(404).json({ message: '酒店不存在' });
+      return res.status(404).json({ message: "酒店不存在" });
     }
+
+    const snapshot = hotel.toObject();
+    const snapshotWithoutId = { ...snapshot };
+    delete (snapshotWithoutId as any)._id;
+    delete (snapshotWithoutId as any).__v;
+    delete (snapshotWithoutId as any).auditHistory;
 
     const updateData: any = {
       status,
-      updateTime: new Date()
+      updateTime: new Date(),
+      $push: {
+        auditHistory: {
+          action: status === "approved" ? "audit_approved" : "audit_rejected",
+          status,
+          rejectReason: status === "rejected" ? rejectReason : "",
+          operatorRole: "admin",
+          timestamp: new Date(),
+          snapshot: snapshotWithoutId,
+        },
+      },
     };
 
-    if (status === 'rejected') {
-      // 拒绝：记录拒绝原因，不修改 isActive
+    if (status === "rejected") {
       updateData.rejectReason = rejectReason;
     } else {
-      // 通过：清空拒绝原因，自动设置为上线状态
       updateData.rejectReason = undefined;
-      updateData.isActive = true;  // 审核通过后自动上线
+      updateData.isActive = true;
     }
 
-    const updatedHotel = await HotelModel.findByIdAndUpdate(
-      id,
-      updateData,
-      { new: true }
+    console.log("🔍 执行审核更新操作...");
+    const updatedHotel = await HotelModel.findByIdAndUpdate(id, updateData, {
+      new: true,
+    });
+
+    console.log(
+      "🔍 审核后的酒店:",
+      updatedHotel ? updatedHotel._id : "更新失败",
     );
 
     if (!updatedHotel) {
-      return res.status(404).json({ message: '酒店不存在' });
+      return res.status(404).json({ message: "酒店不存在" });
     }
 
-    // ✅ 创建审核结果通知
     try {
       if (hotel.ownerId) {
-        // 确保 ownerId 是字符串格式
         const ownerIdStr = String(hotel.ownerId);
+        const message =
+          status === "approved"
+            ? `您的酒店"${hotel.name}"审核已通过，现已上线`
+            : `您的酒店"${hotel.name}"审核被拒绝：${rejectReason}`;
 
-        // 根据审核结果生成不同的通知消息
-        const message = status === 'approved'
-          ? `您的酒店"${hotel.name}"审核已通过，现已上线`
-          : `您的酒店"${hotel.name}"审核被拒绝：${rejectReason}`;
-
-        // 创建通知
         await NotificationModel.create({
-          type: 'audit_result',
+          type: "audit_result",
           hotelId: id,
           hotelName: hotel.name,
           ownerId: ownerIdStr,
-          status: 'unread',
+          status: "unread",
           message,
         });
 
@@ -193,7 +215,6 @@ router.post('/hotels/:id/audit', async (req, res) => {
         console.warn(`⚠️ 酒店没有 ownerId，无法创建通知 - hotelId: ${id}`);
       }
     } catch (notificationError: any) {
-      // 通知创建失败不影响审核结果，只记录错误
       console.error("❌ 创建审核通知失败:", {
         error: notificationError.message,
         ownerId: hotel.ownerId,
@@ -202,23 +223,24 @@ router.post('/hotels/:id/audit', async (req, res) => {
     }
 
     res.json({
-      message: status === 'approved' ? '审核通过成功，酒店已自动上线' : '审核拒绝成功',
-      hotel: updatedHotel
+      message:
+        status === "approved" ? "审核通过成功，酒店已自动上线" : "审核拒绝成功",
+      hotel: updatedHotel,
     });
   } catch (error) {
-    console.error('提交审核结果失败:', error);
-    res.status(500).json({ message: '提交审核结果失败', error });
+    console.error("提交审核结果失败:", error);
+    res.status(500).json({ message: "提交审核结果失败", error });
   }
 });
 // PATCH /api/admin/hotels/:id/toggle - 切换发布状态
-router.patch('/hotels/:id/toggle', async (req, res) => {
+router.patch("/hotels/:id/toggle", async (req, res) => {
   try {
     const { id } = req.params;
 
     const hotel = await HotelModel.findById(id);
 
     if (!hotel) {
-      return res.status(404).json({ message: '酒店不存在' });
+      return res.status(404).json({ message: "酒店不存在" });
     }
 
     const newIsActive = !hotel.isActive;
@@ -227,18 +249,18 @@ router.patch('/hotels/:id/toggle', async (req, res) => {
       id,
       {
         isActive: newIsActive,
-        updateTime: new Date()
+        updateTime: new Date(),
       },
-      { new: true }
+      { new: true },
     );
 
     res.json({
-      message: newIsActive ? '酒店已恢复上线' : '酒店已下线',
-      hotel: updatedHotel
+      message: newIsActive ? "酒店已恢复上线" : "酒店已下线",
+      hotel: updatedHotel,
     });
   } catch (error) {
-    console.error('切换发布状态失败:', error);
-    res.status(500).json({ message: '切换发布状态失败', error });
+    console.error("切换发布状态失败:", error);
+    res.status(500).json({ message: "切换发布状态失败", error });
   }
 });
 

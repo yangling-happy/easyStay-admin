@@ -1,5 +1,5 @@
 import type { Hotel } from "../../types/hotel";
-import { post, get} from "../http/request";
+import { post, get, put} from "../http/request";
 
 /**
  * 酒店业务逻辑封装 (Service 层)
@@ -42,12 +42,17 @@ export const hotelService = {
       throw error;
     }
   },
-
-  deleteHotel: async (): Promise<void> => {
+  updateHotel: async (id: string, hotel: Partial<Hotel>): Promise<Hotel> => {
     try {
-      await get<any>("/hotels/records");
+      const hotelData = {
+        ...hotel,
+        status: "pending",
+        updateTime: new Date().toISOString(),
+      };
+
+      return await put<Hotel>(`/hotels/${id}`, hotelData);
     } catch (error) {
-      console.error("删除酒店失败:", error);
+      console.error("更新酒店失败:", error);
       throw error;
     }
   },

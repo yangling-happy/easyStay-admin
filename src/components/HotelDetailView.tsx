@@ -7,6 +7,7 @@ import {
   Typography,
   Image,
   Divider,
+  Timeline,
 } from "antd";
 import { getFullAddress } from "../utils/addressData";
 const { Text } = Typography;
@@ -33,7 +34,18 @@ const HotelDetailView: React.FC<Props> = ({ data, type }) => {
     5: "五星级/豪华",
   };
 
-  // 酒店设施映射
+  const actionMap: Record<string, string> = {
+    create: "创建酒店",
+    update: "修改信息",
+    audit_approved: "审核通过",
+    audit_rejected: "审核拒绝",
+  };
+
+  const roleMap: Record<string, string> = {
+    merchant: "商户",
+    admin: "管理员",
+  };
+
   const amenitiesMap: Record<string, string> = {
     WiFi: "WiFi",
     Parking: "停车场",
@@ -45,7 +57,6 @@ const HotelDetailView: React.FC<Props> = ({ data, type }) => {
     Airport: "机场接送",
   };
 
-  // 配套权益映射
   const tagsMap: Record<string, string> = {
     breakfast: "含早餐",
     cancel: "免费取消",
@@ -218,6 +229,65 @@ const HotelDetailView: React.FC<Props> = ({ data, type }) => {
               </Card>
             ))}
           </Space>
+        </>
+      )}
+
+      {data.auditHistory && data.auditHistory.length > 0 && (
+        <>
+          <Divider style={{ margin: "24px 0" }}>审核历史记录</Divider>
+          <Timeline
+            mode="left"
+            items={data.auditHistory
+              .slice()
+              .reverse()
+              .map((record: any) => ({
+                color:
+                  record.action === "audit_approved"
+                    ? "green"
+                    : record.action === "audit_rejected"
+                      ? "red"
+                      : "blue",
+                children: (
+                  <div>
+                    <Space>
+                      <Tag
+                        color={
+                          record.status === "approved"
+                            ? "green"
+                            : record.status === "rejected"
+                              ? "red"
+                              : "orange"
+                        }
+                      >
+                        {record.status === "approved"
+                          ? "已通过"
+                          : record.status === "rejected"
+                            ? "已拒绝"
+                            : "审核中"}
+                      </Tag>
+                      <Text strong>
+                        {actionMap[record.action] || record.action}
+                      </Text>
+                    </Space>
+                    <div style={{ marginTop: 8, fontSize: "13px" }}>
+                      <Text type="secondary">操作人: </Text>
+                      {roleMap[record.operatorRole] || record.operatorRole}
+                    </div>
+                    {record.rejectReason && (
+                      <div style={{ marginTop: 8, fontSize: "13px" }}>
+                        <Text type="secondary">拒绝原因: </Text>
+                        <Text type="danger">{record.rejectReason}</Text>
+                      </div>
+                    )}
+                    <div
+                      style={{ marginTop: 8, fontSize: "12px", color: "#999" }}
+                    >
+                      {new Date(record.timestamp).toLocaleString()}
+                    </div>
+                  </div>
+                ),
+              }))}
+          />
         </>
       )}
     </>

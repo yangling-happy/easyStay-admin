@@ -21,10 +21,20 @@ export const BASIC_INFO_FIELDS = [
   "photos",
   "amenities",
 ];
-const BasicInfoForm: React.FC = () => {
-  const [form] = Form.useForm();
+interface Props {
+  form?: any;
+}
+const BasicInfoForm: React.FC<Props> = () => {
   return (
     <>
+      {/* 隐藏字段：保存 id 和 version */}
+      <Form.Item name="id" noStyle>
+        <Input type="hidden" />
+      </Form.Item>
+      <Form.Item name="version" noStyle>
+        <Input type="hidden" />
+      </Form.Item>
+
       <Divider orientation="left">基本信息</Divider>
       <Space size="large" style={{ display: "flex" }}>
         <Form.Item
@@ -53,10 +63,6 @@ const BasicInfoForm: React.FC = () => {
             options={cityOptions}
             placeholder="请选择省/市/区"
             showSearch
-            onChange={(value) => {
-              // 将选中的值转换为数组格式
-              form.setFieldsValue({ location: value });
-            }}
           />
         </Form.Item>
         <Form.Item

@@ -9,7 +9,6 @@ interface AuthRequest extends Request {
   user?: {
     userId: string;
     role?: string;
-    // 根据你 Token 中存放的信息添加字段
   };
 }
 
@@ -20,10 +19,19 @@ router.post("/", auth, async (req: AuthRequest, res: Response) => {
   try {
     const hotelData = {
       ...req.body,
-      ownerId: req.user?.userId, // 使用可选链，安全获取
+      ownerId: req.user?.userId,
       status: "pending",
       createTime: new Date(),
       updateTime: new Date(),
+      auditHistory: [
+        {
+          action: "create",
+          status: "pending",
+          operatorId: req.user?.userId,
+          operatorRole: "merchant",
+          timestamp: new Date(),
+        },
+      ],
     };
 
     const hotel = new HotelModel(hotelData);
@@ -44,7 +52,6 @@ router.get("/records", auth, async (req: AuthRequest, res: Response) => {
       isDeleted: false,
     };
 
-    // 排序逻辑：按 updateTime 倒序，解决“申请恢复后找不到”的问题
     const hotels = await HotelModel.find(query).sort({ updateTime: -1 });
 
     res.json({ success: true, data: hotels });
@@ -84,8 +91,8 @@ router.post("/:id/re-apply", auth, async (req: AuthRequest, res: Response) => {
       {
         status: "pending",
         isActive: false,
-        rejectReason: "", // 清空旧的拒绝原因
-        updateTime: new Date(), // 更新时间，确保排序置顶
+        rejectReason: "",
+        updateTime: new Date(),
       },
       { new: true },
     );
@@ -100,7 +107,139 @@ router.post("/:id/re-apply", auth, async (req: AuthRequest, res: Response) => {
   }
 });
 
-// 5. GET /api/hotels/detail/:id - 获取酒店详情（跳过认证，因移动端没注册用户）
+// 5. PUT /api/hotels/:id - 更新酒店信息
+router.put("/:id", auth, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { version, ...updateData } = req.body;
+
+    console.log("🔧 [PUT /api/hotels/:id] 收到更新请求");
+    console.log("🔧 酒店 ID:", id);
+    console.log("🔧 请求数据:", req.body);
+
+    if (updateData.id && updateData.id !== id) {
+      console.log("❌ ID不一致，拒绝更新");
+      return res.status(400).json({
+        success: false,
+        message: "不允许修改酒店 ID",
+      });
+    }
+
+    const existingHotel = await HotelModel.findOne({
+      _id: id,
+      ownerId: req.user?.userId,
+    });
+
+    console.log(
+      "🔧 找到的现有酒店:",
+      existingHotel ? existingHotel._id : "未找到",
+    );
+
+    if (!existingHotel) {
+      return res.status(404).json({
+        success: false,
+        message: "未找到酒店或无权修改",
+      });
+    }
+
+    if (version !== undefined && existingHotel.version !== version) {
+      return res.status(409).json({
+        success: false,
+        message: "数据已被其他用户修改，请刷新后重试",
+        currentVersion: existingHotel.version,
+      });
+    }
+
+    const isIdentical = Object.keys(updateData).every((key) => {
+      if (
+        [
+          "_id",
+          "__v",
+          "createTime",
+          "updateTime",
+          "version",
+          "auditHistory",
+        ].includes(key)
+      ) {
+        return true;
+      }
+      return (
+        JSON.stringify(updateData[key]) ===
+        JSON.stringify((existingHotel as any)[key])
+      );
+    });
+
+    if (isIdentical) {
+      return res.json({
+        success: true,
+        data: existingHotel,
+        message: "数据未发生变化",
+      });
+    }
+
+    const snapshot = existingHotel.toObject();
+    const snapshotWithoutId = { ...snapshot };
+    delete (snapshotWithoutId as any)._id;
+    delete (snapshotWithoutId as any).__v;
+    delete (snapshotWithoutId as any).auditHistory;
+
+    const finalUpdateData: any = {
+      ...updateData,
+      ownerId: req.user?.userId,
+      status: "pending",
+      rejectReason: "",
+      updateTime: new Date(),
+      version: existingHotel.version + 1,
+      $push: {
+        auditHistory: {
+          action: "update",
+          status: "pending",
+          operatorId: req.user?.userId,
+          operatorRole: "merchant",
+          timestamp: new Date(),
+          snapshot: snapshotWithoutId,
+        },
+      },
+    };
+
+    console.log("🔧 执行更新操作...");
+    const updatedHotel = await HotelModel.findOneAndUpdate(
+      {
+        _id: id,
+        ownerId: req.user?.userId,
+        ...(version !== undefined ? { version } : {}),
+      },
+      finalUpdateData,
+      { new: true },
+    );
+
+    console.log(
+      "🔧 更新后的酒店:",
+      updatedHotel ? updatedHotel._id : "更新失败",
+    );
+
+    if (!updatedHotel) {
+      console.log("❌ 更新失败，可能是版本冲突");
+      return res.status(409).json({
+        success: false,
+        message: "数据已被其他用户修改，请刷新后重试",
+      });
+    }
+
+    console.log("✅ 更新成功，返回响应");
+    res.json({
+      success: true,
+      data: updatedHotel,
+      message: "酒店信息已更新，等待审核",
+    });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "未知错误";
+    console.error("更新酒店失败:", error);
+    res.status(500).json({ success: false, message: errorMessage });
+  }
+});
+
+// 6. GET /api/hotels/detail/:id - 获取酒店详情
 router.get("/detail/:id", async (req: Request, res: Response) => {
   try {
     const hotel = await HotelModel.findById(req.params.id);
@@ -109,7 +248,6 @@ router.get("/detail/:id", async (req: Request, res: Response) => {
       return res.status(404).json({ success: false, message: "未找到酒店" });
     }
 
-    // 只返回部分信息
     const publicHotelData = {
       id: hotel._id.toString(),
       name: hotel.name,

@@ -61,6 +61,10 @@ export const useHotelForm = () => {
     try {
       const values = await form.validateFields();
 
+      console.log("📝 表单值 (values):", values);
+      console.log("🔍 检查 ID:", values.id);
+      console.log("🔍 检查 version:", values.version);
+
       let openingDateStr = "";
       if (values.openingDate) {
         openingDateStr =
@@ -69,7 +73,12 @@ export const useHotelForm = () => {
             : values.openingDate;
       }
 
-      const payload = {
+      const isUpdate =
+        values.id !== undefined && values.id !== null && values.id !== "";
+
+      console.log("🔄 操作类型:", isUpdate ? "UPDATE (更新)" : "CREATE (创建)");
+
+      const payload: any = {
         ...values,
         name: values.name?.trim() || "",
         nameEn: values.nameEn?.trim() || "",
@@ -94,15 +103,33 @@ export const useHotelForm = () => {
           photos: room.photos || [],
         })),
         photos: values.photos || [],
-        createTime: new Date().toISOString(),
         updateTime: new Date().toISOString(),
         isActive: true,
         isDeleted: false,
       };
 
-      const res = await hotelService.saveHotel(payload);
+      if (!isUpdate) {
+        payload.createTime = new Date().toISOString();
+      } else if (values.version) {
+        payload.version = values.version;
+      }
 
-      const hotelId = (res as any)?.data?.id;
+      console.log("📤 请求数据 (payload):", payload);
+
+      let res;
+      let hotelId;
+
+      if (isUpdate) {
+        console.log("📡 调用 updateHotel API, ID:", values.id);
+        res = await hotelService.updateHotel(values.id, payload);
+        hotelId = values.id;
+      } else {
+        console.log("📡 调用 saveHotel API (创建新酒店)");
+        res = await hotelService.saveHotel(payload);
+        hotelId = (res as any)?.data?.id;
+      }
+
+      console.log("✅ 后端返回响应:", res);
 
       if (!hotelId) {
         throw new Error("后端未返回有效的酒店 ID");
@@ -111,7 +138,11 @@ export const useHotelForm = () => {
       localStorage.removeItem("hotel_edit_form_data");
       localStorage.removeItem("hotel_edit_current_step");
 
-      message.success(`提交成功！酒店编号: ${hotelId}`);
+      message.success(
+        isUpdate
+          ? "更新成功！酒店信息已提交审核"
+          : `提交成功！酒店编号: ${hotelId}`,
+      );
 
       setTimeout(() => {
         navigate(`/audit-status/${hotelId}`);
@@ -120,7 +151,9 @@ export const useHotelForm = () => {
       return true;
     } catch (error: any) {
       console.error("保存失败:", error);
-      if (error?.errorFields) {
+      if (error?.response?.status === 409) {
+        message.error("数据已被其他用户修改，请刷新页面后重试");
+      } else if (error?.errorFields) {
         message.error(`请检查：${error.errorFields[0].errors.join(", ")}`);
       } else {
         message.error(error.message || "保存失败，请检查填写的信息");

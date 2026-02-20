@@ -15,6 +15,16 @@ export interface RoomType {
   tags?: string[]; // 标签，如：免费取消、有窗、独立卫浴、免费WiFi
 }
 
+export interface AuditHistoryItem {
+  action: "create" | "update" | "audit_approved" | "audit_rejected";
+  status: HotelStatus;
+  rejectReason?: string;
+  operatorId?: string;
+  operatorRole?: "merchant" | "admin";
+  timestamp: string | Date;
+  snapshot?: Partial<Hotel>;
+}
+
 export interface Hotel {
   id?: string; // MongoDB 会生成 _id
   // --- 基础信息 ---
@@ -39,6 +49,12 @@ export interface Hotel {
   roomTypes: RoomType[]; // 现在包含 photos 字段
   createTime?: string | Date; // 创建时间
   updateTime?: string | Date; // 更新时间
+  
+  // --- 版本控制 ---
+  version?: number; // 数据版本号
+  
+  // --- 审核历史 ---
+  auditHistory?: AuditHistoryItem[]; // 审核历史记录
 }
 
 // 前端表单数据类型

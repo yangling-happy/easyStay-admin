@@ -75,6 +75,47 @@ const hotelSchema = new mongoose.Schema({
     required: false,
   },
 
+  // 版本控制（防止并发更新冲突）
+  version: {
+    type: Number,
+    default: 1,
+  },
+
+  // 审核历史记录
+  auditHistory: [
+    {
+      action: {
+        type: String,
+        enum: ["create", "update", "audit_approved", "audit_rejected"],
+        required: true,
+      },
+      status: {
+        type: String,
+        enum: ["pending", "approved", "rejected"],
+        required: true,
+      },
+      rejectReason: {
+        type: String,
+        default: "",
+      },
+      operatorId: {
+        type: String,
+      },
+      operatorRole: {
+        type: String,
+        enum: ["merchant", "admin"],
+      },
+      timestamp: {
+        type: Date,
+        default: Date.now,
+      },
+      // 快照数据（用于保留修改前的信息）
+      snapshot: {
+        type: mongoose.Schema.Types.Mixed,
+      },
+    },
+  ],
+
   // 房型配置
   roomTypes: [
     {

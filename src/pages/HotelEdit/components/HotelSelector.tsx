@@ -72,6 +72,8 @@ const HotelSelector: React.FC<Props> = ({ form, onAction }) => {
 
       const formattedData = {
         ...hotelData,
+        id: hotelData.id,
+        version: hotelData.version,
         star: hotelData.star.toString(),
         openingDate: hotelData.openingDate
           ? dayjs(hotelData.openingDate)
