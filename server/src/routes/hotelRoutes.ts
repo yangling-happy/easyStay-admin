@@ -232,7 +232,6 @@ router.get("/detail/:id", async (req: Request, res: Response) => {
       openingDate: hotel.openingDate,
       photos: hotel.photos,
       roomTypes: hotel.roomTypes,
-      amenities: hotel.amenities,
       status: hotel.status,
       isActive: hotel.isActive,
     };

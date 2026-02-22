@@ -6,6 +6,7 @@ import RoomTypeFormList from "./components/RoomTypeFormList";
 import { useHotelForm } from "./hooks/useHotelForm";
 import { BASIC_INFO_FIELDS } from "./components/BasicInfoForm";
 import { ROOM_TYPE_FIELDS } from "./components/RoomTypeFormList";
+
 const HotelEdit: React.FC = () => {
   // 加载保存的步骤
   const loadSavedStep = () => {
@@ -18,7 +19,7 @@ const HotelEdit: React.FC = () => {
   };
 
   const [current, setCurrent] = useState(loadSavedStep());
-  const { form, handleSave, saveFormData } = useHotelForm();
+  const { form, handleSave, saveFormData, isSubmitting } = useHotelForm();
 
   //保存当前步骤
   const saveStep = (step: number) => {
@@ -142,7 +143,12 @@ const HotelEdit: React.FC = () => {
         )}
 
         {current === 2 && (
-          <Button type="primary" onClick={handleSave}>
+          <Button
+            type="primary"
+            onClick={handleSave}
+            loading={isSubmitting}
+            disabled={isSubmitting}
+          >
             完成并提交审核
           </Button>
         )}

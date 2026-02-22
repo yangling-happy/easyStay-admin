@@ -1,6 +1,6 @@
 import { Form, message } from "antd";
 import { useNavigate } from "react-router-dom";
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useState } from "react";
 import { hotelService } from "../../../api/services/hotelService";
 import dayjs from "dayjs";
 
@@ -15,7 +15,7 @@ const debounce = (func: Function, wait: number) => {
 export const useHotelForm = () => {
   const [form] = Form.useForm();
   const navigate = useNavigate();
-
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const saveFormData = useCallback(
     debounce((data: any) => {
       try {
@@ -58,7 +58,10 @@ export const useHotelForm = () => {
   }, [form]);
 
   const handleSave = async () => {
+    if (isSubmitting) return; // 如果正在提交，直接返回
+    setIsSubmitting(true); // 设置为正在提交状态
     try {
+      setIsSubmitting(true);
       const values = await form.validateFields();
 
       let openingDateStr = "";
@@ -140,15 +143,17 @@ export const useHotelForm = () => {
     } catch (error: any) {
       console.error("保存失败:", error);
       if (error?.response?.status === 409) {
-        message.error("数据已被其他用户修改，请刷新页面后重试");
+        message.error("提交已受理，请勿重复操作");
       } else if (error?.errorFields) {
         message.error(`请检查：${error.errorFields[0].errors.join(", ")}`);
       } else {
         message.error(error.message || "保存失败，请检查填写的信息");
       }
       return false;
+    } finally {
+      setIsSubmitting(false); // 无论成功或失败都重置状态
     }
   };
 
-  return { form, handleSave, saveFormData };
+  return { form, handleSave, saveFormData, isSubmitting };
 };
