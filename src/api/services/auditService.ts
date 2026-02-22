@@ -22,9 +22,17 @@ export const auditService = {
 
 
   //获取已发布酒店列表
-  getPublishedHotels: async (): Promise<Hotel[]> => {
+  getPublishedHotels: async (params?: {
+    location?: string;
+    keyword?: string;
+    rooms?: number;
+    guests?: number;
+    minPrice?: number;
+    maxPrice?: number;
+    stars?: string;
+  }): Promise<Hotel[]> => {
     try {
-      const response = await get<Hotel[]>('/admin/hotels/published');
+      const response = await get<Hotel[]>('/admin/hotels/published', params);
       return response;
     } catch (error) {
       console.error('获取已发布酒店列表失败:', error);

@@ -1,6 +1,7 @@
 import express from "express";
 import { HotelModel } from "../models/Hotel.js";
 import { NotificationModel } from "../models/Notification.js";
+import { parseAddress } from "../utils/addressUtils.js";
 
 const router = express.Router();
 
@@ -32,12 +33,79 @@ router.get("/hotels/pending", async (req, res) => {
 
 router.get("/hotels/published", async (req, res) => {
   try {
-    const hotels = await HotelModel.find({
+    const { location, keyword, rooms, guests, minPrice, maxPrice, stars } = req.query;
+
+    // 构建查询条件
+    const query: any = {
       status: "approved",
       isDeleted: false,
-      isActive: true,
-    }).sort({ createTime: -1 });
+      isActive: true
+    };
 
+    // 1. 地址匹配（基于行政区划编码的优化版）
+    if (location) {
+      // 解析地址文本，提取省市区编码和街道信息
+      const { codes, streetAddress } = parseAddress(location);
+      console.log('市区编码======',codes, streetAddress);
+      
+      // 如果匹配到编码，使用编码匹配 location 字段
+      if (codes.length > 0) {
+        // 匹配包含任意一个编码的 location 数组
+        query.location = { $in: codes };
+      }
+      
+      // 如果有剩余的街道信息，匹配 address 字段
+      if (streetAddress) {
+        query.address = { $regex: streetAddress, $options: "i" };
+      }
+    }
+
+    // 2. 酒店名和设施匹配
+    if (keyword) {
+      query.$or = [
+        { name: { $regex: keyword, $options: "i" } },
+        { nameEn: { $regex: keyword, $options: "i" } },
+        { amenities: { $regex: keyword, $options: "i" } }
+      ];
+    }
+
+    // 3. 星级匹配
+    if (stars) {
+      const starArray = stars.split(",").map(s => Number(s)).filter(s => !isNaN(s));
+      if (starArray.length > 0) {
+        query.star = { $in: starArray };
+      }
+    }
+
+    // 获取酒店列表
+    let hotels = await HotelModel.find(query).sort({ createTime: -1 });
+
+    // 4. 价格范围过滤（应用层过滤，因为价格在 roomTypes 数组中）
+    if (minPrice || maxPrice) {
+      const min = minPrice ? Number(minPrice) : 0;
+      const max = maxPrice ? Number(maxPrice) : Infinity;
+      
+      hotels = hotels.filter(hotel => {
+        return hotel.roomTypes.some(room => {
+          return room.price >= min && room.price <= max;
+        });
+      });
+    }
+
+    // 5. 房间数和人数过滤（应用层过滤，因为这些字段在 roomTypes 数组中）
+    if (rooms || guests) {
+      const requiredRooms = rooms ? Number(rooms) : 1;
+      const requiredGuests = guests ? Number(guests) : 1;
+      
+      hotels = hotels.filter(hotel => {
+        // 检查是否有足够的房间库存和容量
+        return hotel.roomTypes.some(room => {
+          return room.stock >= requiredRooms && room.capacity >= requiredGuests;
+        });
+      });
+    }
+
+    // 转换 _id 为 id
     const hotelsWithId = hotels.map((hotel) => {
       const hotelObj = hotel.toObject();
       return {
