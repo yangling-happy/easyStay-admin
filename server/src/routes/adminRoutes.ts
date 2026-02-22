@@ -62,16 +62,28 @@ router.get("/hotels/published", async (req, res) => {
 
     // 2. 酒店名和设施匹配
     if (keyword) {
-      query.$or = [
-        { name: { $regex: keyword, $options: "i" } },
-        { nameEn: { $regex: keyword, $options: "i" } },
-        { amenities: { $regex: keyword, $options: "i" } }
-      ];
+      // 处理单个/多个关键词情况
+      const keywords = keyword.split(/\s+/).filter(k => k.trim());
+      if (keywords.length > 0) {
+        const orConditions = [];
+        keywords.forEach(k => {
+          orConditions.push(
+            { name: { $regex: k, $options: "i" } },
+            { nameEn: { $regex: k, $options: "i" } },
+            { amenities: { $regex: k, $options: "i" } }
+          );
+        });
+        query.$or = orConditions;
+      }
     }
 
     // 3. 星级匹配
     if (stars) {
-      const starArray = stars.split(",").map(s => Number(s)).filter(s => !isNaN(s));
+      let starArray: number[] = [];
+      if (Array.isArray(stars)) {
+        // 处理数组形式的星级
+        starArray = stars.map(s => Number(s)).filter(s => !isNaN(s));
+      }
       if (starArray.length > 0) {
         query.star = { $in: starArray };
       }
