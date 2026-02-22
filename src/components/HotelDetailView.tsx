@@ -56,6 +56,15 @@ const HotelDetailView: React.FC<Props> = ({ data, type }) => {
     Pool: "泳池",
     Pets: "可带宠物",
     Airport: "机场接送",
+    pool: "泳池",
+    gym: "健身房",
+    spa: "水疗",
+    restaurant: "餐厅",
+    bar: "酒吧",
+    hotel: "酒店",
+    apartment: "公寓",
+    homestay: "民宿",
+    hostel: "青旅",
   };
 
   const tagsMap: Record<string, string> = {
@@ -64,6 +73,9 @@ const HotelDetailView: React.FC<Props> = ({ data, type }) => {
     window: "有窗",
     bathroom: "独立卫浴",
     wifi: "免费WiFi",
+    family_theme: "亲子主题房",
+    loft: "复式LOFT房",
+    movie: "影音房",
   };
 
   console.log("酒店详情数据:", data);
