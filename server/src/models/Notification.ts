@@ -2,13 +2,20 @@ import mongoose, { Schema, Document } from "mongoose";
 
 export interface INotification extends Document {
   _id: mongoose.Types.ObjectId;
-  type: "audit_result" | "feedback_reply" | "system"; // 通知类型
+  type:
+    | "audit_result"
+    | "feedback_reply"
+    | "system"
+    | "hotel_offline"
+    | "hotel_online"; // 通知类型
   hotelId?: string; // 关联的酒店 ID（可选）
   hotelName?: string; // 冗余存储酒店名称（可选）
   ownerId: string; // 商户 ID（接收通知的用户）
   status: "unread" | "read"; // 未读/已读状态
   message: string; // 通知内容
   relatedId?: string; // 关联的反馈ID或其他业务ID
+  operatorId?: string; // 操作人 ID
+  operatorRole?: "merchant" | "admin"; // 操作人角色
   createdAt: Date;
   updatedAt: Date;
 }
@@ -17,7 +24,13 @@ const NotificationSchema = new Schema<INotification>(
   {
     type: {
       type: String,
-      enum: ["audit_result", "feedback_reply", "system"],
+      enum: [
+        "audit_result",
+        "feedback_reply",
+        "system",
+        "hotel_offline",
+        "hotel_online",
+      ],
       required: true,
       default: "feedback_reply",
     },
@@ -44,10 +57,17 @@ const NotificationSchema = new Schema<INotification>(
     relatedId: {
       type: String, // 可以存 feedbackId
     },
+    operatorId: {
+      type: String,
+    },
+    operatorRole: {
+      type: String,
+      enum: ["merchant", "admin"],
+    },
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // 添加索引
@@ -71,5 +91,5 @@ NotificationSchema.set("toJSON", {
 
 export const NotificationModel = mongoose.model<INotification>(
   "Notification",
-  NotificationSchema
+  NotificationSchema,
 );

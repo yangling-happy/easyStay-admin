@@ -86,7 +86,7 @@ const hotelSchema = new mongoose.Schema({
     {
       action: {
         type: String,
-        enum: ["create", "update", "audit_approved", "audit_rejected"],
+        enum: ["create", "update", "audit_approved", "audit_rejected", "offline", "online"],
         required: true,
       },
       status: {
@@ -108,6 +108,14 @@ const hotelSchema = new mongoose.Schema({
       timestamp: {
         type: Date,
         default: Date.now,
+      },
+      // 操作前状态
+      beforeStatus: {
+        type: Boolean,
+      },
+      // 操作后状态
+      afterStatus: {
+        type: Boolean,
       },
       // 快照数据（用于保留修改前的信息）
       snapshot: {

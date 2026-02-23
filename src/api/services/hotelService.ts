@@ -1,5 +1,5 @@
 import type { Hotel } from "../../types/hotel";
-import { post, get, put} from "../http/request";
+import { post, get, put, patch} from "../http/request";
 
 /**
  * 酒店业务逻辑封装 (Service 层)
@@ -53,6 +53,33 @@ export const hotelService = {
       return await put<Hotel>(`/hotels/${id}`, hotelData);
     } catch (error) {
       console.error("更新酒店失败:", error);
+      throw error;
+    }
+  },
+
+  offlineHotel: async (id: string): Promise<void> => {
+    try {
+      await patch(`/hotels/${id}/offline`);
+    } catch (error) {
+      console.error("下线酒店失败:", error);
+      throw error;
+    }
+  },
+
+  onlineHotel: async (id: string): Promise<void> => {
+    try {
+      await patch(`/hotels/${id}/online`);
+    } catch (error) {
+      console.error("上线酒店失败:", error);
+      throw error;
+    }
+  },
+
+  reapplyOnline: async (id: string): Promise<any> => {
+    try {
+      return await post(`/hotels/${id}/re-apply`);
+    } catch (error) {
+      console.error("申请恢复上线失败:", error);
       throw error;
     }
   },

@@ -4,19 +4,25 @@ import {
   Tag,
   Card,
   Typography,
-  Input,
   Modal,
   Button,
   Space,
   Tooltip,
 } from "antd";
-import { EyeOutlined, InfoCircleOutlined } from "@ant-design/icons";
+import {
+  EyeOutlined,
+  InfoCircleOutlined,
+  CopyOutlined,
+} from "@ant-design/icons";
 import { useAuditData } from "./hooks/useAuditData";
 import HotelDetailView from "@/components/HotelDetailView";
 import { formatDateTime } from "@/utils/dateUtils";
+import { message } from "antd";
+import { getFullAddress } from "@/utils/addressData";
+import HotelSearchInput from "@/components/HotelSearchInput";
+import { filterHotelsByKeyword } from "@/utils/filterHotelsByKeyword."; 
 
 const { Title } = Typography;
-const { Search } = Input;
 
 const AuditRecords: React.FC = () => {
   const { data, loading } = useAuditData();
@@ -31,32 +37,75 @@ const AuditRecords: React.FC = () => {
   };
 
   // 搜索过滤逻辑（支持酒店名称和编号搜索）
-  const filteredData = data.filter(
-    (item: any) =>
-      item.name?.includes(searchText) ||
-      item._id?.includes(searchText) ||
-      item.id?.includes(searchText),
-  );
+  const filteredData = filterHotelsByKeyword(data, searchText);
 
   const columns = [
     {
       title: "酒店编号",
-      dataIndex: "id", // 如果后端转化了则是 id，否则写 _id
+      dataIndex: "id",
       key: "id",
       width: 120,
       render: (id: string, record: any) => {
         const displayId = id || record._id;
+        const shortId = displayId?.slice(-6).toUpperCase();
+        const fullId = displayId;
+
         return (
-          <code style={{ color: "#1890ff" }}>
-            {displayId?.slice(-6).toUpperCase()}
-          </code>
+          <Tooltip title={`完整编号: ${fullId}`}>
+            <Space>
+              <code
+                style={{
+                  color: "#1890ff",
+                  cursor: "pointer",
+                  textDecoration: "underline",
+                }}
+                onClick={() => {
+                  navigator.clipboard.writeText(fullId);
+                  message.success("编号已复制");
+                }}
+              >
+                {shortId}
+              </code>
+              <CopyOutlined
+                style={{ color: "#1890ff", cursor: "pointer" }}
+                onClick={() => {
+                  navigator.clipboard.writeText(fullId);
+                }}
+              />
+            </Space>
+          </Tooltip>
         );
       },
     },
+{
+    title: "酒店名称",
+    dataIndex: "name",
+    width: 200,
+    ellipsis: true,
+    render: (name: string, record: any) => (
+      <div>
+        <div>{name}</div> 
+        {record.nameEn && (
+          <div style={{ color: "#888", fontSize: "12px" }}>
+            {record.nameEn}
+          </div>
+        )}
+      </div>
+    ),
+  },
     {
-      title: "酒店名称",
-      dataIndex: "name",
-      key: "name",
+      title: "地区",
+      key: "location",
+      width: 200,
+      render: (_: unknown, record: any) => {
+        return getFullAddress(record.location) || "未设置";
+      },
+    },
+    {
+      title: "酒店地址",
+      dataIndex: "address",
+      key: "address",
+      render: (address: string) => address || "-",
     },
     {
       title: "申请时间",
@@ -116,11 +165,10 @@ const AuditRecords: React.FC = () => {
           <Title level={4} style={{ margin: 0 }}>
             酒店上线申请记录
           </Title>
-          <Search
+          <HotelSearchInput
             placeholder="搜索酒店名称或编号"
-            allowClear
             onSearch={(value) => setSearchText(value)}
-            onChange={(e) => setSearchText(e.target.value)}
+            onChange={(value) => setSearchText(value)}
             style={{ width: 300 }}
           />
         </div>

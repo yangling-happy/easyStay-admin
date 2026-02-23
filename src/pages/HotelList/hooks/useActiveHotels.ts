@@ -5,7 +5,7 @@ export const useActiveHotels = () => {
   const allHotels = data
     ? data.filter(
         (item: any) =>
-          !item.isDeleted && item.status === "approved" && item.isActive,
+          !item.isDeleted && item.status === "approved",
       )
     : [];
 

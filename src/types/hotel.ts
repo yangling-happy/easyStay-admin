@@ -16,12 +16,14 @@ export interface RoomType {
 }
 
 export interface AuditHistoryItem {
-  action: "create" | "update" | "audit_approved" | "audit_rejected";
+  action: "create" | "update" | "audit_approved" | "audit_rejected" | "offline" | "online";
   status: HotelStatus;
   rejectReason?: string;
   operatorId?: string;
   operatorRole?: "merchant" | "admin";
   timestamp: string | Date;
+  beforeStatus?: boolean;
+  afterStatus?: boolean;
   snapshot?: Partial<Hotel>;
 }
 

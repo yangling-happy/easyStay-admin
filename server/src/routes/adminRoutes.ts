@@ -1,7 +1,16 @@
 import express from "express";
+import type { Request, Response } from "express";
 import { HotelModel } from "../models/Hotel.js";
 import { NotificationModel } from "../models/Notification.js";
 import { parseAddress } from "../utils/addressUtils.js";
+import { auth } from "../middleware/authMiddleware.js";
+
+interface AuthRequest extends Request {
+  user?: {
+    userId: string;
+    role?: string;
+  };
+}
 
 const router = express.Router();
 
@@ -33,27 +42,28 @@ router.get("/hotels/pending", async (req, res) => {
 
 router.get("/hotels/published", async (req, res) => {
   try {
-    const { location, keyword, rooms, guests, minPrice, maxPrice, stars } = req.query;
+    const { location, keyword, rooms, guests, minPrice, maxPrice, stars } =
+      req.query;
 
     // 构建查询条件
     const query: any = {
       status: "approved",
       isDeleted: false,
-      isActive: true
+      isActive: true,
     };
 
     // 1. 地址匹配（基于行政区划编码的优化版）
     if (location) {
       // 解析地址文本，提取省市区编码和街道信息
-      const { codes, streetAddress } = parseAddress(location);
-      console.log('市区编码======',codes, streetAddress);
-      
+      const { codes, streetAddress } = parseAddress(String(location));
+      console.log("市区编码======", codes, streetAddress);
+
       // 如果匹配到编码，使用编码匹配 location 字段
       if (codes.length > 0) {
         // 匹配包含任意一个编码的 location 数组
         query.location = { $in: codes };
       }
-      
+
       // 如果有剩余的街道信息，匹配 address 字段
       if (streetAddress) {
         query.address = { $regex: streetAddress, $options: "i" };
@@ -63,14 +73,15 @@ router.get("/hotels/published", async (req, res) => {
     // 2. 酒店名和设施匹配
     if (keyword) {
       // 处理单个/多个关键词情况
-      const keywords = keyword.split(/\s+/).filter(k => k.trim());
+      const keywordStr = String(keyword);
+      const keywords = keywordStr.split(/\s+/).filter((k: string) => k.trim());
       if (keywords.length > 0) {
-        const orConditions = [];
-        keywords.forEach(k => {
+        const orConditions: any[] = [];
+        keywords.forEach((k: string) => {
           orConditions.push(
             { name: { $regex: k, $options: "i" } },
             { nameEn: { $regex: k, $options: "i" } },
-            { amenities: { $regex: k, $options: "i" } }
+            { amenities: { $regex: k, $options: "i" } },
           );
         });
         query.$or = orConditions;
@@ -82,7 +93,7 @@ router.get("/hotels/published", async (req, res) => {
       let starArray: number[] = [];
       if (Array.isArray(stars)) {
         // 处理数组形式的星级
-        starArray = stars.map(s => Number(s)).filter(s => !isNaN(s));
+        starArray = stars.map((s) => Number(s)).filter((s) => !isNaN(s));
       }
       if (starArray.length > 0) {
         query.star = { $in: starArray };
@@ -96,9 +107,9 @@ router.get("/hotels/published", async (req, res) => {
     if (minPrice || maxPrice) {
       const min = minPrice ? Number(minPrice) : 0;
       const max = maxPrice ? Number(maxPrice) : Infinity;
-      
-      hotels = hotels.filter(hotel => {
-        return hotel.roomTypes.some(room => {
+
+      hotels = hotels.filter((hotel) => {
+        return hotel.roomTypes.some((room) => {
           return room.price >= min && room.price <= max;
         });
       });
@@ -108,11 +119,14 @@ router.get("/hotels/published", async (req, res) => {
     if (rooms || guests) {
       const requiredRooms = rooms ? Number(rooms) : 1;
       const requiredGuests = guests ? Number(guests) : 1;
-      
-      hotels = hotels.filter(hotel => {
+
+      hotels = hotels.filter((hotel) => {
         // 检查是否有足够的房间库存和容量
-        return hotel.roomTypes.some(room => {
-          return room.stock >= requiredRooms && room.capacity >= requiredGuests;
+        return hotel.roomTypes.some((room) => {
+          return (
+            room.stock >= requiredRooms &&
+            (room.capacity || 0) >= requiredGuests
+          );
         });
       });
     }
@@ -293,35 +307,91 @@ router.post("/hotels/:id/audit", async (req, res) => {
   }
 });
 
-router.patch("/hotels/:id/toggle", async (req, res) => {
-  try {
-    const { id } = req.params;
+router.patch(
+  "/hotels/:id/toggle",
+  auth,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { id } = req.params;
 
-    const hotel = await HotelModel.findById(id);
+      const hotel = await HotelModel.findById(id);
 
-    if (!hotel) {
-      return res.status(404).json({ message: "酒店不存在" });
+      if (!hotel) {
+        return res.status(404).json({ message: "酒店不存在" });
+      }
+
+      const newIsActive = !hotel.isActive;
+      const beforeStatus = hotel.isActive;
+      const afterStatus = newIsActive;
+
+      const snapshot = hotel.toObject();
+      const snapshotWithoutId = { ...snapshot };
+      delete (snapshotWithoutId as any)._id;
+      delete (snapshotWithoutId as any).__v;
+      delete (snapshotWithoutId as any).auditHistory;
+
+      const updatedHotel = await HotelModel.findByIdAndUpdate(
+        id,
+        {
+          isActive: newIsActive,
+          updateTime: new Date(),
+          $push: {
+            auditHistory: {
+              action: newIsActive ? "online" : "offline",
+              status: hotel.status,
+              operatorId: req.user?.userId,
+              operatorRole: "admin",
+              timestamp: new Date(),
+              beforeStatus,
+              afterStatus,
+              snapshot: snapshotWithoutId,
+            },
+          },
+        },
+        { new: true },
+      );
+
+      if (updatedHotel) {
+        try {
+          if (updatedHotel.ownerId) {
+            const ownerIdStr = String(updatedHotel.ownerId);
+            const message = newIsActive
+              ? `您的酒店"${updatedHotel.name}"已由管理员上线`
+              : `您的酒店"${updatedHotel.name}"已由管理员下线`;
+            await NotificationModel.create({
+              type: newIsActive ? "hotel_online" : "hotel_offline",
+              hotelId: String(id),
+              hotelName: updatedHotel.name,
+              ownerId: ownerIdStr,
+              status: "unread",
+              message,
+              operatorId: req.user?.userId,
+              operatorRole: "admin",
+            });
+            console.log(`已为商户创建${newIsActive ? "上线" : "下线"}通知:`, {
+              ownerId: ownerIdStr,
+              hotelName: updatedHotel.name,
+              message,
+            });
+          }
+        } catch (notificationError: any) {
+          console.error("创建通知失败:", {
+            error: notificationError.message,
+            ownerId: updatedHotel.ownerId,
+            hotelId: id,
+          });
+        }
+      }
+
+      res.json({
+        message: newIsActive ? "酒店已恢复上线" : "酒店已下线",
+        hotel: updatedHotel,
+      });
+    } catch (error) {
+      console.error("切换发布状态失败:", error);
+      res.status(500).json({ message: "切换发布状态失败", error });
     }
-
-    const newIsActive = !hotel.isActive;
-
-    const updatedHotel = await HotelModel.findByIdAndUpdate(
-      id,
-      {
-        isActive: newIsActive,
-        updateTime: new Date(),
-      },
-      { new: true },
-    );
-
-    res.json({
-      message: newIsActive ? "酒店已恢复上线" : "酒店已下线",
-      hotel: updatedHotel,
-    });
-  } catch (error) {
-    console.error("切换发布状态失败:", error);
-    res.status(500).json({ message: "切换发布状态失败", error });
-  }
-});
+  },
+);
 
 export default router;

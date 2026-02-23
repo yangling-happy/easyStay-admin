@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Table,
   Tag,
@@ -10,6 +10,7 @@ import {
   Tooltip,
   Modal,
   Typography,
+  Select,
 } from "antd";
 import { useNavigate } from "react-router-dom";
 import {
@@ -17,29 +18,48 @@ import {
   EyeOutlined,
   ReloadOutlined,
   ExclamationCircleOutlined,
+  CopyOutlined,
 } from "@ant-design/icons";
-import { patch, post } from "@/api/http/request";
+import { hotelService } from "@/api/services/hotelService";
 import { useActiveHotels } from "./hooks/useActiveHotels";
 import HotelDetailView from "@/components/HotelDetailView";
 import { getFullAddress } from "@/utils/addressData";
 import { formatDateTime } from "@/utils/dateUtils";
-
+import HotelSearchInput from "@/components/HotelSearchInput";
+import { filterHotelsByKeyword } from "@/utils/filterHotelsByKeyword.";
 const { Text } = Typography;
 
 const HotelList: React.FC = () => {
   const navigate = useNavigate();
 
   // 直接从 Hook 获取数据和刷新方法
-  const { activeHotels, activeCount, loading, refresh } = useActiveHotels();
+  const { activeHotels, loading, refresh } = useActiveHotels();
 
   const [isDetailVisible, setIsDetailVisible] = useState(false);
   const [selectedHotel, setSelectedHotel] = useState<any>(null);
+  const [searchText, setSearchText] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   const showDetail = (record: any) => {
     setSelectedHotel(record);
     setIsDetailVisible(true);
   };
 
+  const filteredHotels = useMemo(() => {
+    let result: any[] = [...activeHotels];
+
+    // 关键词搜索
+    result = filterHotelsByKeyword(result, searchText);
+
+    // 状态筛选
+    if (statusFilter !== "all") {
+      result = result.filter((hotel) =>
+        statusFilter === "active" ? hotel.isActive : !hotel.isActive,
+      );
+    }
+
+    return result;
+  }, [activeHotels, searchText, statusFilter]);
   // --- 处理上下线逻辑 ---
   const handleToggle = (record: any) => {
     const hotelId = record._id || record.id;
@@ -47,12 +67,12 @@ const HotelList: React.FC = () => {
     if (record.isActive) {
       Modal.confirm({
         title: "确定要下线该酒店吗？",
-        content: "下线后旅客将无法预订，重新上线需管理员再次审核。",
+        content: "下线后旅客将无法预订。",
         okText: "确认下线",
         okButtonProps: { danger: true },
         onOk: async () => {
           try {
-            await patch(`/hotels/${hotelId}/offline`);
+            await hotelService.offlineHotel(hotelId);
             message.success("酒店已下线");
             refresh(); // 刷新数据
           } catch (error: any) {
@@ -63,15 +83,18 @@ const HotelList: React.FC = () => {
     } else {
       Modal.confirm({
         title: "申请恢复上线",
-        content: "提交后将进入待审核列表，审核通过后方可重新销售。",
+        content: "提交申请后将进入待审核列表，审核通过后方可重新开放预订。",
         okText: "提交申请",
         onOk: async () => {
           try {
-            await post(`/hotels/${hotelId}/re-apply`);
-            message.success("申请已提交，请关注审核记录");
+            const result = await hotelService.reapplyOnline(hotelId);
+            message.success(result.message || "申请已提交，请关注审核记录");
             refresh();
           } catch (error: any) {
-            message.error("提交失败");
+            console.error("申请恢复上线失败:", error);
+            message.error(
+              error.response?.data?.message || "提交失败，请稍后重试",
+            );
           }
         },
       });
@@ -93,13 +116,56 @@ const HotelList: React.FC = () => {
 
   const columns = [
     {
+      title: "酒店编号",
+      dataIndex: "id",
+      key: "id",
+      width: 120,
+      render: (id: string, record: any) => {
+        const displayId = id || record._id;
+        const shortId = displayId?.slice(-6).toUpperCase();
+        const fullId = displayId;
+
+        return (
+          <Tooltip title={`完整编号: ${fullId}`}>
+            <Space>
+              <code
+                style={{
+                  color: "#1890ff",
+                  cursor: "pointer",
+                  textDecoration: "underline",
+                }}
+                onClick={() => {
+                  navigator.clipboard.writeText(fullId);
+                  message.success("编号已复制");
+                }}
+              >
+                {shortId}
+              </code>
+              <CopyOutlined
+                style={{ color: "#1890ff", cursor: "pointer" }}
+                onClick={() => {
+                  navigator.clipboard.writeText(fullId);
+                }}
+              />
+            </Space>
+          </Tooltip>
+        );
+      },
+    },
+    {
       title: "酒店名称",
       dataIndex: "name",
-      key: "name",
-      render: (text: string) => (
-        <Text strong style={{ color: "#1890ff" }}>
-          {text}
-        </Text>
+      width: 200,
+      ellipsis: true,
+      render: (name: string, record: any) => (
+        <div>
+          <div>{name}</div>
+          {record.nameEn && (
+            <div style={{ color: "#888", fontSize: "12px" }}>
+              {record.nameEn}
+            </div>
+          )}
+        </div>
       ),
     },
     {
@@ -116,11 +182,15 @@ const HotelList: React.FC = () => {
       width: 180,
       render: (_: unknown, record: any) => (
         <Space>
-          <Switch
-            checked={record.isActive}
-            onChange={() => handleToggle(record)}
-            size="small"
-          />
+          <Tooltip
+            title={record.isActive ? "点击下线该酒店" : "点击申请恢复上线"}
+          >
+            <Switch
+              checked={record.isActive}
+              onChange={() => handleToggle(record)}
+              size="small"
+            />
+          </Tooltip>
           <Tag color={record.isActive ? "green" : "orange"}>
             {record.isActive ? "销售中" : "已下线/待重审"}
           </Tag>
@@ -130,6 +200,7 @@ const HotelList: React.FC = () => {
     {
       title: "最后核准日期",
       key: "updateTime",
+      width: 160,
       render: (_: unknown, record: any) => {
         const date = record.updateTime || record.updatedAt;
         return formatDateTime(date);
@@ -171,24 +242,44 @@ const HotelList: React.FC = () => {
               酒店列表管理
             </span>
             <Tag color="cyan" style={{ fontSize: "14px", padding: "0 8px" }}>
-              共 {activeCount} 家
+              共 {filteredHotels.length} 家
             </Tag>
           </Space>
         }
         extra={
-          <Button
-            type="primary"
-            icon={<ReloadOutlined />}
-            onClick={refresh}
-            loading={loading}
-          >
-            同步数据
-          </Button>
+          <Space>
+            {/* 状态筛选 */}
+            <Select
+              value={statusFilter}
+              onChange={setStatusFilter}
+              style={{ width: 120 }}
+              options={[
+                { value: "all", label: "全部" },
+                { value: "active", label: "已上线" },
+                { value: "inactive", label: "已下线" },
+              ]}
+            />
+            {/* 搜索组件 */}
+            <HotelSearchInput
+              placeholder="搜索酒店名称或编号"
+              onSearch={(value) => setSearchText(value)}
+              onChange={(value) => setSearchText(value)}
+              style={{ width: 300 }}
+            />
+            <Button
+              type="primary"
+              icon={<ReloadOutlined />}
+              onClick={refresh}
+              loading={loading}
+            >
+              同步数据
+            </Button>
+          </Space>
         }
       >
         <Table
           columns={columns}
-          dataSource={activeHotels}
+          dataSource={filteredHotels} // 使用过滤后的数据
           rowKey={(record) => record._id || record.id}
           loading={loading}
           pagination={{ pageSize: 8 }}
