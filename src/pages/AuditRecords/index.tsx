@@ -10,10 +10,15 @@ import {
   Space,
   Tooltip,
 } from "antd";
-import { EyeOutlined, InfoCircleOutlined } from "@ant-design/icons";
+import {
+  EyeOutlined,
+  InfoCircleOutlined,
+  CopyOutlined,
+} from "@ant-design/icons";
 import { useAuditData } from "./hooks/useAuditData";
 import HotelDetailView from "@/components/HotelDetailView";
 import { formatDateTime } from "@/utils/dateUtils";
+import { message } from "antd";
 
 const { Title } = Typography;
 const { Search } = Input;
@@ -41,15 +46,38 @@ const AuditRecords: React.FC = () => {
   const columns = [
     {
       title: "酒店编号",
-      dataIndex: "id", // 如果后端转化了则是 id，否则写 _id
+      dataIndex: "id",
       key: "id",
       width: 120,
       render: (id: string, record: any) => {
         const displayId = id || record._id;
+        const shortId = displayId?.slice(-6).toUpperCase();
+        const fullId = displayId;
+
         return (
-          <code style={{ color: "#1890ff" }}>
-            {displayId?.slice(-6).toUpperCase()}
-          </code>
+          <Tooltip title={`完整编号: ${fullId}`}>
+            <Space>
+              <code
+                style={{
+                  color: "#1890ff",
+                  cursor: "pointer",
+                  textDecoration: "underline",
+                }}
+                onClick={() => {
+                  navigator.clipboard.writeText(fullId);
+                  message.success("编号已复制");
+                }}
+              >
+                {shortId}
+              </code>
+              <CopyOutlined
+                style={{ color: "#1890ff", cursor: "pointer" }}
+                onClick={() => {
+                  navigator.clipboard.writeText(fullId);
+                }}
+              />
+            </Space>
+          </Tooltip>
         );
       },
     },
