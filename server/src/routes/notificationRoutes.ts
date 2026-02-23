@@ -16,7 +16,7 @@ const getUserIdFromToken = (req: express.Request): string | null => {
     }
     const token = authHeader.split(" ")[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-    // ✅ 确保返回字符串格式的 userId
+    // 确保返回字符串格式的 userId
     const userId = decoded.userId ? String(decoded.userId) : null;
     if (userId) {
       console.log(`🔑 从 Token 解析 userId: ${userId}`);
@@ -41,7 +41,7 @@ router.get("/", async (req, res) => {
 
     const { type, status, page = 1, pageSize = 20 } = req.query;
 
-    // ✅ 确保 ownerId 是字符串格式，用于查询
+    // 确保 ownerId 是字符串格式，用于查询
     const ownerIdStr = String(ownerId);
     const query: any = { ownerId: ownerIdStr };
 
@@ -56,7 +56,7 @@ router.get("/", async (req, res) => {
     const skip = (Number(page) - 1) * Number(pageSize);
     const limit = Number(pageSize);
 
-    // ✅ 添加调试日志
+    // 添加调试日志
     console.log(`🔍 查询通知 - ownerId: ${ownerIdStr}, query:`, JSON.stringify(query));
 
     const notifications = await NotificationModel.find(query)
@@ -66,7 +66,7 @@ router.get("/", async (req, res) => {
 
     const total = await NotificationModel.countDocuments(query);
 
-    // ✅ 调试：检查数据库中的所有通知（仅用于调试）
+    // 调试：检查数据库中的所有通知（仅用于调试）
     const allNotifications = await NotificationModel.find({}).limit(5);
     console.log(`📋 数据库中的通知示例（前5条）:`, allNotifications.map(n => ({
       id: n._id.toString(),
@@ -80,7 +80,7 @@ router.get("/", async (req, res) => {
       status: "unread",
     });
 
-    // ✅ 添加缓存控制头，防止 304 缓存问题
+    // 添加缓存控制头，防止 304 缓存问题
     res.set({
       "Cache-Control": "no-cache, no-store, must-revalidate",
       "Pragma": "no-cache",

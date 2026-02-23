@@ -1,15 +1,45 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { QuestionCircleOutlined, PlusOutlined } from "@ant-design/icons";
-import { Modal, Input, message, Select, Upload, Form } from "antd";
-import axiosInstance from "../../../api/http/axiosConfig"; // ✅ 引入统一封装的 axios
+import { Modal, Input, message, Select, Upload, Form, Image } from "antd";
+import axiosInstance from "../../../api/http/axiosConfig"; // 引入统一封装的 axios
 
 const Feedback: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [form] = Form.useForm();
+  const [hotels, setHotels] = useState<{ id: string; name: string }[]>([]);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewImage, setPreviewImage] = useState("");
+
+  const fetchMyHotels = async () => {
+    const userStr = localStorage.getItem("user");
+    if (!userStr) return;
+
+    try {
+      const user = JSON.parse(userStr);
+      const res: any = await axiosInstance.get(`/hotels/owner/${user.id}`);
+
+      if (res.success) {
+        setHotels(res.data);
+      }
+    } catch (err) {
+      console.error("加载酒店失败", err);
+    }
+  };
+
+  useEffect(() => {
+    if (isModalOpen) {
+      fetchMyHotels();
+    }
+  }, [isModalOpen]);
 
   const showModal = () => setIsModalOpen(true);
-
+  const handlePreview = (file: any) => {
+    const src = file.url ?? file.thumbUrl ??
+      (file.originFileObj ? URL.createObjectURL(file.originFileObj) : "");
+    setPreviewImage(src);
+    setPreviewOpen(true);
+  };
   const handleCancel = () => {
     form.resetFields();
     setIsModalOpen(false);
@@ -108,15 +138,21 @@ const Feedback: React.FC = () => {
         confirmLoading={submitting}
       >
         <Form form={form} layout="vertical">
-          {/* 关联酒店（当前后端 Feedback 表 hotelId 必填，这里先做成简单输入） */}
           <Form.Item
-            label="关联酒店 ID"
+            label="选择关联酒店"
             name="hotelId"
-            rules={[{ required: true, message: "请输入关联的酒店 ID（可先随便写一个测试）" }]}
+            rules={[{ required: true, message: "请选择需要反馈的酒店" }]}
           >
-            <Input placeholder="请输入酒店 ID，将来可以改成下拉选择自己的酒店" />
+            <Select
+              placeholder="请选择您的酒店"
+              showSearch
+              optionFilterProp="label"
+              options={hotels.map(h => ({
+                value: h.id,
+                label: h.name
+              }))}
+            />
           </Form.Item>
-
           <Form.Item
             label="反馈类型"
             name="type"
@@ -151,7 +187,13 @@ const Feedback: React.FC = () => {
             valuePropName="fileList"
             getValueFromEvent={(e) => e?.fileList}
           >
-            <Upload listType="picture-card" beforeUpload={() => false}>
+            <Upload
+              listType="picture-card"
+              beforeUpload={() => false}
+              onPreview={handlePreview}
+              maxCount={5}
+              accept="image/jpeg,image/png,image/webp"
+            >
               <div>
                 <PlusOutlined />
                 <div style={{ marginTop: 8 }}>上传</div>
@@ -159,6 +201,15 @@ const Feedback: React.FC = () => {
             </Upload>
           </Form.Item>
         </Form>
+        <Image
+          wrapperStyle={{ display: "none" }}
+          src={previewImage}
+          preview={{
+            visible: previewOpen,
+            onVisibleChange: (visible) => setPreviewOpen(visible),
+            src: previewImage,
+          }}
+        />
       </Modal>
     </>
   );
