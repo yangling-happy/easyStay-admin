@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Table,
   Tag,
@@ -10,6 +10,7 @@ import {
   Tooltip,
   Modal,
   Typography,
+  Select,
 } from "antd";
 import { useNavigate } from "react-router-dom";
 import {
@@ -32,16 +33,33 @@ const HotelList: React.FC = () => {
   const navigate = useNavigate();
 
   // 直接从 Hook 获取数据和刷新方法
-  const { activeHotels, activeCount, loading, refresh } = useActiveHotels();
+  const { activeHotels, loading, refresh } = useActiveHotels();
 
   const [isDetailVisible, setIsDetailVisible] = useState(false);
   const [selectedHotel, setSelectedHotel] = useState<any>(null);
   const [searchText, setSearchText] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+
   const showDetail = (record: any) => {
     setSelectedHotel(record);
     setIsDetailVisible(true);
   };
-  const filteredHotels = filterHotelsByKeyword(activeHotels, searchText);
+
+  const filteredHotels = useMemo(() => {
+    let result: any[] = [...activeHotels];
+
+    // 关键词搜索
+    result = filterHotelsByKeyword(result, searchText);
+
+    // 状态筛选
+    if (statusFilter !== "all") {
+      result = result.filter((hotel) =>
+        statusFilter === "active" ? hotel.isActive : !hotel.isActive,
+      );
+    }
+
+    return result;
+  }, [activeHotels, searchText, statusFilter]);
   // --- 处理上下线逻辑 ---
   const handleToggle = (record: any) => {
     const hotelId = record._id || record.id;
@@ -150,22 +168,22 @@ const HotelList: React.FC = () => {
         );
       },
     },
-{
-    title: "酒店名称",
-    dataIndex: "name",
-    width: 200,
-    ellipsis: true,
-    render: (name: string, record: any) => (
-      <div>
-        <div>{name}</div> 
-        {record.nameEn && (
-          <div style={{ color: "#888", fontSize: "12px" }}>
-            {record.nameEn}
-          </div>
-        )}
-      </div>
-    ),
-  },
+    {
+      title: "酒店名称",
+      dataIndex: "name",
+      width: 200,
+      ellipsis: true,
+      render: (name: string, record: any) => (
+        <div>
+          <div>{name}</div>
+          {record.nameEn && (
+            <div style={{ color: "#888", fontSize: "12px" }}>
+              {record.nameEn}
+            </div>
+          )}
+        </div>
+      ),
+    },
     {
       title: "地区",
       key: "location",
@@ -240,12 +258,23 @@ const HotelList: React.FC = () => {
               酒店列表管理
             </span>
             <Tag color="cyan" style={{ fontSize: "14px", padding: "0 8px" }}>
-              共 {activeCount} 家
+              共 {filteredHotels.length} 家
             </Tag>
           </Space>
         }
         extra={
           <Space>
+            {/* 状态筛选 */}
+            <Select
+              value={statusFilter}
+              onChange={setStatusFilter}
+              style={{ width: 120 }}
+              options={[
+                { value: "all", label: "全部" },
+                { value: "active", label: "已上线" },
+                { value: "inactive", label: "已下线" },
+              ]}
+            />
             {/* 搜索组件 */}
             <HotelSearchInput
               placeholder="搜索酒店名称或编号"
