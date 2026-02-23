@@ -86,7 +86,15 @@ const hotelSchema = new mongoose.Schema({
     {
       action: {
         type: String,
-        enum: ["create", "update", "audit_approved", "audit_rejected", "offline", "online"],
+        enum: [
+          "create",
+          "update",
+          "audit_approved",
+          "audit_rejected",
+          "offline",
+          "online",
+          "reapply_online",
+        ],
         required: true,
       },
       status: {
@@ -111,11 +119,11 @@ const hotelSchema = new mongoose.Schema({
       },
       // 操作前状态
       beforeStatus: {
-        type: Boolean,
+        type: mongoose.Schema.Types.Mixed,
       },
       // 操作后状态
       afterStatus: {
-        type: Boolean,
+        type: mongoose.Schema.Types.Mixed,
       },
       // 快照数据（用于保留修改前的信息）
       snapshot: {
