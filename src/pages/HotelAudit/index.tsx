@@ -24,7 +24,6 @@ const HotelAudit = () => {
   }, [statusFilter])
 
   // 加载数据
-  // 加载数据
   const loadHotels = async () => {
     setLoading(true)
     try {

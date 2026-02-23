@@ -4,7 +4,6 @@ import {
   Tag,
   Card,
   Typography,
-  Input,
   Modal,
   Button,
   Space,
@@ -20,8 +19,10 @@ import HotelDetailView from "@/components/HotelDetailView";
 import { formatDateTime } from "@/utils/dateUtils";
 import { message } from "antd";
 import { getFullAddress } from "@/utils/addressData";
+import HotelSearchInput from "@/components/HotelSearchInput";
+import { filterHotelsByKeyword } from "@/utils/filterHotelsByKeyword."; 
+
 const { Title } = Typography;
-const { Search } = Input;
 
 const AuditRecords: React.FC = () => {
   const { data, loading } = useAuditData();
@@ -36,25 +37,7 @@ const AuditRecords: React.FC = () => {
   };
 
   // 搜索过滤逻辑（支持酒店名称和编号搜索）
-  const filteredData = data.filter((item: any) => {
-    // 处理搜索关键词：转小写 + 去除空格
-    const keyword = searchText.toLowerCase().trim();
-
-    // 如果没有输入关键词，则返回所有数据
-    if (!keyword) return true;
-
-    // 获取酒店名称和编号
-    const name = item.name || "";
-    const nameEn = item.nameEn || ""; // 英文名称（如果存在）
-    const id = item.id || item._id || ""; // 编号（兼容 _id）
-
-    // 判断是否匹配关键词
-    return (
-      name.toLowerCase().includes(keyword) ||
-      nameEn.toLowerCase().includes(keyword) ||
-      id.toLowerCase().includes(keyword)
-    );
-  });
+  const filteredData = filterHotelsByKeyword(data, searchText);
 
   const columns = [
     {
@@ -177,11 +160,10 @@ const AuditRecords: React.FC = () => {
           <Title level={4} style={{ margin: 0 }}>
             酒店上线申请记录
           </Title>
-          <Search
+          <HotelSearchInput
             placeholder="搜索酒店名称或编号"
-            allowClear
             onSearch={(value) => setSearchText(value)}
-            onChange={(e) => setSearchText(e.target.value)}
+            onChange={(value) => setSearchText(value)}
             style={{ width: 300 }}
           />
         </div>

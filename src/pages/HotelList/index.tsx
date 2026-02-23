@@ -24,7 +24,9 @@ import { useActiveHotels } from "./hooks/useActiveHotels";
 import HotelDetailView from "@/components/HotelDetailView";
 import { getFullAddress } from "@/utils/addressData";
 import { formatDateTime } from "@/utils/dateUtils";
-
+// src/pages/HotelList/index.tsx
+import HotelSearchInput from "@/components/HotelSearchInput";
+import { filterHotelsByKeyword } from "@/utils/filterHotelsByKeyword.";
 const { Text } = Typography;
 
 const HotelList: React.FC = () => {
@@ -35,12 +37,12 @@ const HotelList: React.FC = () => {
 
   const [isDetailVisible, setIsDetailVisible] = useState(false);
   const [selectedHotel, setSelectedHotel] = useState<any>(null);
-
+  const [searchText, setSearchText] = useState("");
   const showDetail = (record: any) => {
     setSelectedHotel(record);
     setIsDetailVisible(true);
   };
-
+  const filteredHotels = filterHotelsByKeyword(activeHotels, searchText);
   // --- 处理上下线逻辑 ---
   const handleToggle = (record: any) => {
     const hotelId = record._id || record.id;
@@ -165,7 +167,7 @@ const HotelList: React.FC = () => {
           >
             <Switch
               checked={record.isActive}
-              onChange={() => handleToggle(record)} 
+              onChange={() => handleToggle(record)}
               size="small"
             />
           </Tooltip>
@@ -224,19 +226,28 @@ const HotelList: React.FC = () => {
           </Space>
         }
         extra={
-          <Button
-            type="primary"
-            icon={<ReloadOutlined />}
-            onClick={refresh}
-            loading={loading}
-          >
-            同步数据
-          </Button>
+          <Space>
+            {/* 搜索组件 */}
+            <HotelSearchInput
+              placeholder="搜索酒店名称或编号"
+              onSearch={(value) => setSearchText(value)}
+              onChange={(value) => setSearchText(value)}
+              style={{ width: 300 }}
+            />
+            <Button
+              type="primary"
+              icon={<ReloadOutlined />}
+              onClick={refresh}
+              loading={loading}
+            >
+              同步数据
+            </Button>
+          </Space>
         }
       >
         <Table
           columns={columns}
-          dataSource={activeHotels}
+          dataSource={filteredHotels} // 使用过滤后的数据
           rowKey={(record) => record._id || record.id}
           loading={loading}
           pagination={{ pageSize: 8 }}
