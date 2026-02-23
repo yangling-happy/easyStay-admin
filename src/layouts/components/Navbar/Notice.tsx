@@ -162,7 +162,7 @@ const Notice: React.FC = () => {
         </div>
       </Popover>
 
-      {/* ✅ 通知详情弹窗 */}
+      {/* 通知详情弹窗 */}
       <Modal
         title="通知详情"
         open={detailModalVisible}
@@ -200,7 +200,7 @@ const Notice: React.FC = () => {
               </Descriptions.Item>
             </Descriptions>
 
-            {/* ✅ 如果是反馈回复类型，显示完整的反馈信息 */}
+            {/* 如果是反馈回复类型，显示完整的反馈信息 */}
             {selectedNotification.type === "feedback_reply" && selectedNotification.relatedId && (
               <>
                 <Divider>反馈回复详情</Divider>

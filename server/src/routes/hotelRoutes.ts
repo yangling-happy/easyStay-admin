@@ -243,4 +243,18 @@ router.get("/detail/:id", async (req: Request, res: Response) => {
   }
 });
 
+
+// 获取指定商户的酒店列表
+router.get("/owner/:ownerId", async (req, res) => {
+  try {
+    const { ownerId } = req.params;
+    // 只查对应的 ownerId，并且只返回 name 和 _id 提高效率
+    const hotels = await HotelModel.find({ ownerId }, "name _id");
+    res.json({ success: true, data: hotels });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "获取酒店失败" });
+  }
+});
+
+
 export default router;

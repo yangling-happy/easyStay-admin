@@ -71,7 +71,7 @@ router.patch("/:id/reply", async (req, res) => {
       return res.status(404).json({ success: false, message: "反馈不存在" });
     }
 
-    // ✅ 创建通知：管理员已回复反馈
+    // 创建通知：管理员已回复反馈
     try {
       // 获取酒店名称（如果有 hotelId）
       let hotelName = "";
@@ -86,7 +86,7 @@ router.patch("/:id/reply", async (req, res) => {
         ? `管理员已回复您关于酒店"${hotelName}"的反馈`
         : "管理员已回复您的反馈";
 
-      // ✅ 确保 ownerId 是字符串格式
+      // 确保 ownerId 是字符串格式
       const ownerIdStr = String(feedback.ownerId);
 
       const notification = await NotificationModel.create({
@@ -99,11 +99,11 @@ router.patch("/:id/reply", async (req, res) => {
         relatedId: id, // 关联的反馈ID
       });
 
-      console.log(`✅ 已为商户创建反馈回复通知:`, {
+      console.log(`已为商户创建反馈回复通知:`, {
         notificationId: notification._id.toString(),
         ownerId: ownerIdStr,
         ownerIdType: typeof ownerIdStr,
-        ownerIdValue: JSON.stringify(ownerIdStr), // ✅ 添加：查看实际值
+        ownerIdValue: JSON.stringify(ownerIdStr), // 添加：查看实际值
         message,
       });
     } catch (notificationError: any) {
