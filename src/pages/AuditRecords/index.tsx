@@ -19,7 +19,7 @@ import { useAuditData } from "./hooks/useAuditData";
 import HotelDetailView from "@/components/HotelDetailView";
 import { formatDateTime } from "@/utils/dateUtils";
 import { message } from "antd";
-
+import { getFullAddress } from "@/utils/addressData";
 const { Title } = Typography;
 const { Search } = Input;
 
@@ -36,12 +36,25 @@ const AuditRecords: React.FC = () => {
   };
 
   // 搜索过滤逻辑（支持酒店名称和编号搜索）
-  const filteredData = data.filter(
-    (item: any) =>
-      item.name?.includes(searchText) ||
-      item._id?.includes(searchText) ||
-      item.id?.includes(searchText),
-  );
+  const filteredData = data.filter((item: any) => {
+    // 处理搜索关键词：转小写 + 去除空格
+    const keyword = searchText.toLowerCase().trim();
+
+    // 如果没有输入关键词，则返回所有数据
+    if (!keyword) return true;
+
+    // 获取酒店名称和编号
+    const name = item.name || "";
+    const nameEn = item.nameEn || ""; // 英文名称（如果存在）
+    const id = item.id || item._id || ""; // 编号（兼容 _id）
+
+    // 判断是否匹配关键词
+    return (
+      name.toLowerCase().includes(keyword) ||
+      nameEn.toLowerCase().includes(keyword) ||
+      id.toLowerCase().includes(keyword)
+    );
+  });
 
   const columns = [
     {
@@ -85,6 +98,26 @@ const AuditRecords: React.FC = () => {
       title: "酒店名称",
       dataIndex: "name",
       key: "name",
+    },
+    {
+      title: "英文名称",
+      dataIndex: "nameEn",
+      key: "nameEn",
+      render: (nameEn: string) => nameEn || "-",
+    },
+    {
+      title: "地区",
+      key: "location",
+      width: 200,
+      render: (_: unknown, record: any) => {
+        return getFullAddress(record.location) || "未设置";
+      },
+    },
+    {
+      title: "酒店地址",
+      dataIndex: "address",
+      key: "address",
+      render: (address: string) => address || "-",
     },
     {
       title: "申请时间",

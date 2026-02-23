@@ -17,6 +17,7 @@ import {
   EyeOutlined,
   ReloadOutlined,
   ExclamationCircleOutlined,
+  CopyOutlined,
 } from "@ant-design/icons";
 import { patch, post } from "@/api/http/request";
 import { useActiveHotels } from "./hooks/useActiveHotels";
@@ -93,6 +94,43 @@ const HotelList: React.FC = () => {
 
   const columns = [
     {
+      title: "酒店编号",
+      dataIndex: "id",
+      key: "id",
+      width: 120,
+      render: (id: string, record: any) => {
+        const displayId = id || record._id;
+        const shortId = displayId?.slice(-6).toUpperCase();
+        const fullId = displayId;
+
+        return (
+          <Tooltip title={`完整编号: ${fullId}`}>
+            <Space>
+              <code
+                style={{
+                  color: "#1890ff",
+                  cursor: "pointer",
+                  textDecoration: "underline",
+                }}
+                onClick={() => {
+                  navigator.clipboard.writeText(fullId);
+                  message.success("编号已复制");
+                }}
+              >
+                {shortId}
+              </code>
+              <CopyOutlined
+                style={{ color: "#1890ff", cursor: "pointer" }}
+                onClick={() => {
+                  navigator.clipboard.writeText(fullId);
+                }}
+              />
+            </Space>
+          </Tooltip>
+        );
+      },
+    },
+    {
       title: "酒店名称",
       dataIndex: "name",
       key: "name",
@@ -101,6 +139,12 @@ const HotelList: React.FC = () => {
           {text}
         </Text>
       ),
+    },
+    {
+      title: "英文名称",
+      dataIndex: "nameEn",
+      key: "nameEn",
+      render: (nameEn: string) => nameEn || "-",
     },
     {
       title: "地区",
@@ -116,11 +160,15 @@ const HotelList: React.FC = () => {
       width: 180,
       render: (_: unknown, record: any) => (
         <Space>
-          <Switch
-            checked={record.isActive}
-            onChange={() => handleToggle(record)}
-            size="small"
-          />
+          <Tooltip
+            title={record.isActive ? "点击下线该酒店" : "点击申请恢复上线"}
+          >
+            <Switch
+              checked={record.isActive}
+              onChange={() => handleToggle(record)} 
+              size="small"
+            />
+          </Tooltip>
           <Tag color={record.isActive ? "green" : "orange"}>
             {record.isActive ? "销售中" : "已下线/待重审"}
           </Tag>
