@@ -90,13 +90,30 @@ const RoomTypeFormList: React.FC = () => {
                       {...restField}
                       name={[name, "price"]}
                       label="每晚价格"
-                      rules={[{ required: true, message: "必填" }]}
+                      rules={[
+                        { required: true, message: "请输入每晚价格" },
+                        {
+                          validator: (_, value) => {
+                            if (
+                              value === null ||
+                              value === undefined ||
+                              value === ""
+                            ) {
+                              return Promise.reject("价格不能为空");
+                            }
+                            if (isNaN(value) || value < 0) {
+                              return Promise.reject("请输入有效的正数价格");
+                            }
+                            return Promise.resolve();
+                          },
+                        },
+                      ]}
                     >
                       <InputNumber
                         min={0}
                         prefix="¥"
                         style={{ width: "100%" }}
-                        placeholder="价格"
+                        placeholder="请输入价格"
                       />
                     </Form.Item>
                   </Col>
@@ -172,16 +189,7 @@ const RoomTypeFormList: React.FC = () => {
                   name={[name, "photos"]}
                   label="房型照片"
                   extra="建议上传 3-5 张，展示客房细节、卫浴等"
-                  rules={[
-                    {
-                      validator: (_, value) => {
-                        if (!value || value.length === 0) {
-                          return Promise.reject("请至少上传一张房型照片");
-                        }
-                        return Promise.resolve();
-                      },
-                    },
-                  ]}
+                  rules={[{ required: true, message: "请至少上传一张照片" }]}
                 >
                   <PhotoUploader maxCount={5} />
                 </Form.Item>
@@ -194,7 +202,7 @@ const RoomTypeFormList: React.FC = () => {
                 onClick={() =>
                   add({
                     name: "",
-                    price: 0,
+                    price: undefined,
                     stock: 10,
                     capacity: 2,
                     bedType: "big",

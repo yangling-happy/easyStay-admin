@@ -118,12 +118,13 @@ const BasicInfoForm: React.FC<Props> = () => {
         name="photos"
         label="酒店整体照片"
         extra="建议上传 3-8 张大堂或外景图"
+        rules={[{ required: true, message: "请至少上传一张照片" }]}
       >
         <PhotoUploader maxCount={8} />
       </Form.Item>
       <Form.Item name="amenities" label="酒店设施">
         <Select
-          mode="tags" // 允许用户自己输入新标签
+          mode="tags"
           style={{ width: "100%" }}
           placeholder="请选择或输入酒店设施"
           options={[
