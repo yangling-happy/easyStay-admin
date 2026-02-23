@@ -131,9 +131,13 @@ router.get("/hotels/published", async (req, res) => {
       });
     }
 
-    // 转换 _id 为 id
+    // 转换 _id 为 id，并对 roomTypes 按价格排序
     const hotelsWithId = hotels.map((hotel) => {
       const hotelObj = hotel.toObject();
+      // 对 roomTypes 按价格从低到高排序
+      if (hotelObj.roomTypes && Array.isArray(hotelObj.roomTypes)) {
+        hotelObj.roomTypes.sort((a: any, b: any) => a.price - b.price);
+      }
       return {
         ...hotelObj,
         id: hotelObj._id.toString(),

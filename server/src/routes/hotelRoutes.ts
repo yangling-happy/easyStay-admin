@@ -401,6 +401,27 @@ router.get("/detail/:id", async (req: Request, res: Response) => {
       return res.status(404).json({ success: false, message: "未找到酒店" });
     }
 
+    // 从请求参数中获取 rooms 和 guests
+    const rooms = parseInt(req.query.rooms as string) || 1;
+    const guests = parseInt(req.query.guests as string) || 1;
+
+    // 将房型分为 available 和 unavailable 两个数组
+    const available: any[] = [];
+    const unavailable: any[] = [];
+
+    hotel.roomTypes.forEach((room: any) => {
+      // 检查库存和容量是否符合要求
+      if (room.stock >= rooms && room.capacity >= guests) {
+        available.push(room);
+      } else {
+        unavailable.push(room);
+      }
+    });
+
+    // 对两个数组按价格从低到高排序
+    available.sort((a, b) => a.price - b.price);
+    unavailable.sort((a, b) => a.price - b.price);
+
     const publicHotelData = {
       id: hotel._id.toString(),
       name: hotel.name,
@@ -410,7 +431,10 @@ router.get("/detail/:id", async (req: Request, res: Response) => {
       openingDate: hotel.openingDate,
       photos: hotel.photos,
       amenities: hotel.amenities,
-      roomTypes: hotel.roomTypes,
+      roomTypes: {
+        available,
+        unavailable
+      },
       status: hotel.status,
       isActive: hotel.isActive,
     };
