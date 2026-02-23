@@ -1,12 +1,18 @@
 // src/pages/HotelAudit/columns.tsx
 import type { ColumnsType } from "antd/es/table";
 import { Tag, Button, Space, Tooltip, message } from "antd";
-import { EyeOutlined, CopyOutlined } from "@ant-design/icons";
+import {
+  EyeOutlined,
+  CopyOutlined,
+  VerticalAlignBottomOutlined,
+  VerticalAlignTopOutlined,
+} from "@ant-design/icons";
+
 import type { Hotel } from "@/types/hotel";
 import dayjs from "dayjs";
 import { getFullAddress } from "@/utils/addressData";
 
-//将状态值映射为显示文本和颜色
+// 将状态值映射为显示文本和颜色
 const statusMap: Record<Hotel["status"], { text: string; color: string }> = {
   pending: { text: "待审核", color: "orange" },
   approved: { text: "已通过", color: "green" },
@@ -65,11 +71,9 @@ export const getColumns = (
     ellipsis: true,
     render: (name: string, record: Hotel) => (
       <div>
-        <div>{name}</div> 
+        <div>{name}</div>
         {record.nameEn && (
-          <div style={{ color: "#888", fontSize: "12px" }}>
-            {record.nameEn}
-          </div>
+          <div style={{ color: "#888", fontSize: "12px" }}>{record.nameEn}</div>
         )}
       </div>
     ),
@@ -93,16 +97,13 @@ export const getColumns = (
     dataIndex: "star",
     width: 100,
     render: (star) => {
-      // 处理 undefined 或 null 的情况
       if (star === undefined || star === null) {
         return <span style={{ color: "#999" }}>未设置</span>;
       }
-      // 确保 star 是数字且在有效范围内
       const starNum = Number(star);
       if (isNaN(starNum) || starNum < 1 || starNum > 5) {
         return <span style={{ color: "#999" }}>无效</span>;
       }
-      // 使用 ⭐ 重复显示
       return <span style={{ fontSize: "9px" }}>{"⭐".repeat(starNum)}</span>;
     },
   },
@@ -112,7 +113,6 @@ export const getColumns = (
     width: 150,
     render: (status, record) => (
       <Space direction="vertical" size={4}>
-        {/* 显示审核状态标签 */}
         <Tag
           color={
             statusMap[status as keyof typeof statusMap]?.color || "default"
@@ -120,15 +120,11 @@ export const getColumns = (
         >
           {statusMap[status as keyof typeof statusMap]?.text || status}
         </Tag>
-
-        {/* 显示上线/下线状态标签 */}
         {status === "approved" && (
           <Tag color={record.isActive ? "blue" : "gray"}>
             {record.isActive ? "已上线" : "已下线"}
           </Tag>
         )}
-
-        {/* 显示拒绝原因 */}
         {status === "rejected" && record.rejectReason && (
           <Tooltip title={record.rejectReason}>
             <div style={{ color: "#ff4d4f", fontSize: 12, cursor: "help" }}>
@@ -152,10 +148,10 @@ export const getColumns = (
   },
   {
     title: "操作",
-    width: 170,
+    width: 200,
     fixed: "right",
     render: (_, record) => (
-      <Space>
+      <Space direction="vertical" size="middle">
         {/* 查看详情按钮 - 所有状态都显示 */}
         <Button
           type="link"
@@ -166,9 +162,9 @@ export const getColumns = (
           详情
         </Button>
 
-        {/* 待审核状态：显示通过和拒绝按钮 */}
+        {/* 待审核状态：垂直排列通过和拒绝按钮 */}
         {record.status === "pending" && record.id && (
-          <>
+          <Space direction="horizontal" size="small">
             <Button
               type="link"
               size="small"
@@ -184,7 +180,7 @@ export const getColumns = (
             >
               拒绝
             </Button>
-          </>
+          </Space>
         )}
 
         {/* 审核通过且已上线：显示下线按钮 */}
@@ -193,6 +189,7 @@ export const getColumns = (
             type="link"
             danger
             size="small"
+            icon={<VerticalAlignBottomOutlined />}
             onClick={() => onOffline(record.id!)}
           >
             下线
@@ -204,6 +201,7 @@ export const getColumns = (
           <Button
             type="link"
             size="small"
+            icon={<VerticalAlignTopOutlined />}
             onClick={() => onRestore(record.id!)}
           >
             上线
