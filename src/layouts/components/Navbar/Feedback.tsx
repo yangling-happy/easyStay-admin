@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { QuestionCircleOutlined, PlusOutlined } from "@ant-design/icons";
-import { Modal, Input, message, Select, Upload, Form } from "antd";
+import { Modal, Input, message, Select, Upload, Form, Image } from "antd";
 import axiosInstance from "../../../api/http/axiosConfig"; // 引入统一封装的 axios
 
 const Feedback: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [form] = Form.useForm();
-  // 1. 增加状态存储
   const [hotels, setHotels] = useState<{ id: string; name: string }[]>([]);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewImage, setPreviewImage] = useState("");
 
-  // 2. 编写获取逻辑
   const fetchMyHotels = async () => {
     const userStr = localStorage.getItem("user");
     if (!userStr) return;
@@ -27,7 +27,6 @@ const Feedback: React.FC = () => {
     }
   };
 
-  // 3. 监听弹窗状态
   useEffect(() => {
     if (isModalOpen) {
       fetchMyHotels();
@@ -35,7 +34,12 @@ const Feedback: React.FC = () => {
   }, [isModalOpen]);
 
   const showModal = () => setIsModalOpen(true);
-
+  const handlePreview = (file: any) => {
+    const src = file.url ?? file.thumbUrl ??
+      (file.originFileObj ? URL.createObjectURL(file.originFileObj) : "");
+    setPreviewImage(src);
+    setPreviewOpen(true);
+  };
   const handleCancel = () => {
     form.resetFields();
     setIsModalOpen(false);
@@ -183,7 +187,13 @@ const Feedback: React.FC = () => {
             valuePropName="fileList"
             getValueFromEvent={(e) => e?.fileList}
           >
-            <Upload listType="picture-card" beforeUpload={() => false}>
+            <Upload
+              listType="picture-card"
+              beforeUpload={() => false}
+              onPreview={handlePreview}
+              maxCount={5}
+              accept="image/jpeg,image/png,image/webp"
+            >
               <div>
                 <PlusOutlined />
                 <div style={{ marginTop: 8 }}>上传</div>
@@ -191,6 +201,15 @@ const Feedback: React.FC = () => {
             </Upload>
           </Form.Item>
         </Form>
+        <Image
+          wrapperStyle={{ display: "none" }}
+          src={previewImage}
+          preview={{
+            visible: previewOpen,
+            onVisibleChange: (visible) => setPreviewOpen(visible),
+            src: previewImage,
+          }}
+        />
       </Modal>
     </>
   );
