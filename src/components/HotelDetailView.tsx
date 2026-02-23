@@ -42,6 +42,7 @@ const HotelDetailView: React.FC<Props> = ({ data, type }) => {
     audit_rejected: "审核拒绝",
     offline: "下线酒店",
     online: "上线酒店",
+    reapply_online: "申请恢复上线",
   };
 
   const roleMap: Record<string, string> = {

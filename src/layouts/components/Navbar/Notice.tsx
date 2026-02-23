@@ -135,7 +135,7 @@ const Notice: React.FC = () => {
       )}
       footer={
         <div style={{ textAlign: "center", cursor: "pointer", color: "#1677ff" }}>
-          查看全部
+           —— 没有更多通知了 ——
         </div>
       }
     />

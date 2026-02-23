@@ -81,39 +81,23 @@ const HotelList: React.FC = () => {
         },
       });
     } else {
-      if (record.status === "approved") {
-        Modal.confirm({
-          title: "恢复上线",
-          content: "确认恢复上线吗？恢复后酒店将立即开放预订。",
-          okText: "确认上线",
-          onOk: async () => {
-            try {
-              await hotelService.onlineHotel(hotelId);
-              message.success("酒店已恢复上线");
-              refresh();
-            } catch (error: any) {
-              message.error(error.response?.data?.message || "上线失败");
-            }
-          },
-        });
-      } else {
-        Modal.confirm({
-          title: "申请恢复上线",
-          content: "提交后将进入待审核列表，审核通过后方可重新销售。",
-          okText: "提交申请",
-          onOk: async () => {
-            try {
-              await fetch(`/api/hotels/${hotelId}/re-apply`, {
-                method: "POST",
-              });
-              message.success("申请已提交，请关注审核记录");
-              refresh();
-            } catch (error: any) {
-              message.error("提交失败");
-            }
-          },
-        });
-      }
+      Modal.confirm({
+        title: "申请恢复上线",
+        content: "提交申请后将进入待审核列表，审核通过后方可重新开放预订。",
+        okText: "提交申请",
+        onOk: async () => {
+          try {
+            const result = await hotelService.reapplyOnline(hotelId);
+            message.success(result.message || "申请已提交，请关注审核记录");
+            refresh();
+          } catch (error: any) {
+            console.error("申请恢复上线失败:", error);
+            message.error(
+              error.response?.data?.message || "提交失败，请稍后重试",
+            );
+          }
+        },
+      });
     }
   };
 

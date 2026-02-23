@@ -223,23 +223,59 @@ router.patch("/:id/online", auth, async (req: AuthRequest, res: Response) => {
 
 router.post("/:id/re-apply", auth, async (req: AuthRequest, res: Response) => {
   try {
-    const hotel = await HotelModel.findOneAndUpdate(
+    const hotel = await HotelModel.findOne({
+      _id: req.params.id,
+      ownerId: req.user?.userId,
+    });
+
+    if (!hotel) {
+      return res.status(404).json({ success: false, message: "未找到酒店" });
+    }
+
+    const snapshot = hotel.toObject();
+    const snapshotWithoutId = { ...snapshot };
+    delete (snapshotWithoutId as any)._id;
+    delete (snapshotWithoutId as any).__v;
+    delete (snapshotWithoutId as any).auditHistory;
+
+    const beforeStatus = hotel.status;
+    const afterStatus = "pending";
+
+    const updatedHotel = await HotelModel.findOneAndUpdate(
       { _id: req.params.id, ownerId: req.user?.userId },
       {
         status: "pending",
         isActive: false,
         rejectReason: "",
         updateTime: new Date(),
+        $push: {
+          auditHistory: {
+            action: "reapply_online",
+            status: "pending",
+            operatorId: req.user?.userId,
+            operatorRole: "merchant",
+            timestamp: new Date(),
+            beforeStatus,
+            afterStatus,
+            snapshot: snapshotWithoutId,
+          },
+        },
       },
       { new: true },
     );
 
-    if (!hotel) {
-      return res.status(404).json({ success: false, message: "未找到酒店" });
+    if (!updatedHotel) {
+      return res.status(404).json({ success: false, message: "更新酒店失败" });
     }
-    res.json({ success: true, message: "已提交重新上线申请", data: hotel });
+
+    res.json({
+      success: true,
+      message: "已提交重新上线申请",
+      data: updatedHotel,
+    });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : "未知错误";
+    console.error("提交重新上线申请失败:", error);
     res.status(500).json({ success: false, message: errorMessage });
   }
 });

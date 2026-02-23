@@ -75,6 +75,15 @@ export const hotelService = {
     }
   },
 
+  reapplyOnline: async (id: string): Promise<any> => {
+    try {
+      return await post(`/hotels/${id}/re-apply`);
+    } catch (error) {
+      console.error("申请恢复上线失败:", error);
+      throw error;
+    }
+  },
+
   restoreHotel: async (id: string): Promise<void> => {
     try {
       await post("/hotels/restore", { id });
