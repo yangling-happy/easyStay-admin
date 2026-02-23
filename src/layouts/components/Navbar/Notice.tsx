@@ -1,7 +1,22 @@
 import React, { useEffect, useState } from "react";
 import { BellOutlined } from "@ant-design/icons";
-import { Popover, Badge, List, Typography, Empty, Modal, Descriptions, Tag, Divider, Spin, Alert } from "antd";
-import { notificationService, type Notification } from "../../../api/services/notificationService";
+import {
+  Popover,
+  Badge,
+  List,
+  Typography,
+  Empty,
+  Modal,
+  Descriptions,
+  Tag,
+  Divider,
+  Spin,
+  Alert,
+} from "antd";
+import {
+  notificationService,
+  type Notification,
+} from "../../../api/services/notificationService";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import "dayjs/locale/zh-cn";
@@ -16,7 +31,8 @@ const Notice: React.FC = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
-  const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
+  const [selectedNotification, setSelectedNotification] =
+    useState<Notification | null>(null);
   const [feedbackDetail, setFeedbackDetail] = useState<{
     id: string;
     content: string;
@@ -26,12 +42,14 @@ const Notice: React.FC = () => {
     repliedAt?: string;
   } | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [markAllLoading, setMarkAllLoading] = useState(false);
+
   const fetchNotifications = async () => {
     setLoading(true);
     try {
       const res = await notificationService.getNotifications({
         page: 1,
-        pageSize: 10,
+        pageSize: 100,
       });
       if (res.success) {
         setNotifications(res.data.notifications || []);
@@ -41,6 +59,26 @@ const Notice: React.FC = () => {
       console.error("获取通知失败:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    if (unreadCount === 0) return;
+    setMarkAllLoading(true);
+    try {
+      const res = await notificationService.markAllAsRead();
+      if (res.success) {
+        setNotifications((prev) =>
+          prev.map((n) => ({ ...n, status: "read" as const })),
+        );
+        setUnreadCount(0);
+        // 重新获取通知以确保数据一致
+        fetchNotifications();
+      }
+    } catch (error) {
+      console.error("全部标记已读失败:", error);
+    } finally {
+      setMarkAllLoading(false);
     }
   };
 
@@ -57,10 +95,11 @@ const Notice: React.FC = () => {
       // 更新本地状态
       setNotifications((prev) =>
         prev.map((n) =>
-          n.id === notificationId ? { ...n, status: "read" as const } : n
-        )
+          n.id === notificationId ? { ...n, status: "read" as const } : n,
+        ),
       );
-      setUnreadCount((prev) => Math.max(0, prev - 1));
+      // 重新获取通知以确保未读计数准确
+      fetchNotifications();
     } catch (error) {
       console.error("标记已读失败:", error);
     }
@@ -105,40 +144,64 @@ const Notice: React.FC = () => {
   };
 
   const content = (
-    <List
-      style={{ width: 300, maxHeight: 400, overflowY: "auto" }}
-      loading={loading}
-      dataSource={notifications}
-      locale={{ emptyText: <Empty description="暂无通知" /> }}
-      renderItem={(item) => (
-        <List.Item
-          style={{
-            cursor: "pointer",
-            backgroundColor: item.status === "unread" ? "#f0f7ff" : "transparent",
-          }}
-          onClick={() => handleNotificationClick(item)}
-        >
-          <List.Item.Meta
-            title={
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <Text strong={item.status === "unread"}>
-                  {item.message}
-                </Text>
-                {item.status === "unread" && (
-                  <Badge dot color="red" />
-                )}
-              </div>
-            }
-            description={dayjs(item.createdAt).fromNow()}
-          />
-        </List.Item>
-      )}
-      footer={
-        <div style={{ textAlign: "center", cursor: "pointer", color: "#1677ff" }}>
-           —— 没有更多通知了 ——
-        </div>
-      }
-    />
+    <div style={{ width: 300 }}>
+      <div
+        style={{
+          padding: "8px 12px",
+          borderBottom: "1px solid #f0f0f0",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <span style={{ fontWeight: 500 }}>全部通知</span>
+        {unreadCount > 0 && (
+          <span
+            style={{
+              color: "#1677ff",
+              cursor: "pointer",
+              fontSize: "12px",
+            }}
+            onClick={handleMarkAllAsRead}
+          >
+            {markAllLoading ? "处理中..." : "全部已读"}
+          </span>
+        )}
+      </div>
+      <List
+        style={{ maxHeight: 360, overflowY: "auto" }}
+        loading={loading}
+        dataSource={notifications}
+        locale={{ emptyText: <Empty description="暂无通知" /> }}
+        renderItem={(item) => (
+          <List.Item
+            style={{
+              cursor: "pointer",
+              backgroundColor:
+                item.status === "unread" ? "#f0f7ff" : "transparent",
+            }}
+            onClick={() => handleNotificationClick(item)}
+          >
+            <List.Item.Meta
+              title={
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <Text strong={item.status === "unread"}>{item.message}</Text>
+                  {item.status === "unread" && <Badge dot color="red" />}
+                </div>
+              }
+              description={dayjs(item.createdAt).fromNow()}
+            />
+          </List.Item>
+        )}
+        footer={
+          <div
+            style={{ textAlign: "center", cursor: "pointer", color: "#1677ff" }}
+          >
+            —— 没有更多通知了 ——
+          </div>
+        }
+      />
+    </div>
   );
 
   return (
@@ -188,59 +251,74 @@ const Notice: React.FC = () => {
                 <Text>{selectedNotification.message}</Text>
               </Descriptions.Item>
               <Descriptions.Item label="通知状态">
-                <Tag color={selectedNotification.status === "unread" ? "red" : "green"}>
+                <Tag
+                  color={
+                    selectedNotification.status === "unread" ? "red" : "green"
+                  }
+                >
                   {selectedNotification.status === "unread" ? "未读" : "已读"}
                 </Tag>
               </Descriptions.Item>
               <Descriptions.Item label="创建时间">
-                {dayjs(selectedNotification.createdAt).format("YYYY-MM-DD HH:mm:ss")}
+                {dayjs(selectedNotification.createdAt).format(
+                  "YYYY-MM-DD HH:mm:ss",
+                )}
               </Descriptions.Item>
               <Descriptions.Item label="更新时间">
-                {dayjs(selectedNotification.updatedAt).format("YYYY-MM-DD HH:mm:ss")}
+                {dayjs(selectedNotification.updatedAt).format(
+                  "YYYY-MM-DD HH:mm:ss",
+                )}
               </Descriptions.Item>
             </Descriptions>
 
             {/* 如果是反馈回复类型，显示完整的反馈信息 */}
-            {selectedNotification.type === "feedback_reply" && selectedNotification.relatedId && (
-              <>
-                <Divider>反馈回复详情</Divider>
-                {detailLoading ? (
-                  <div style={{ textAlign: "center", padding: "20px" }}>
-                    <Spin />
-                  </div>
-                ) : feedbackDetail ? (
-                  <Descriptions column={1} bordered size="small">
-                    <Descriptions.Item label="回复内容">
-                      <div style={{
-                        padding: "12px",
-                        backgroundColor: "#f5f5f5",
-                        borderRadius: "4px",
-                        whiteSpace: "pre-wrap",
-                        wordBreak: "break-word"
-                      }}>
-                        <Text>{feedbackDetail.reply}</Text>
-                      </div>
-                    </Descriptions.Item>
-
-                    {feedbackDetail.repliedAt && (
-                      <Descriptions.Item label="回复时间">
-                        {dayjs(feedbackDetail.repliedAt).format("YYYY-MM-DD HH:mm:ss")}
+            {selectedNotification.type === "feedback_reply" &&
+              selectedNotification.relatedId && (
+                <>
+                  <Divider>反馈回复详情</Divider>
+                  {detailLoading ? (
+                    <div style={{ textAlign: "center", padding: "20px" }}>
+                      <Spin />
+                    </div>
+                  ) : feedbackDetail ? (
+                    <Descriptions column={1} bordered size="small">
+                      <Descriptions.Item label="回复内容">
+                        <div
+                          style={{
+                            padding: "12px",
+                            backgroundColor: "#f5f5f5",
+                            borderRadius: "4px",
+                            whiteSpace: "pre-wrap",
+                            wordBreak: "break-word",
+                          }}
+                        >
+                          <Text>{feedbackDetail.reply}</Text>
+                        </div>
                       </Descriptions.Item>
-                    )}
-                    <Descriptions.Item label="反馈时间">
-                      {dayjs(feedbackDetail.createdAt).format("YYYY-MM-DD HH:mm:ss")}
-                    </Descriptions.Item>
-                  </Descriptions>
-                ) : (
-                  <Alert
-                    message="无法获取反馈详情"
-                    description="反馈信息可能已被删除"
-                    type="warning"
-                    showIcon
-                  />
-                )}
-              </>
-            )}
+
+                      {feedbackDetail.repliedAt && (
+                        <Descriptions.Item label="回复时间">
+                          {dayjs(feedbackDetail.repliedAt).format(
+                            "YYYY-MM-DD HH:mm:ss",
+                          )}
+                        </Descriptions.Item>
+                      )}
+                      <Descriptions.Item label="反馈时间">
+                        {dayjs(feedbackDetail.createdAt).format(
+                          "YYYY-MM-DD HH:mm:ss",
+                        )}
+                      </Descriptions.Item>
+                    </Descriptions>
+                  ) : (
+                    <Alert
+                      message="无法获取反馈详情"
+                      description="反馈信息可能已被删除"
+                      type="warning"
+                      showIcon
+                    />
+                  )}
+                </>
+              )}
           </div>
         )}
       </Modal>
