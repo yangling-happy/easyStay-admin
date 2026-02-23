@@ -40,6 +40,8 @@ const HotelDetailView: React.FC<Props> = ({ data, type }) => {
     update: "修改信息",
     audit_approved: "审核通过",
     audit_rejected: "审核拒绝",
+    offline: "下线酒店",
+    online: "上线酒店",
   };
 
   const roleMap: Record<string, string> = {

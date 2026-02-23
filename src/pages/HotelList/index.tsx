@@ -19,7 +19,7 @@ import {
   ExclamationCircleOutlined,
   CopyOutlined,
 } from "@ant-design/icons";
-import { patch, post } from "@/api/http/request";
+import { hotelService } from "@/api/services/hotelService";
 import { useActiveHotels } from "./hooks/useActiveHotels";
 import HotelDetailView from "@/components/HotelDetailView";
 import { getFullAddress } from "@/utils/addressData";
@@ -49,12 +49,12 @@ const HotelList: React.FC = () => {
     if (record.isActive) {
       Modal.confirm({
         title: "确定要下线该酒店吗？",
-        content: "下线后旅客将无法预订，重新上线需管理员再次审核。",
+        content: "下线后旅客将无法预订。",
         okText: "确认下线",
         okButtonProps: { danger: true },
         onOk: async () => {
           try {
-            await patch(`/hotels/${hotelId}/offline`);
+            await hotelService.offlineHotel(hotelId);
             message.success("酒店已下线");
             refresh(); // 刷新数据
           } catch (error: any) {
@@ -63,20 +63,39 @@ const HotelList: React.FC = () => {
         },
       });
     } else {
-      Modal.confirm({
-        title: "申请恢复上线",
-        content: "提交后将进入待审核列表，审核通过后方可重新销售。",
-        okText: "提交申请",
-        onOk: async () => {
-          try {
-            await post(`/hotels/${hotelId}/re-apply`);
-            message.success("申请已提交，请关注审核记录");
-            refresh();
-          } catch (error: any) {
-            message.error("提交失败");
-          }
-        },
-      });
+      if (record.status === "approved") {
+        Modal.confirm({
+          title: "恢复上线",
+          content: "确认恢复上线吗？恢复后酒店将立即开放预订。",
+          okText: "确认上线",
+          onOk: async () => {
+            try {
+              await hotelService.onlineHotel(hotelId);
+              message.success("酒店已恢复上线");
+              refresh();
+            } catch (error: any) {
+              message.error(error.response?.data?.message || "上线失败");
+            }
+          },
+        });
+      } else {
+        Modal.confirm({
+          title: "申请恢复上线",
+          content: "提交后将进入待审核列表，审核通过后方可重新销售。",
+          okText: "提交申请",
+          onOk: async () => {
+            try {
+              await fetch(`/api/hotels/${hotelId}/re-apply`, {
+                method: "POST",
+              });
+              message.success("申请已提交，请关注审核记录");
+              refresh();
+            } catch (error: any) {
+              message.error("提交失败");
+            }
+          },
+        });
+      }
     }
   };
 
