@@ -24,7 +24,6 @@ import { useActiveHotels } from "./hooks/useActiveHotels";
 import HotelDetailView from "@/components/HotelDetailView";
 import { getFullAddress } from "@/utils/addressData";
 import { formatDateTime } from "@/utils/dateUtils";
-// src/pages/HotelList/index.tsx
 import HotelSearchInput from "@/components/HotelSearchInput";
 import { filterHotelsByKeyword } from "@/utils/filterHotelsByKeyword.";
 const { Text } = Typography;
@@ -132,22 +131,22 @@ const HotelList: React.FC = () => {
         );
       },
     },
-    {
-      title: "酒店名称",
-      dataIndex: "name",
-      key: "name",
-      render: (text: string) => (
-        <Text strong style={{ color: "#1890ff" }}>
-          {text}
-        </Text>
-      ),
-    },
-    {
-      title: "英文名称",
-      dataIndex: "nameEn",
-      key: "nameEn",
-      render: (nameEn: string) => nameEn || "-",
-    },
+{
+    title: "酒店名称",
+    dataIndex: "name",
+    width: 200,
+    ellipsis: true,
+    render: (name: string, record: any) => (
+      <div>
+        <div>{name}</div> 
+        {record.nameEn && (
+          <div style={{ color: "#888", fontSize: "12px" }}>
+            {record.nameEn}
+          </div>
+        )}
+      </div>
+    ),
+  },
     {
       title: "地区",
       key: "location",
@@ -180,6 +179,7 @@ const HotelList: React.FC = () => {
     {
       title: "最后核准日期",
       key: "updateTime",
+      width: 160,
       render: (_: unknown, record: any) => {
         const date = record.updateTime || record.updatedAt;
         return formatDateTime(date);

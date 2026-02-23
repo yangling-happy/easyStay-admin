@@ -245,4 +245,4 @@ const HotelAudit = () => {
   )
 }
 
-export default HotelAudit
+export default HotelAudit;

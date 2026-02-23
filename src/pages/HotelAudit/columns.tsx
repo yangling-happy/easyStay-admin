@@ -1,7 +1,7 @@
 // src/pages/HotelAudit/columns.tsx
 import type { ColumnsType } from "antd/es/table";
-import { Tag, Button, Space, Tooltip } from "antd";
-import { EyeOutlined } from "@ant-design/icons";
+import { Tag, Button, Space, Tooltip, message } from "antd";
+import { EyeOutlined, CopyOutlined } from "@ant-design/icons";
 import type { Hotel } from "@/types/hotel";
 import dayjs from "dayjs";
 import { getFullAddress } from "@/utils/addressData";
@@ -22,10 +22,57 @@ export const getColumns = (
   onViewDetail: (hotel: Hotel) => void,
 ): ColumnsType<Hotel> => [
   {
+    title: "酒店编号",
+    dataIndex: "id",
+    key: "id",
+    width: 120,
+    render: (id: string, record: any) => {
+      const displayId = id || record._id;
+      const shortId = displayId?.slice(-6).toUpperCase();
+      const fullId = displayId;
+
+      return (
+        <Tooltip title={`完整编号: ${fullId}`}>
+          <Space>
+            <code
+              style={{
+                color: "#1890ff",
+                cursor: "pointer",
+                textDecoration: "underline",
+              }}
+              onClick={() => {
+                navigator.clipboard.writeText(fullId);
+                message.success("编号已复制");
+              }}
+            >
+              {shortId}
+            </code>
+            <CopyOutlined
+              style={{ color: "#1890ff", cursor: "pointer" }}
+              onClick={() => {
+                navigator.clipboard.writeText(fullId);
+              }}
+            />
+          </Space>
+        </Tooltip>
+      );
+    },
+  },
+  {
     title: "酒店名称",
     dataIndex: "name",
     width: 200,
     ellipsis: true,
+    render: (name: string, record: Hotel) => (
+      <div>
+        <div>{name}</div> 
+        {record.nameEn && (
+          <div style={{ color: "#888", fontSize: "12px" }}>
+            {record.nameEn}
+          </div>
+        )}
+      </div>
+    ),
   },
   {
     title: "地区",
@@ -38,13 +85,13 @@ export const getColumns = (
   {
     title: "详细地址",
     dataIndex: "address",
-    width: 200,
+    width: 180,
     ellipsis: true,
   },
   {
     title: "星级",
     dataIndex: "star",
-    width: 90,
+    width: 100,
     render: (star) => {
       // 处理 undefined 或 null 的情况
       if (star === undefined || star === null) {
@@ -105,7 +152,7 @@ export const getColumns = (
   },
   {
     title: "操作",
-    width: 250,
+    width: 170,
     fixed: "right",
     render: (_, record) => (
       <Space>

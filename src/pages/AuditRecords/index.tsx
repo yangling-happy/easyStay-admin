@@ -77,17 +77,22 @@ const AuditRecords: React.FC = () => {
         );
       },
     },
-    {
-      title: "酒店名称",
-      dataIndex: "name",
-      key: "name",
-    },
-    {
-      title: "英文名称",
-      dataIndex: "nameEn",
-      key: "nameEn",
-      render: (nameEn: string) => nameEn || "-",
-    },
+{
+    title: "酒店名称",
+    dataIndex: "name",
+    width: 200,
+    ellipsis: true,
+    render: (name: string, record: any) => (
+      <div>
+        <div>{name}</div> 
+        {record.nameEn && (
+          <div style={{ color: "#888", fontSize: "12px" }}>
+            {record.nameEn}
+          </div>
+        )}
+      </div>
+    ),
+  },
     {
       title: "地区",
       key: "location",
