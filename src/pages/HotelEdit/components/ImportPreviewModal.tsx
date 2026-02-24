@@ -21,6 +21,7 @@ import {
   CheckCircleOutlined,
   CloseCircleOutlined,
 } from "@ant-design/icons";
+import { useNavigate } from "react-router-dom";
 import type { ValidationError, ImportResult } from "../batchImport/types";
 import type { Hotel } from "../../../types/hotel";
 
@@ -47,6 +48,8 @@ const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
   onCancel,
   hotels,
 }) => {
+  const navigate = useNavigate();
+
   console.log("ImportPreviewModal渲染:", {
     visible,
     importResults,
@@ -432,7 +435,8 @@ const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
               key="goToIncomplete"
               type="primary"
               onClick={() => {
-                window.location.href = "/hotels/incomplete?status=all";
+                onCancel();
+                navigate("/hotels/incomplete?status=all");
               }}
             >
               前往待完善酒店
