@@ -31,6 +31,8 @@ interface ImportPreviewModalProps {
   validationErrors: ValidationError[];
   /** 关闭弹窗的回调函数 */
   onCancel: () => void;
+  /** 导航到下一步的回调函数 */
+  onNext?: () => void;
 }
 
 const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
@@ -40,6 +42,7 @@ const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
   importResults,
   validationErrors,
   onCancel,
+  onNext,
 }) => {
   /**
    * 酒店数据预览列配置
@@ -270,7 +273,15 @@ const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
         <Button key="close" onClick={onCancel}>
           关闭
         </Button>,
-      ]}
+        importMode === "hotel" &&
+          importResults.length > 0 &&
+          importResults.every((result) => result.status === "success") &&
+          onNext && (
+            <Button key="next" type="primary" onClick={onNext}>
+              下一步
+            </Button>
+          ),
+      ].filter(Boolean)}
     >
       {renderModalContent()}
     </Modal>

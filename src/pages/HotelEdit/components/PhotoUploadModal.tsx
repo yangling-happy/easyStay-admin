@@ -23,6 +23,7 @@ import {
 } from "@ant-design/icons";
 import type { UploadFile } from "antd";
 import type { Hotel } from "../../../types/hotel";
+import { handleHotelImport } from "../batchImport/importProcessor";
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -31,6 +32,7 @@ interface PhotoUploadModalProps {
   hotels: Hotel[];
   onClose: () => void;
   onComplete: () => void;
+  importType?: "hotel" | "room";
 }
 
 const PhotoUploadModal: React.FC<PhotoUploadModalProps> = ({
@@ -38,6 +40,7 @@ const PhotoUploadModal: React.FC<PhotoUploadModalProps> = ({
   hotels,
   onClose,
   onComplete,
+  importType = "hotel",
 }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [uploading, setUploading] = useState(false);
@@ -70,13 +73,60 @@ const PhotoUploadModal: React.FC<PhotoUploadModalProps> = ({
     setUploadProgress(0);
 
     try {
+      // 收集上传的图片数据
+      const hotelsWithPhotos = hotels.map((hotel) => {
+        // 添加酒店照片
+        const hotelPhotoUrls = hotelPhotos.get(hotel.id || "") || [];
+        const hotelImages = hotelPhotoUrls.map((file) => ({
+          url: URL.createObjectURL(file.originFileObj!),
+          isPrimary: false,
+        }));
+
+        // 添加房型照片
+        const roomTypesWithPhotos = hotel.roomTypes.map((roomType, index) => {
+          const roomKey = `${hotel.id || ""}_${index}`;
+          const roomPhotoUrls = roomTypePhotos.get(roomKey) || [];
+          const roomImages = roomPhotoUrls.map((file) => ({
+            url: URL.createObjectURL(file.originFileObj!),
+            isPrimary: false,
+          }));
+
+          return {
+            ...roomType,
+            photos: roomImages,
+          };
+        });
+
+        return {
+          ...hotel,
+          photos: hotelImages,
+          roomTypes: roomTypesWithPhotos,
+        };
+      });
+
       // 模拟上传过程
-      for (let i = 0; i <= 100; i += 10) {
+      for (let i = 0; i <= 80; i += 10) {
         await new Promise((resolve) => setTimeout(resolve, 200));
         setUploadProgress(i);
       }
 
-      message.success("照片上传成功！");
+      // 提交酒店数据到后端
+      const results = await handleHotelImport(hotelsWithPhotos);
+
+      setUploadProgress(100);
+
+      // 显示上传结果
+      const successCount = results.filter((r) => r.status === "success").length;
+      const errorCount = results.filter((r) => r.status === "error").length;
+
+      if (errorCount === 0) {
+        message.success(`照片上传成功！共提交 ${successCount} 家酒店进行审核`);
+      } else {
+        message.warning(
+          `照片上传完成：成功 ${successCount} 家，失败 ${errorCount} 家。请查看错误详情。`,
+        );
+      }
+
       onComplete();
     } catch (error) {
       message.error("照片上传失败");

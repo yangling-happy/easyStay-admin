@@ -6,7 +6,7 @@ import * as XLSX from "xlsx";
 import { message } from "antd";
 
 /**
- * 下载酒店数据模板
+ * 下载酒店基础信息模板
  */
 export const downloadHotelTemplate = (): void => {
   const template = [
@@ -21,18 +21,12 @@ export const downloadHotelTemplate = (): void => {
       酒店星级: "4",
       开业时间: "2020-01-01",
       酒店设施: "WiFi,Parking,Breakfast",
-      房型名称: "豪华大床房",
-      每晚价格: "500",
-      剩余库存: "10",
-      标准入住人数: "2",
-      床型: "big",
-      配套权益: "breakfast,wifi,window",
     },
   ];
 
   const ws = XLSX.utils.json_to_sheet(template);
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "酒店批量导入模板");
+  XLSX.utils.book_append_sheet(wb, ws, "酒店基础信息模板");
 
   // 添加说明工作表，解释各字段的含义和选项
   const instructions = [
@@ -97,6 +91,58 @@ export const downloadHotelTemplate = (): void => {
       示例: "WiFi,Parking,Breakfast",
     },
     {
+      字段名称: "酒店照片",
+      必填: "否",
+      说明: "酒店整体照片，建议上传3-8张大堂或外景图。批量导入后需要上传照片才能进入审核流程",
+      示例: "导入后上传",
+    },
+  ];
+
+  const instructionsWs = XLSX.utils.json_to_sheet(instructions);
+  XLSX.utils.book_append_sheet(wb, instructionsWs, "字段说明");
+
+  XLSX.writeFile(wb, "酒店基础信息导入模板.xlsx");
+  message.success("酒店基础信息模板下载成功");
+};
+
+/**
+ * 下载房型信息模板
+ */
+export const downloadRoomTemplate = (): void => {
+  const template = [
+    {
+      酒店名称: "示例酒店",
+      房型名称: "豪华大床房",
+      每晚价格: "500",
+      剩余库存: "10",
+      标准入住人数: "2",
+      床型: "big",
+      配套权益: "breakfast,wifi,window",
+    },
+    {
+      酒店名称: "示例酒店",
+      房型名称: "豪华双床房",
+      每晚价格: "550",
+      剩余库存: "8",
+      标准入住人数: "2",
+      床型: "double",
+      配套权益: "breakfast,wifi,window,bathroom",
+    },
+  ];
+
+  const ws = XLSX.utils.json_to_sheet(template);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "房型信息模板");
+
+  // 添加说明工作表，解释各字段的含义和选项
+  const instructions = [
+    {
+      字段名称: "酒店名称",
+      必填: "是",
+      说明: "房型所属的酒店名称，必须与已成功导入的酒店名称完全一致",
+      示例: "示例酒店",
+    },
+    {
       字段名称: "房型名称",
       必填: "是",
       说明: "房型的名称",
@@ -133,15 +179,9 @@ export const downloadHotelTemplate = (): void => {
       示例: "breakfast,wifi,window",
     },
     {
-      字段名称: "酒店照片",
-      必填: "否",
-      说明: "酒店整体照片，建议上传3-8张大堂或外景图。批量导入后可在酒店详情页上传照片",
-      示例: "导入后上传",
-    },
-    {
       字段名称: "房型照片",
       必填: "否",
-      说明: "房型照片，建议上传3-5张，展示客房细节、卫浴等。批量导入后可在房型详情页上传照片",
+      说明: "房型照片，建议上传3-5张，展示客房细节、卫浴等。批量导入后需要上传照片才能进入审核流程",
       示例: "导入后上传",
     },
   ];
@@ -149,8 +189,8 @@ export const downloadHotelTemplate = (): void => {
   const instructionsWs = XLSX.utils.json_to_sheet(instructions);
   XLSX.utils.book_append_sheet(wb, instructionsWs, "字段说明");
 
-  XLSX.writeFile(wb, "酒店批量导入模板.xlsx");
-  message.success("酒店数据模板下载成功");
+  XLSX.writeFile(wb, "房型信息导入模板.xlsx");
+  message.success("房型信息模板下载成功");
 };
 
 /**

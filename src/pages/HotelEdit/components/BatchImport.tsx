@@ -16,11 +16,7 @@ import {
   Tabs,
   Divider,
 } from "antd";
-import {
-  DownloadOutlined,
-  UploadOutlined,
-  SettingOutlined,
-} from "@ant-design/icons";
+import { DownloadOutlined, UploadOutlined } from "@ant-design/icons";
 import * as XLSX from "xlsx";
 import { useSelectOptions } from "../hooks/useSelectOptions";
 import type {
@@ -30,15 +26,15 @@ import type {
   ValidationError,
   ImportMode,
 } from "../batchImport/types";
+import { handleOptionsImport } from "../batchImport/importProcessor";
 import {
-  validateHotelData,
-  handleHotelImport,
-  handleOptionsImport,
-} from "../batchImport/importProcessor";
-import { validateOptionData } from "../batchImport/validators";
+  validateHotelBasicInfo,
+  validateOptionData,
+} from "../batchImport/validators";
 import {
   downloadHotelTemplate,
   downloadOptionsTemplate,
+  downloadRoomTemplate,
 } from "../batchImport/templateDownloader";
 import type { Hotel } from "../../../types/hotel";
 import PhotoUploadModal from "./PhotoUploadModal";
@@ -110,6 +106,7 @@ const BatchImport: React.FC<BatchImportProps> = ({ onSuccess, onCancel }) => {
   const [importResults, setImportResults] = useState<ImportResult[]>([]);
   const [showPreview, setShowPreview] = useState(false);
   const [importMode, setImportMode] = useState<ImportMode>("hotel");
+  const [importStep, setImportStep] = useState<"hotel" | "room">("hotel");
   const { importFromExcel, resetToDefault } = useSelectOptions();
   const [photoUploadModalVisible, setPhotoUploadModalVisible] = useState(false);
   const [importedHotels, setImportedHotels] = useState<Hotel[]>([]);
@@ -117,9 +114,11 @@ const BatchImport: React.FC<BatchImportProps> = ({ onSuccess, onCancel }) => {
   /**
    * 下载模板
    */
-  const downloadTemplate = () => {
-    if (importMode === "hotel") {
+  const downloadTemplate = (type: string = "hotel") => {
+    if (type === "hotel") {
       downloadHotelTemplate();
+    } else if (type === "room") {
+      downloadRoomTemplate();
     } else {
       downloadOptionsTemplate();
     }
@@ -128,9 +127,10 @@ const BatchImport: React.FC<BatchImportProps> = ({ onSuccess, onCancel }) => {
   /**
    * 处理文件上传
    * @param file 上传的文件
+   * @param fileType 文件类型：hotel（酒店基础信息）、room（房型信息）
    * @returns false 阻止默认上传行为
    */
-  const handleFileUpload = async (file: File) => {
+  const handleFileUpload = async (file: File, fileType: string = "hotel") => {
     setUploading(true);
     setProgress(0);
     setValidationErrors([]);
@@ -155,7 +155,171 @@ const BatchImport: React.FC<BatchImportProps> = ({ onSuccess, onCancel }) => {
         return false;
       }
 
-      if (importMode === "options") {
+      if (fileType === "hotel") {
+        // 处理酒店基础信息导入
+        const hotelData = jsonData as ExcelRow[];
+        setPreviewData(hotelData);
+
+        // 只验证酒店基础信息，不验证房型信息
+        const errors: ValidationError[] = [];
+        const validHotels: Hotel[] = [];
+
+        hotelData.forEach((row: ExcelRow, index: number) => {
+          const rowNum = index + 2;
+          const basicInfoErrors = validateHotelBasicInfo(row, rowNum);
+
+          if (basicInfoErrors.length > 0) {
+            errors.push(...basicInfoErrors);
+            return;
+          }
+
+          // 解析酒店基础信息
+          const star = parseInt(row["酒店星级"], 10);
+          const newHotel: Hotel = {
+            name: row["酒店中文名"].trim(),
+            nameEn: row["酒店英文名"].trim(),
+            location: [
+              row["所在省份"],
+              row["所在城市"],
+              row["所在区县"],
+            ].filter(Boolean) as string[],
+            address: row["详细地址"]?.trim() || "",
+            phone: row["联系电话"].trim(),
+            star: star as 1 | 2 | 3 | 4 | 5,
+            openingDate: row["开业时间"],
+            amenities: row["酒店设施"]
+              ? row["酒店设施"]
+                  .split(",")
+                  .map((s: string) => s.trim())
+                  .filter(Boolean)
+              : [],
+            roomTypes: [],
+            photos: [], // 照片需要单独上传
+            status: "pending",
+            ownerId: localStorage.getItem("userId") || "user_001",
+            createTime: new Date().toISOString(),
+            updateTime: new Date().toISOString(),
+            isActive: true,
+            isDeleted: false,
+          };
+
+          validHotels.push(newHotel);
+        });
+
+        setProgress(60);
+
+        if (errors.length > 0) {
+          setValidationErrors(errors);
+          message.warning(`发现 ${errors.length} 个数据验证错误，请检查后重试`);
+          setShowPreview(true);
+          setUploading(false);
+          return false;
+        }
+
+        setProgress(80);
+
+        // 保存导入的酒店数据，用于照片上传
+        setImportedHotels(validHotels);
+
+        setProgress(100);
+        setImportResults(
+          validHotels.map((hotel) => ({
+            hotelName: hotel.name,
+            status: "success",
+            message: "酒店基础信息导入成功，等待上传图片",
+            hotelId: hotel.id,
+          })),
+        );
+
+        message.success(
+          `批量导入成功！共导入 ${validHotels.length} 家酒店的基础信息`,
+        );
+        setShowPreview(true);
+      } else if (fileType === "room") {
+        // 处理房型信息导入
+        const roomData = jsonData;
+        setPreviewData(roomData);
+
+        // 这里需要添加房型数据的验证逻辑
+        // 暂时简单验证
+        const errors: ValidationError[] = [];
+        roomData.forEach((row: any, index: number) => {
+          if (!row["酒店名称"]?.trim()) {
+            errors.push({
+              row: index + 2,
+              field: "酒店名称",
+              message: "不能为空",
+            });
+          }
+          if (!row["房型名称"]?.trim()) {
+            errors.push({
+              row: index + 2,
+              field: "房型名称",
+              message: "不能为空",
+            });
+          }
+          if (!row["每晚价格"] || isNaN(parseFloat(row["每晚价格"]))) {
+            errors.push({
+              row: index + 2,
+              field: "每晚价格",
+              message: "必须是有效的正数",
+            });
+          }
+          if (!row["剩余库存"] || isNaN(parseInt(row["剩余库存"]))) {
+            errors.push({
+              row: index + 2,
+              field: "剩余库存",
+              message: "必须是有效的非负整数",
+            });
+          }
+          if (
+            !row["标准入住人数"] ||
+            isNaN(parseInt(row["标准入住人数"])) ||
+            parseInt(row["标准入住人数"]) < 1 ||
+            parseInt(row["标准入住人数"]) > 4
+          ) {
+            errors.push({
+              row: index + 2,
+              field: "标准入住人数",
+              message: "必须是1-4之间的整数",
+            });
+          }
+          if (
+            !row["床型"] ||
+            !["big", "double", "king"].includes(row["床型"])
+          ) {
+            errors.push({
+              row: index + 2,
+              field: "床型",
+              message: "必须是big/double/king之一",
+            });
+          }
+        });
+
+        setProgress(60);
+
+        if (errors.length > 0) {
+          setValidationErrors(errors);
+          message.warning(`发现 ${errors.length} 个数据验证错误，请检查后重试`);
+          setShowPreview(true);
+          setUploading(false);
+          return false;
+        }
+
+        setProgress(100);
+        setImportResults(
+          roomData.map((row: any) => ({
+            hotelName: row["酒店名称"],
+            status: "success",
+            message: `房型"${row["房型名称"]}"导入成功，等待上传图片`,
+          })),
+        );
+
+        message.success(
+          `批量导入成功！共导入 ${roomData.length} 个房型的基础信息`,
+        );
+        setShowPreview(true);
+      } else if (importMode === "options") {
         const optionData = jsonData as OptionExcelRow[];
         setPreviewData(optionData as any);
 
@@ -176,54 +340,6 @@ const BatchImport: React.FC<BatchImportProps> = ({ onSuccess, onCancel }) => {
 
         setProgress(80);
         await handleOptionsImport(optionData, importFromExcel);
-      } else {
-        const hotelData = jsonData as ExcelRow[];
-        setPreviewData(hotelData);
-        const { valid, errors } = validateHotelData(hotelData);
-
-        setProgress(60);
-
-        if (errors.length > 0) {
-          setValidationErrors(errors);
-          message.warning(`发现 ${errors.length} 个数据验证错误，请检查后重试`);
-          setShowPreview(true);
-          setUploading(false);
-          return false;
-        }
-
-        setProgress(80);
-
-        // 保存导入的酒店数据，用于照片上传
-        setImportedHotels(valid);
-
-        // 导入酒店数据
-        const results = await handleHotelImport(valid);
-
-        setProgress(100);
-        setImportResults(results);
-
-        // 显示导入结果
-        const successCount = results.filter(
-          (r) => r.status === "success",
-        ).length;
-        const errorCount = results.filter((r) => r.status === "error").length;
-
-        if (errorCount === 0) {
-          message.success(`批量导入成功！共导入 ${successCount} 家酒店`);
-
-          // 显示照片上传模态框
-          setPhotoUploadModalVisible(true);
-
-          if (onSuccess) {
-            onSuccess();
-          }
-        } else {
-          message.warning(
-            `批量导入完成：成功 ${successCount} 家，失败 ${errorCount} 家。请查看错误详情。`,
-          );
-        }
-
-        setShowPreview(true);
       }
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : "未知错误";
@@ -246,12 +362,12 @@ const BatchImport: React.FC<BatchImportProps> = ({ onSuccess, onCancel }) => {
       >
         <Space direction="vertical" size="large" style={styles.space}>
           <Tabs
-            activeKey={importMode}
-            onChange={(key) => setImportMode(key as ImportMode)}
+            activeKey={importStep}
+            onChange={(key) => setImportStep(key as "hotel" | "room")}
             items={[
               {
                 key: "hotel",
-                label: "酒店数据导入",
+                label: "酒店基础信息导入",
                 children: (
                   <>
                     <div style={styles.section}>
@@ -261,12 +377,13 @@ const BatchImport: React.FC<BatchImportProps> = ({ onSuccess, onCancel }) => {
                           点击下方按钮下载 Excel 模板
                         </li>
                         <li style={{ marginBottom: "8px" }}>
-                          在本地填写酒店和房型信息
+                          在本地填写酒店基础信息
                         </li>
                         <li style={{ marginBottom: "8px" }}>
                           上传填写好的 Excel 文件
                         </li>
-                        <li>系统自动验证并批量提交</li>
+                        <li style={{ marginBottom: "8px" }}>上传酒店图片</li>
+                        <li>提交审核</li>
                       </ol>
                     </div>
 
@@ -274,11 +391,11 @@ const BatchImport: React.FC<BatchImportProps> = ({ onSuccess, onCancel }) => {
                       <Button
                         type="primary"
                         icon={<DownloadOutlined />}
-                        onClick={downloadTemplate}
+                        onClick={() => downloadTemplate("hotel")}
                         size="large"
                         style={{ padding: "0 24px", height: "40px" }}
                       >
-                        下载 Excel 模板
+                        下载酒店模板
                       </Button>
                     </div>
 
@@ -289,7 +406,9 @@ const BatchImport: React.FC<BatchImportProps> = ({ onSuccess, onCancel }) => {
                       <div style={styles.uploadSection}>
                         <Upload.Dragger
                           accept=".xlsx,.xls"
-                          beforeUpload={handleFileUpload}
+                          beforeUpload={(file) =>
+                            handleFileUpload(file, "hotel")
+                          }
                           showUploadList={false}
                           disabled={uploading}
                         >
@@ -324,56 +443,57 @@ const BatchImport: React.FC<BatchImportProps> = ({ onSuccess, onCancel }) => {
                       <h3 style={styles.title}>注意事项：</h3>
                       <ul style={styles.notice}>
                         <li style={{ marginBottom: "6px" }}>
-                          同一酒店可以有多个房型，请在 Excel 中按行填写
-                        </li>
-                        <li style={{ marginBottom: "6px" }}>
                           酒店星级必须是 1-5 之间的数字
                         </li>
                         <li style={{ marginBottom: "6px" }}>
-                          床型可选：big(1.8m大床)、double(1.2m双床)、king(2.0m超大床)
+                          开业时间格式为YYYY-MM-DD
                         </li>
                         <li style={{ marginBottom: "6px" }}>
-                          标准入住人数必须是 1-4 之间的整数
+                          酒店设施用逗号分隔
                         </li>
                         <li style={{ marginBottom: "6px" }}>
-                          酒店设施和配套权益用逗号分隔
-                        </li>
-                        <li style={{ marginBottom: "6px" }}>
-                          照片需要在批量导入成功后单独上传
+                          酒店图片上传是必要环节，未完成图片上传不得进入审核流程
                         </li>
                         <li style={{ marginBottom: "6px" }}>
                           酒店照片：建议上传3-8张大堂或外景图
                         </li>
-                        <li style={{ marginBottom: "6px" }}>
-                          房型照片：建议上传3-5张，展示客房细节、卫浴等
-                        </li>
-                        <li>每个酒店必须至少包含一种房型</li>
+                        <li>每个酒店必须填写完整的基础信息</li>
                       </ul>
                     </div>
                   </>
                 ),
               },
               {
-                key: "options",
-                label: "Select选项导入",
+                key: "room",
+                label: "房型信息导入",
                 children: (
                   <>
                     <div style={styles.section}>
-                      <h3 style={styles.title}>功能说明：</h3>
-                      <p style={{ lineHeight: "1.6" }}>
-                        通过Excel批量导入Select组件的选项，支持酒店设施、床型、配套权益等选项的自定义扩展。
-                      </p>
+                      <h3 style={styles.title}>操作步骤：</h3>
+                      <ol style={styles.steps}>
+                        <li style={{ marginBottom: "8px" }}>
+                          点击下方按钮下载 Excel 模板
+                        </li>
+                        <li style={{ marginBottom: "8px" }}>
+                          在本地填写房型信息，关联已导入的酒店
+                        </li>
+                        <li style={{ marginBottom: "8px" }}>
+                          上传填写好的 Excel 文件
+                        </li>
+                        <li style={{ marginBottom: "8px" }}>上传房型图片</li>
+                        <li>提交审核</li>
+                      </ol>
                     </div>
 
                     <div style={styles.buttonGroup}>
                       <Button
                         type="primary"
                         icon={<DownloadOutlined />}
-                        onClick={downloadTemplate}
+                        onClick={() => downloadTemplate("room")}
                         size="large"
                         style={{ padding: "0 24px", height: "40px" }}
                       >
-                        下载选项模板
+                        下载房型模板
                       </Button>
                     </div>
 
@@ -384,7 +504,9 @@ const BatchImport: React.FC<BatchImportProps> = ({ onSuccess, onCancel }) => {
                       <div style={styles.uploadSection}>
                         <Upload.Dragger
                           accept=".xlsx,.xls"
-                          beforeUpload={handleFileUpload}
+                          beforeUpload={(file) =>
+                            handleFileUpload(file, "room")
+                          }
                           showUploadList={false}
                           disabled={uploading}
                         >
@@ -416,36 +538,34 @@ const BatchImport: React.FC<BatchImportProps> = ({ onSuccess, onCancel }) => {
                     <Divider style={styles.divider} />
 
                     <div style={styles.section}>
-                      <h3 style={styles.title}>Excel格式说明：</h3>
+                      <h3 style={styles.title}>注意事项：</h3>
                       <ul style={styles.notice}>
-                        <li style={{ marginBottom: "8px" }}>
-                          <strong>选项类型</strong>
-                          ：必须是"酒店设施"、"床型"、"配套权益"之一
+                        <li style={{ marginBottom: "6px" }}>
+                          房型名称不能为空
                         </li>
-                        <li style={{ marginBottom: "8px" }}>
-                          <strong>选项值</strong>
-                          ：选项的实际值（英文或数字），如"Spa"、"queen"
+                        <li style={{ marginBottom: "6px" }}>
+                          每晚价格必须是有效的正数
                         </li>
-                        <li style={{ marginBottom: "8px" }}>
-                          <strong>选项标签</strong>
-                          ：选项显示的中文标签，如"水疗中心"、"1.5m特大床"
+                        <li style={{ marginBottom: "6px" }}>
+                          剩余库存必须是有效的非负整数
                         </li>
-                        <li style={{ marginBottom: "8px" }}>
-                          导入后的选项将自动应用到BasicInfoForm和RoomTypeFormList的Select组件
+                        <li style={{ marginBottom: "6px" }}>
+                          标准入住人数必须是1-4之间的整数
                         </li>
-                        <li>选项数据保存在localStorage中，刷新页面不会丢失</li>
+                        <li style={{ marginBottom: "6px" }}>
+                          床型可选：big(1.8m大床)、double(1.2m双床)、king(2.0m超大床)
+                        </li>
+                        <li style={{ marginBottom: "6px" }}>
+                          配套权益用逗号分隔
+                        </li>
+                        <li style={{ marginBottom: "6px" }}>
+                          房型图片上传是必要环节，未完成图片上传不得进入审核流程
+                        </li>
+                        <li style={{ marginBottom: "6px" }}>
+                          房型照片：建议上传3-5张，展示客房细节、卫浴等
+                        </li>
+                        <li>每个房型必须关联一个已成功导入的酒店</li>
                       </ul>
-                    </div>
-
-                    <div style={{ marginTop: "20px" }}>
-                      <Button
-                        danger
-                        icon={<SettingOutlined />}
-                        onClick={resetToDefault}
-                        style={{ padding: "0 16px" }}
-                      >
-                        重置为默认选项
-                      </Button>
                     </div>
                   </>
                 ),
@@ -466,6 +586,10 @@ const BatchImport: React.FC<BatchImportProps> = ({ onSuccess, onCancel }) => {
             if (onCancel) {
               onCancel();
             }
+          }}
+          onNext={() => {
+            setShowPreview(false);
+            setPhotoUploadModalVisible(true);
           }}
         />
 

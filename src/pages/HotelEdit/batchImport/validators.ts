@@ -102,6 +102,18 @@ export const validateHotelRoomTypes = (
         field: "酒店房型",
         message: `酒店"${hotel.name}"没有房型数据，每个酒店必须至少包含一种房型`,
       });
+    } else {
+      // 验证每个酒店至少包含一个已上线状态的房间
+      const hasActiveRoom = hotel.roomTypes.some(
+        (room: any) => room.isActive !== false,
+      );
+      if (!hasActiveRoom) {
+        errors.push({
+          row: 1,
+          field: "房间状态",
+          message: `酒店"${hotel.name}"没有已上线的房间，每个酒店必须至少包含一个已上线状态的房间`,
+        });
+      }
     }
   });
 

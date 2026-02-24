@@ -76,7 +76,6 @@ export const validateHotelData = (
         updateTime: new Date().toISOString(),
         isActive: true,
         isDeleted: false,
-        description: "",
       };
       hotelMap.set(hotelKey, newHotel);
     }
@@ -97,6 +96,7 @@ export const validateHotelData = (
               .filter(Boolean)
           : [],
         photos: [], // 照片需要单独上传
+        isActive: true, // 默认上线状态
       };
       hotel.roomTypes.push(newRoomType);
     }
