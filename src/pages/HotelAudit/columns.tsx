@@ -80,10 +80,20 @@ export const getColumns = (
     },
 
     {
-      title: "详细地址",
+      title: "酒店地址",
       dataIndex: "address",
       width: 180,
       ellipsis: true,
+      render: (address: string, record: Hotel) => (
+        <div>
+          <div>{address || "-"}</div>
+          {record.location && record.location.length > 0 && (
+            <div style={{ color: "#888", fontSize: "12px" }}>
+              {getFullAddress(record.location)}
+            </div>
+          )}
+        </div>
+      ),
     },
     {
       title: "星级",

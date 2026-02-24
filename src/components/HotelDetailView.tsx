@@ -225,14 +225,15 @@ const getChangeDetails = (before: any, after: any) => {
           {data.star ? starMap[data.star as keyof typeof starMap] : "未选择"}
         </Descriptions.Item>
 
-        <Descriptions.Item label="所在地区">
-          {Array.isArray(data.location) && data.location.length > 0
-            ? getFullAddress(data.location)
-            : "未选择"}
-        </Descriptions.Item>
-
-        <Descriptions.Item label="详细地址">
-          {data.address || "未提供"}
+        <Descriptions.Item label="酒店地址">
+          <div>
+            <div>{data.address || "未提供"}</div>
+            {Array.isArray(data.location) && data.location.length > 0 && (
+              <div style={{ color: "#888", fontSize: "12px" }}>
+                {getFullAddress(data.location)}
+              </div>
+            )}
+          </div>
         </Descriptions.Item>
 
         <Descriptions.Item label="开业时间">
