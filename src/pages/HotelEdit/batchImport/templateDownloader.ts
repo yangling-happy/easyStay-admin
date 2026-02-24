@@ -28,24 +28,6 @@ export const downloadHotelTemplate = (): void => {
       床型: "big",
       配套权益: "breakfast,wifi,window",
     },
-    {
-      酒店中文名: "示例酒店",
-      酒店英文名: "Example Hotel",
-      所在省份: "北京市",
-      所在城市: "北京市",
-      所在区县: "朝阳区",
-      详细地址: "建国路88号",
-      联系电话: "010-12345678",
-      酒店星级: "4",
-      开业时间: "2020-01-01",
-      酒店设施: "WiFi,Parking,Breakfast",
-      房型名称: "标准双床房",
-      每晚价格: "400",
-      剩余库存: "15",
-      标准入住人数: "2",
-      床型: "double",
-      配套权益: "wifi,window",
-    },
   ];
 
   const ws = XLSX.utils.json_to_sheet(template);

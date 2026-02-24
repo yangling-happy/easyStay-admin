@@ -100,12 +100,12 @@ const PhotoUploadModal: React.FC<PhotoUploadModalProps> = ({
 
   const isStepComplete = (step: number): boolean => {
     if (step === 0) {
-      return hotels.every((hotel) => getHotelPhotoCount(hotel.id || "") >= 3);
+      return hotels.every((hotel) => getHotelPhotoCount(hotel.id || "") >= 1);
     }
     if (step === 1) {
       return hotels.every((hotel) =>
         hotel.roomTypes.every(
-          (_, index) => getRoomTypePhotoCount(hotel.id || "", index) >= 3,
+          (_, index) => getRoomTypePhotoCount(hotel.id || "", index) >= 1,
         ),
       );
     }
@@ -158,8 +158,8 @@ const PhotoUploadModal: React.FC<PhotoUploadModalProps> = ({
             批量导入成功后，请为每个酒店和房型上传照片。照片是展示酒店特色的重要元素，建议上传高质量的照片。
           </Paragraph>
           <Space>
-            <Tag color="blue">酒店照片：3-8张</Tag>
-            <Tag color="green">房型照片：3-5张</Tag>
+            <Tag color="blue">酒店照片：1-8张</Tag>
+            <Tag color="green">房型照片：1-5张</Tag>
           </Space>
         </Card>
 
@@ -202,12 +202,12 @@ const PhotoUploadModal: React.FC<PhotoUploadModalProps> = ({
                       <Text type="secondary">({hotel.nameEn})</Text>
                       <Tag
                         color={
-                          getHotelPhotoCount(hotel.id || "") >= 3
+                          getHotelPhotoCount(hotel.id || "") >= 1
                             ? "success"
                             : "warning"
                         }
                       >
-                        {getHotelPhotoCount(hotel.id || "")}/3 张
+                        {getHotelPhotoCount(hotel.id || "")}/1 张
                       </Tag>
                     </Space>
                   }
@@ -256,9 +256,9 @@ const PhotoUploadModal: React.FC<PhotoUploadModalProps> = ({
                             <Text strong>{roomType.name}</Text>
                             <Text type="secondary">¥{roomType.price}/晚</Text>
                             <Tag
-                              color={photoCount >= 3 ? "success" : "warning"}
+                              color={photoCount >= 1 ? "success" : "warning"}
                             >
-                              {photoCount}/3 张
+                              {photoCount}/1 张
                             </Tag>
                           </Space>
                         }
