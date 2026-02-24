@@ -41,9 +41,6 @@ const RoomTypeFormList: React.FC = () => {
     setBatchImportModalVisible(false);
   };
 
-  const handleBatchImportSuccess = () => {
-    setBatchImportModalVisible(false);
-  };
   return (
     <>
       <Divider orientation="left" style={{ marginTop: 40 }}>
@@ -268,10 +265,7 @@ const RoomTypeFormList: React.FC = () => {
         footer={null}
         width={800}
       >
-        <BatchImport
-          onSuccess={handleBatchImportSuccess}
-          onCancel={handleBatchImportClose}
-        />
+        <BatchImport onCancel={handleBatchImportClose} />
       </Modal>
     </>
   );

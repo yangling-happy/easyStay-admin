@@ -18,19 +18,12 @@ import {
 } from "antd";
 import { DownloadOutlined, UploadOutlined } from "@ant-design/icons";
 import * as XLSX from "xlsx";
-import { useSelectOptions } from "../hooks/useSelectOptions";
 import type {
   ExcelRow,
-  OptionExcelRow,
   ImportResult,
   ValidationError,
-  ImportMode,
 } from "../batchImport/types";
-import { handleOptionsImport } from "../batchImport/importProcessor";
-import {
-  validateHotelBasicInfo,
-  validateOptionData,
-} from "../batchImport/validators";
+import { validateHotelBasicInfo } from "../batchImport/validators";
 import {
   downloadHotelTemplate,
   downloadOptionsTemplate,
@@ -92,11 +85,10 @@ const styles = {
 };
 
 interface BatchImportProps {
-  onSuccess?: () => void;
   onCancel?: () => void;
 }
 
-const BatchImport: React.FC<BatchImportProps> = ({ onSuccess, onCancel }) => {
+const BatchImport: React.FC<BatchImportProps> = ({ onCancel }) => {
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [previewData, setPreviewData] = useState<any[]>([]);
@@ -105,9 +97,7 @@ const BatchImport: React.FC<BatchImportProps> = ({ onSuccess, onCancel }) => {
   );
   const [importResults, setImportResults] = useState<ImportResult[]>([]);
   const [showPreview, setShowPreview] = useState(false);
-  const [importMode, setImportMode] = useState<ImportMode>("hotel");
   const [importStep, setImportStep] = useState<"hotel" | "room">("hotel");
-  const { importFromExcel, resetToDefault } = useSelectOptions();
   const [photoUploadModalVisible, setPhotoUploadModalVisible] = useState(false);
   const [importedHotels, setImportedHotels] = useState<Hotel[]>([]);
 
@@ -319,27 +309,6 @@ const BatchImport: React.FC<BatchImportProps> = ({ onSuccess, onCancel }) => {
           `批量导入成功！共导入 ${roomData.length} 个房型的基础信息`,
         );
         setShowPreview(true);
-      } else if (importMode === "options") {
-        const optionData = jsonData as OptionExcelRow[];
-        setPreviewData(optionData as any);
-
-        // 验证选项数据
-        const optionErrors = validateOptionData(optionData);
-
-        setProgress(60);
-
-        if (optionErrors.length > 0) {
-          setValidationErrors(optionErrors);
-          message.warning(
-            `发现 ${optionErrors.length} 个数据验证错误，请检查后重试`,
-          );
-          setShowPreview(true);
-          setUploading(false);
-          return false;
-        }
-
-        setProgress(80);
-        await handleOptionsImport(optionData, importFromExcel);
       }
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : "未知错误";
@@ -577,7 +546,6 @@ const BatchImport: React.FC<BatchImportProps> = ({ onSuccess, onCancel }) => {
 
         <ImportPreviewModal
           visible={showPreview}
-          importMode={importMode}
           previewData={previewData}
           importResults={importResults}
           validationErrors={validationErrors}

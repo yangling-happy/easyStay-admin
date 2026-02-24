@@ -12,17 +12,11 @@ import {
   CheckCircleOutlined,
   CloseCircleOutlined,
 } from "@ant-design/icons";
-import type {
-  ValidationError,
-  ImportResult,
-  ImportMode,
-} from "../batchImport/types";
+import type { ValidationError, ImportResult } from "../batchImport/types";
 
 interface ImportPreviewModalProps {
   /** 控制弹窗显示/隐藏 */
   visible: boolean;
-  /** 导入模式：hotel 或 options */
-  importMode: ImportMode;
   /** 预览数据 */
   previewData: any[];
   /** 导入结果 */
@@ -37,7 +31,6 @@ interface ImportPreviewModalProps {
 
 const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
   visible,
-  importMode,
   previewData,
   importResults,
   validationErrors,
@@ -71,30 +64,6 @@ const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
       dataIndex: "剩余库存",
       key: "stock",
       width: 80,
-    },
-  ];
-
-  /**
-   * 选项数据预览列配置
-   */
-  const optionPreviewColumns = [
-    {
-      title: "选项类型",
-      dataIndex: "选项类型",
-      key: "optionType",
-      width: 120,
-    },
-    {
-      title: "选项值",
-      dataIndex: "选项值",
-      key: "optionValue",
-      width: 120,
-    },
-    {
-      title: "选项标签",
-      dataIndex: "选项标签",
-      key: "optionLabel",
-      width: 150,
     },
   ];
 
@@ -179,11 +148,11 @@ const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
    * 生成弹窗标题
    */
   const getModalTitle = () => {
-    if (importMode === "options") {
-      return "选项导入预览";
-    }
     if (importResults.length > 0) {
       return "批量导入结果";
+    }
+    if (validationErrors.length > 0) {
+      return "数据验证错误";
     }
     return "数据预览";
   };
@@ -192,18 +161,6 @@ const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
    * 渲染弹窗内容
    */
   const renderModalContent = () => {
-    if (importMode === "options") {
-      return (
-        <Table
-          dataSource={previewData}
-          columns={optionPreviewColumns}
-          rowKey={(_record: any, index?: number) => index ?? 0}
-          pagination={{ pageSize: 10 }}
-          scroll={{ y: 400 }}
-        />
-      );
-    }
-
     if (importResults.length > 0) {
       return (
         <Table
@@ -273,8 +230,7 @@ const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
         <Button key="close" onClick={onCancel}>
           关闭
         </Button>,
-        importMode === "hotel" &&
-          importResults.length > 0 &&
+        importResults.length > 0 &&
           importResults.every((result) => result.status === "success") &&
           onNext && (
             <Button key="next" type="primary" onClick={onNext}>

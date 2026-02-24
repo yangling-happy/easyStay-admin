@@ -32,7 +32,6 @@ interface PhotoUploadModalProps {
   hotels: Hotel[];
   onClose: () => void;
   onComplete: () => void;
-  importType?: "hotel" | "room";
 }
 
 const PhotoUploadModal: React.FC<PhotoUploadModalProps> = ({
@@ -40,7 +39,6 @@ const PhotoUploadModal: React.FC<PhotoUploadModalProps> = ({
   hotels,
   onClose,
   onComplete,
-  importType = "hotel",
 }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [uploading, setUploading] = useState(false);
