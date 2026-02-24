@@ -16,6 +16,7 @@ import {
   validateRoomTypeInfo,
   validateHotelRoomTypes,
 } from "./validators";
+import { getCodesFromNames } from "../../../utils/addressData";
 
 /**
  * 验证酒店数据
@@ -28,6 +29,25 @@ export const validateHotelData = (
   const errors: ValidationError[] = [];
   const validHotels: Hotel[] = [];
   const hotelMap = new Map<string, Hotel>();
+
+  const resolveCompletionStatus = (hotel: Hotel) => {
+    const missingRequiredFields =
+      !hotel.name?.trim() ||
+      !hotel.nameEn?.trim() ||
+      !hotel.address?.trim() ||
+      !hotel.phone?.trim() ||
+      !hotel.openingDate ||
+      !hotel.star ||
+      !hotel.location ||
+      hotel.location.length < 2 ||
+      !hotel.photos ||
+      hotel.photos.length === 0 ||
+      !hotel.roomTypes ||
+      hotel.roomTypes.length === 0 ||
+      hotel.roomTypes.some((room) => !room.photos || room.photos.length === 0);
+
+    return missingRequiredFields ? "incomplete" : "draft";
+  };
 
   hotels.forEach((row: ExcelRow, index: number) => {
     const rowNum = index + 2;
@@ -52,12 +72,22 @@ export const validateHotelData = (
     // 按酒店分组
     const hotelKey = `${row["酒店中文名"]}_${row["酒店英文名"]}`;
     if (!hotelMap.has(hotelKey)) {
+      // 将省、市、区名称转换为编码数组
+      const locationCodes = getCodesFromNames(
+        row["所在省份"] || "",
+        row["所在城市"] || "",
+        row["所在区县"] || "",
+      );
+
       const newHotel: Hotel = {
         name: row["酒店中文名"].trim(),
         nameEn: row["酒店英文名"].trim(),
-        location: [row["所在省份"], row["所在城市"], row["所在区县"]].filter(
-          Boolean,
-        ) as string[],
+        location:
+          locationCodes.length > 0
+            ? locationCodes
+            : ([row["所在省份"], row["所在城市"], row["所在区县"]].filter(
+                Boolean,
+              ) as string[]),
         address: row["详细地址"]?.trim() || "",
         phone: row["联系电话"].trim(),
         star: star as 1 | 2 | 3 | 4 | 5,
@@ -79,6 +109,7 @@ export const validateHotelData = (
         updateTime: new Date().toISOString(),
         isDeleted: false,
       };
+      newHotel.completionStatus = resolveCompletionStatus(newHotel);
       hotelMap.set(hotelKey, newHotel);
     }
 
@@ -101,6 +132,7 @@ export const validateHotelData = (
         isActive: true, // 默认上线状态
       };
       hotel.roomTypes.push(newRoomType);
+      hotel.completionStatus = resolveCompletionStatus(hotel);
     }
   });
 

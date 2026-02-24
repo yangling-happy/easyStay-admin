@@ -43,6 +43,52 @@ export const cityOptions: CascaderOption[] = provinces.map((province) => ({
     })),
   })),
 }));
+
+/**
+ * 将省、市、区名称转换为编码数组
+ * @param provinceName 省名称，如 "北京市"
+ * @param cityName 市名称，如 "北京市"
+ * @param areaName 区名称，如 "朝阳区"
+ * @returns 编码数组，如 ['11', '1101', '110101']
+ */
+export const getCodesFromNames = (
+  provinceName: string,
+  cityName: string,
+  areaName: string,
+): string[] => {
+  // 查找省编码
+  const province = provinces.find((p) => p.name === provinceName);
+  if (!province) {
+    console.warn(`未找到省: ${provinceName}`);
+    return [];
+  }
+
+  // 直辖市特殊处理：北京市、天津市、上海市、重庆市
+  // 这些直辖市的市名称在china-division中是"市辖区"，但用户可能填写"北京市"等
+  const directCities = ["北京市", "天津市", "上海市", "重庆市"];
+  let actualCityName = cityName;
+  if (directCities.includes(provinceName) && cityName === provinceName) {
+    actualCityName = "市辖区";
+  }
+
+  // 查找市编码
+  const citiesInProvince = cityMap[province.code] || [];
+  const city = citiesInProvince.find((c) => c.name === actualCityName);
+  if (!city) {
+    console.warn(`未找到市: ${cityName} (省: ${provinceName})`);
+    return [province.code];
+  }
+
+  // 查找区编码
+  const areasInCity = areaMap[city.code] || [];
+  const area = areasInCity.find((a) => a.name === areaName);
+  if (!area) {
+    console.warn(`未找到区: ${areaName} (市: ${cityName})`);
+    return [province.code, city.code];
+  }
+
+  return [province.code, city.code, area.code];
+};
 /**
  * 将编码数组转换为详细的中文地址
  * @param codes 编码数组，如 ['31', '3101', '310101']

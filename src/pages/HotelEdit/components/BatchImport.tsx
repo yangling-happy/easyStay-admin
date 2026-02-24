@@ -101,6 +101,25 @@ const BatchImport: React.FC<BatchImportProps> = ({ onCancel }) => {
   const [photoUploadModalVisible, setPhotoUploadModalVisible] = useState(false);
   const [importedHotels, setImportedHotels] = useState<Hotel[]>([]);
 
+  const resolveCompletionStatus = (hotel: Hotel) => {
+    const missingRequiredFields =
+      !hotel.name?.trim() ||
+      !hotel.nameEn?.trim() ||
+      !hotel.address?.trim() ||
+      !hotel.phone?.trim() ||
+      !hotel.openingDate ||
+      !hotel.star ||
+      !hotel.location ||
+      hotel.location.length < 2 ||
+      !hotel.photos ||
+      hotel.photos.length === 0 ||
+      !hotel.roomTypes ||
+      hotel.roomTypes.length === 0 ||
+      hotel.roomTypes.some((room) => !room.photos || room.photos.length === 0);
+
+    return missingRequiredFields ? "incomplete" : "draft";
+  };
+
   /**
    * 下载模板
    */
@@ -194,6 +213,8 @@ const BatchImport: React.FC<BatchImportProps> = ({ onCancel }) => {
             updateTime: new Date().toISOString(),
             isDeleted: false,
           };
+
+          newHotel.completionStatus = resolveCompletionStatus(newHotel);
 
           validHotels.push(newHotel);
         });

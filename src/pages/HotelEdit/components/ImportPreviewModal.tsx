@@ -6,16 +6,7 @@
  */
 
 import React from "react";
-import {
-  Modal,
-  Table,
-  Tag,
-  Button,
-  Space,
-  Card,
-  Typography,
-  message,
-} from "antd";
+import { Modal, Table, Tag, Button, Space, Card, Typography } from "antd";
 import {
   ExclamationCircleOutlined,
   CheckCircleOutlined,

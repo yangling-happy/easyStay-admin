@@ -37,33 +37,51 @@ const router = express.Router();
 
 router.post("/", auth, async (req: AuthRequest, res: Response) => {
   try {
+    const isIncomplete =
+      req.body?.isIncomplete === true ||
+      ["draft", "incomplete", "rejected"].includes(req.body?.completionStatus);
+
+    const completionStatus = isIncomplete
+      ? req.body?.completionStatus || "draft"
+      : null;
+
     const hotelData = {
       ...req.body,
       ownerId: req.user?.userId,
       status: "pending",
+      isIncomplete,
+      completionStatus,
+      isActive: isIncomplete ? false : (req.body?.isActive ?? false),
       createTime: new Date(),
       updateTime: new Date(),
-      auditHistory: [
-        {
-          action: "create",
-          status: "pending",
-          operatorId: req.user?.userId,
-          operatorRole: "merchant",
-          timestamp: new Date(),
-        },
-      ],
+      ...(isIncomplete
+        ? {}
+        : {
+            auditHistory: [
+              {
+                action: "create",
+                status: "pending",
+                operatorId: req.user?.userId,
+                operatorRole: "merchant",
+                timestamp: new Date(),
+              },
+            ],
+          }),
     };
 
     const hotel = new HotelModel(hotelData);
     const savedHotel = await hotel.save();
 
-    await notifyAdminsOfPendingHotel(String(savedHotel._id), savedHotel.name);
+    if (!isIncomplete) {
+      await notifyAdminsOfPendingHotel(String(savedHotel._id), savedHotel.name);
+    }
 
     console.log("酒店保存成功:", {
       id: savedHotel._id,
       name: savedHotel.name,
       isIncomplete: savedHotel.isIncomplete,
       completionStatus: savedHotel.completionStatus,
+      status: savedHotel.status,
     });
 
     res.status(201).json({ success: true, data: savedHotel });

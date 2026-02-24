@@ -19,6 +19,7 @@ router.get("/hotels/pending", async (req, res) => {
     const hotels = await HotelModel.find({
       status: "pending",
       isDeleted: false,
+      isIncomplete: false,
     }).sort({ createTime: -1 });
 
     const hotelsWithId = hotels.map((hotel) => {
@@ -92,7 +93,7 @@ router.get("/hotels/published", async (req, res) => {
     if (stars) {
       // 将字符串按逗号分割成数组并转为数字
       const starArray = String(stars)
-        .split(',')
+        .split(",")
         .map((s) => Number(s.trim()))
         .filter((s) => !isNaN(s));
       if (starArray.length > 0) {
