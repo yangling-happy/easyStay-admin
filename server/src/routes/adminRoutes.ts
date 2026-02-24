@@ -90,11 +90,11 @@ router.get("/hotels/published", async (req, res) => {
 
     // 3. 星级匹配
     if (stars) {
-      let starArray: number[] = [];
-      if (Array.isArray(stars)) {
-        // 处理数组形式的星级
-        starArray = stars.map((s) => Number(s)).filter((s) => !isNaN(s));
-      }
+      // 将字符串按逗号分割成数组并转为数字
+      const starArray = String(stars)
+        .split(',')
+        .map((s) => Number(s.trim()))
+        .filter((s) => !isNaN(s));
       if (starArray.length > 0) {
         query.star = { $in: starArray };
       }
