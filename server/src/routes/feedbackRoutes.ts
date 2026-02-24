@@ -35,8 +35,35 @@ router.get("/list", async (req, res) => {
     const { status } = req.query;
     const filter = status ? { status } : {};
 
-    const list = await FeedbackModel.find(filter).sort({ createdAt: -1 });
-    res.json({ success: true, data: list });
+    const list = await FeedbackModel.find(filter).sort({ createdAt: -1 }).lean();
+
+    const listWithHotelName = await Promise.all(
+      list.map(async (item: any) => {
+        let hotelName = "";
+        let hotelNameEn = "";
+        if (item.hotelId) {
+          try {
+            const hotel = await HotelModel.findById(item.hotelId)
+              .select("name nameEn")
+              .lean();
+            if (hotel) {
+              if (hotel.name) hotelName = hotel.name;
+              if ((hotel as any).nameEn) hotelNameEn = (hotel as any).nameEn;
+            }
+          } catch (_) {
+            // invalid ObjectId, ignore
+          }
+        }
+        return {
+          ...item,
+          id: item._id ? item._id.toString() : item.id,
+          hotelName,
+          hotelNameEn,
+        };
+      })
+    );
+
+    res.json({ success: true, data: listWithHotelName });
   } catch (error) {
     res.status(500).json({ success: false, message: "获取列表失败" });
   }

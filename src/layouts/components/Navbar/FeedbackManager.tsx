@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Table, Tag, Button, Modal, Input, message, Descriptions, Space, Card, Typography, Divider } from "antd";
-import { EyeOutlined, MessageOutlined, ClockCircleOutlined } from "@ant-design/icons";
+import { Table, Tag, Button, Modal, Input, message, Descriptions, Space, Card, Typography, Divider, Tooltip } from "antd";
+import { EyeOutlined, MessageOutlined, ClockCircleOutlined, CopyOutlined } from "@ant-design/icons";
 import axiosInstance from "../../../api/http/axiosConfig";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -14,6 +14,8 @@ const { Text, Paragraph } = Typography;
 interface FeedbackItem {
   id: string;
   hotelId: string;
+  hotelName?: string;
+  hotelNameEn?: string;
   ownerId: string;
   content: string;
   reply?: string;
@@ -106,7 +108,7 @@ const FeedbackManager: React.FC = () => {
       title: "标题",
       dataIndex: "content",
       key: "title",
-      width: 250,
+      width: 150,
       ellipsis: {
         showTitle: false,
       },
@@ -132,11 +134,57 @@ const FeedbackManager: React.FC = () => {
       },
     },
     {
-      title: "酒店ID",
+      title: "酒店编号",
       dataIndex: "hotelId",
       key: "hotelId",
       width: 120,
+      render: (hotelId: string) => {
+        const fullId = hotelId || "";
+        const shortId = fullId ? fullId.slice(-6).toUpperCase() : "-";
+        return (
+          <Tooltip title={`完整编号: ${fullId}`}>
+            <Space>
+              <code
+                style={{
+                  color: "#1890ff",
+                  cursor: "pointer",
+                  textDecoration: "underline",
+                }}
+                onClick={() => {
+                  navigator.clipboard.writeText(fullId);
+                  message.success("编号已复制");
+                }}
+              >
+                {shortId}
+              </code>
+              <CopyOutlined
+                style={{ color: "#1890ff", cursor: "pointer" }}
+                onClick={() => {
+                  navigator.clipboard.writeText(fullId);
+                  message.success("编号已复制");
+                }}
+              />
+            </Space>
+          </Tooltip>
+        );
+      },
+    },
+    {
+      title: "酒店名称",
+      dataIndex: "hotelName",
+      key: "hotelName",
+      width: 200,
       ellipsis: true,
+      render: (name: string, record: FeedbackItem) => (
+        <div>
+          <div>{name || "-"}</div>
+          {record.hotelNameEn && (
+            <div style={{ color: "#888", fontSize: "12px" }}>
+              {record.hotelNameEn}
+            </div>
+          )}
+        </div>
+      ),
     },
     {
       title: "状态",
@@ -268,8 +316,20 @@ const FeedbackManager: React.FC = () => {
                   {extractType(currentRecord.content)}
                 </Tag>
               </Descriptions.Item>
-              <Descriptions.Item label="酒店ID">
-                {currentRecord.hotelId}
+              <Descriptions.Item label="关联酒店">
+                <Space direction="vertical" size={0}>
+                  {currentRecord.hotelName && (
+                    <Text strong>{currentRecord.hotelName}</Text>
+                  )}
+                  {currentRecord.hotelNameEn && (
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                      {currentRecord.hotelNameEn}
+                    </Text>
+                  )}
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    ID: {currentRecord.hotelId}
+                  </Text>
+                </Space>
               </Descriptions.Item>
               <Descriptions.Item label="反馈状态">
                 <Tag color={currentRecord.status === "pending" ? "orange" : "green"}>
