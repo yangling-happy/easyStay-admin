@@ -574,6 +574,10 @@ const BatchImport: React.FC<BatchImportProps> = ({ onCancel }) => {
               onCancel();
             }
           }}
+          onBackToPreview={() => {
+            setPhotoUploadModalVisible(false);
+            setShowPreview(true);
+          }}
         />
       </Card>
     </div>

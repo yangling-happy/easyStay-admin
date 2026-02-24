@@ -32,6 +32,7 @@ interface PhotoUploadModalProps {
   hotels: Hotel[];
   onClose: () => void;
   onComplete: () => void;
+  onBackToPreview?: () => void;
 }
 
 const PhotoUploadModal: React.FC<PhotoUploadModalProps> = ({
@@ -39,6 +40,7 @@ const PhotoUploadModal: React.FC<PhotoUploadModalProps> = ({
   hotels,
   onClose,
   onComplete,
+  onBackToPreview,
 }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [uploading, setUploading] = useState(false);
@@ -173,6 +175,11 @@ const PhotoUploadModal: React.FC<PhotoUploadModalProps> = ({
         <Button key="cancel" onClick={onClose}>
           取消
         </Button>,
+        currentStep === 0 && onBackToPreview && (
+          <Button key="backToPreview" onClick={onBackToPreview}>
+            返回预览导出结果
+          </Button>
+        ),
         currentStep > 0 && (
           <Button key="prev" onClick={() => setCurrentStep(currentStep - 1)}>
             上一步
