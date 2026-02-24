@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { QuestionCircleOutlined, PlusOutlined } from "@ant-design/icons";
 import { Modal, Input, message, Select, Upload, Form, Image } from "antd";
-import axiosInstance from "../../../api/http/axiosConfig"; // 引入统一封装的 axios
+import axiosInstance from "../../../api/http/axiosConfig";
+import { uploadService } from "../../../api/services/uploadService";
 
 const Feedback: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -73,8 +74,8 @@ const Feedback: React.FC = () => {
 
       const ownerId = user.id as string;
 
-      // 3. 组装 content 文本（后端只需要一个 content 字段）
-      const { type, title, description, hotelId } = values;
+      // 3. 组装 content 文本
+      const { type, title, description, hotelId, files } = values;
 
       const contentLines: string[] = [];
       contentLines.push(`【类型】${type === "bug" ? "意见" : type === "ui" ? "问题" : "其他"}`);
@@ -85,8 +86,25 @@ const Feedback: React.FC = () => {
       const content = contentLines.join("\n");
 
       if (!hotelId) {
-        message.error("请填写或选择关联酒店 ID（后端当前要求必填）");
+        message.error("请选择关联酒店");
         return;
+      }
+
+      // 4. 上传图片
+      let imageUrls: string[] = [];
+      if (files && files.length > 0) {
+        const fileList = (files as any[])
+          .map((f) => f.originFileObj)
+          .filter(Boolean) as File[];
+        if (fileList.length > 0) {
+          try {
+            imageUrls = await uploadService.uploadMultipleImages(fileList);
+          } catch (uploadErr) {
+            message.error("图片上传失败，请重试");
+            setSubmitting(false);
+            return;
+          }
+        }
       }
 
       setSubmitting(true);
@@ -94,7 +112,7 @@ const Feedback: React.FC = () => {
         hotelId,
         ownerId,
         content,
-        // notificationId: 可选字段，这里不需要就先不传
+        images: imageUrls,
       })) as {
         success: boolean;
         message?: string;
@@ -180,9 +198,8 @@ const Feedback: React.FC = () => {
             <Input.TextArea rows={4} placeholder="请详细描述您遇到的问题..." />
           </Form.Item>
 
-          {/* 目前后端 Feedback 表还不支持图片，这里只是本地上传预览，不会发到后端 */}
           <Form.Item
-            label="上传图片（可选，仅本地预览）"
+            label="上传图片（可选）"
             name="files"
             valuePropName="fileList"
             getValueFromEvent={(e) => e?.fileList}

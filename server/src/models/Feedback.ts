@@ -4,8 +4,9 @@ export interface IFeedback extends Document {
   _id: mongoose.Types.ObjectId;
   hotelId: string; // 酒店 ID
   ownerId: string; // 商户 ID
-  notificationId?: string; // 关联的通知 ID（可选）
+  notificationId?: string; // 关联的通知 ID
   content: string; // 商户反馈内容
+  images?: string[]; // 反馈图片 URL 数组
   reply?: string; // 管理员回复内容
   status: "pending" | "replied"; // 待处理/已回复
   createdAt: Date;
@@ -31,6 +32,10 @@ const FeedbackSchema = new Schema<IFeedback>(
       required: true,
       trim: true,
       minlength: 1,
+    },
+    images: {
+      type: [String],
+      default: [],
     },
     reply: {
       type: String,

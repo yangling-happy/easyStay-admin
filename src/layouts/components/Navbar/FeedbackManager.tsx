@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Table, Tag, Button, Modal, Input, message, Descriptions, Space, Card, Typography, Divider, Tooltip } from "antd";
+import { Table, Tag, Button, Modal, Input, message, Descriptions, Space, Card, Typography, Divider, Tooltip, Image } from "antd";
 import { EyeOutlined, MessageOutlined, ClockCircleOutlined, CopyOutlined } from "@ant-design/icons";
 import axiosInstance from "../../../api/http/axiosConfig";
 import dayjs from "dayjs";
@@ -18,6 +18,7 @@ interface FeedbackItem {
   hotelNameEn?: string;
   ownerId: string;
   content: string;
+  images?: string[];
   reply?: string;
   status: 'pending' | 'replied';
   createdAt: string;
@@ -361,6 +362,25 @@ const FeedbackManager: React.FC = () => {
                     {extractDescription(currentRecord.content)}
                   </Paragraph>
                 </Card>
+              </>
+            )}
+
+            {currentRecord.images && currentRecord.images.length > 0 && (
+              <>
+                <Divider>反馈图片</Divider>
+                <Image.PreviewGroup>
+                  <Space wrap>
+                    {currentRecord.images.map((url, idx) => (
+                      <Image
+                        key={idx}
+                        src={url}
+                        width={100}
+                        height={100}
+                        style={{ objectFit: "cover", borderRadius: 4 }}
+                      />
+                    ))}
+                  </Space>
+                </Image.PreviewGroup>
               </>
             )}
 

@@ -10,13 +10,14 @@ const router = Router();
  */
 router.post("/", async (req, res) => {
   try {
-    const { hotelId, ownerId, content, notificationId } = req.body;
+    const { hotelId, ownerId, content, notificationId, images } = req.body;
 
     const newFeedback = await FeedbackModel.create({
       hotelId,
       ownerId,
       content,
       notificationId,
+      images: Array.isArray(images) ? images : [],
       status: "pending",
     });
 
