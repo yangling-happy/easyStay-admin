@@ -168,6 +168,7 @@ const PhotoUploadModal: React.FC<PhotoUploadModalProps> = ({
       open={visible}
       onCancel={onClose}
       width={1000}
+      zIndex={2100}
       footer={[
         <Button key="cancel" onClick={onClose}>
           取消

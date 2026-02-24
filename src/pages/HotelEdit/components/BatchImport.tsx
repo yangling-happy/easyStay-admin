@@ -212,14 +212,16 @@ const BatchImport: React.FC<BatchImportProps> = ({ onCancel }) => {
         setImportedHotels(validHotels);
 
         setProgress(100);
-        setImportResults(
-          validHotels.map((hotel) => ({
-            hotelName: hotel.name,
-            status: "success",
-            message: "酒店基础信息导入成功，等待上传图片",
-            hotelId: hotel.id,
-          })),
-        );
+        const results = validHotels.map((hotel) => ({
+          hotelName: hotel.name,
+          status: "success" as const,
+          message: "酒店基础信息导入成功，等待上传图片",
+          hotelId: hotel.id,
+        }));
+        setImportResults(results);
+
+        console.log("导入成功，设置预览数据:", results);
+        console.log("导入的酒店数据:", validHotels);
 
         message.success(
           `批量导入成功！共导入 ${validHotels.length} 家酒店的基础信息`,

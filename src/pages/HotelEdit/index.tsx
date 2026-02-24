@@ -94,12 +94,6 @@ const HotelEdit: React.FC = () => {
     setShowBatchImport(true);
   };
 
-  // 处理批量导入成功
-  const handleBatchImportSuccess = () => {
-    setShowBatchImport(false);
-    message.success("批量创建酒店成功");
-  };
-
   // 处理批量导入取消
   const handleBatchImportCancel = () => {
     setShowBatchImport(false);
@@ -129,7 +123,7 @@ const HotelEdit: React.FC = () => {
           {/* 第0步 */}
           <div style={{ display: current === 0 ? "block" : "none" }}>
             <HotelSelector form={form} onAction={handleProceed} />
-                        {/* 批量创建入口 */}
+            {/* 批量创建入口 */}
             <div style={{ marginBottom: 30, textAlign: "center" }}>
               <Button
                 type="dashed"
@@ -208,10 +202,7 @@ const HotelEdit: React.FC = () => {
           }}
           extra={<Button onClick={handleBatchImportCancel}>关闭</Button>}
         >
-          <BatchImport
-            onSuccess={handleBatchImportSuccess}
-            onCancel={handleBatchImportCancel}
-          />
+          <BatchImport onCancel={handleBatchImportCancel} />
         </Card>
       )}
 

@@ -37,6 +37,13 @@ const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
   onCancel,
   onNext,
 }) => {
+  console.log("ImportPreviewModal渲染:", {
+    visible,
+    importResults,
+    validationErrors,
+    previewData,
+  });
+
   /**
    * 酒店数据预览列配置
    */
@@ -226,6 +233,7 @@ const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
       open={visible}
       onCancel={onCancel}
       width={1000}
+      zIndex={2000}
       footer={[
         <Button key="close" onClick={onCancel}>
           关闭
