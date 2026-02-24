@@ -168,14 +168,14 @@ const HotelList: React.FC = () => {
         </div>
       ),
     },
+
     {
-      title: "地区",
-      key: "location",
-      width: 200,
-      render: (_: unknown, record: any) => {
-        return getFullAddress(record.location) || "未设置";
-      },
+      title: "酒店地址",
+      dataIndex: "address",
+      key: "address",
+      render: (address: string) => address || "-",
     },
+
     {
       title: "当前状态",
       key: "isActive",
