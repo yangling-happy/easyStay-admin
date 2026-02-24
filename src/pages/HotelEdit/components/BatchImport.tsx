@@ -30,9 +30,9 @@ import {
   downloadRoomTemplate,
 } from "../batchImport/templateDownloader";
 import type { Hotel } from "../../../types/hotel";
-import PhotoUploadModal from "./PhotoUploadModal";
+import { hotelService } from "../../../api/services/hotelService";
 import ImportPreviewModal from "./ImportPreviewModal";
-
+import PhotoUploadModal from "./PhotoUploadModal";
 // 样式定义
 const styles = {
   container: {
@@ -214,20 +214,49 @@ const BatchImport: React.FC<BatchImportProps> = ({ onCancel }) => {
         setImportedHotels(validHotels);
 
         setProgress(100);
-        const results = validHotels.map((hotel) => ({
-          hotelName: hotel.name,
-          status: "success" as const,
-          message: "酒店基础信息导入成功，等待上传图片",
-          hotelId: hotel.id,
-        }));
-        setImportResults(results);
 
-        console.log("导入成功，设置预览数据:", results);
+        // 保存酒店数据到后端
+        const saveResults = await Promise.all(
+          validHotels.map(async (hotel) => {
+            try {
+              const savedHotel = await hotelService.saveHotel(hotel);
+              return {
+                hotelName: hotel.name,
+                status: "success" as const,
+                message: "酒店基础信息导入成功",
+                hotelId: savedHotel?.id || hotel.id,
+              };
+            } catch (error: any) {
+              return {
+                hotelName: hotel.name,
+                status: "error" as const,
+                message: error.message || "导入失败",
+              };
+            }
+          }),
+        );
+
+        setImportResults(saveResults);
+
+        console.log("导入成功，设置预览数据:", saveResults);
         console.log("导入的酒店数据:", validHotels);
 
-        message.success(
-          `批量导入成功！共导入 ${validHotels.length} 家酒店的基础信息，请去"待完善酒店"完善照片和房型`,
-        );
+        const successCount = saveResults.filter(
+          (r) => r.status === "success",
+        ).length;
+        const errorCount = saveResults.filter(
+          (r) => r.status === "error",
+        ).length;
+
+        if (errorCount === 0) {
+          message.success(
+            `批量导入成功！共导入 ${successCount} 家酒店的基础信息，请去"待完善酒店"完善照片和房型`,
+          );
+        } else {
+          message.warning(
+            `批量导入完成：成功 ${successCount} 家，失败 ${errorCount} 家。请前往"待完善酒店"查看成功导入的酒店。`,
+          );
+        }
         setShowPreview(true);
       } else if (fileType === "room") {
         // 处理房型信息导入
@@ -556,13 +585,6 @@ const BatchImport: React.FC<BatchImportProps> = ({ onCancel }) => {
           hotels={importedHotels}
           onCancel={() => {
             setShowPreview(false);
-            if (onCancel) {
-              onCancel();
-            }
-          }}
-          onNext={() => {
-            setShowPreview(false);
-            setPhotoUploadModalVisible(true);
           }}
         />
 

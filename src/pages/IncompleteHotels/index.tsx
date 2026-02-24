@@ -1,7 +1,21 @@
-import React, { useState, useEffect, useMemo } from "react";
-import { Table, Button, Card, Space, message, Modal, Tag, Select, Empty } from "antd";
+import React, { useState, useEffect } from "react";
+import {
+  Table,
+  Button,
+  Card,
+  Space,
+  message,
+  Modal,
+  Tag,
+  Select,
+  Empty,
+} from "antd";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { EditOutlined, DeleteOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
+import {
+  EditOutlined,
+  DeleteOutlined,
+  ExclamationCircleOutlined,
+} from "@ant-design/icons";
 import { hotelService } from "@/api/services/hotelService";
 import { getFullAddress } from "@/utils/addressData";
 import { formatDateTime } from "@/utils/dateUtils";
@@ -17,11 +31,30 @@ const IncompleteHotels: React.FC = () => {
   const loadIncompleteHotels = async () => {
     setLoading(true);
     try {
-      const hotels = await hotelService.getIncompleteHotelsByStatus(statusFilter);
-      setIncompleteHotels(hotels);
+      // 直接调用获取所有酒店的接口，然后在前端过滤
+      const hotels = await hotelService.getMyHotels();
+      const filteredHotels = hotels.filter(
+        (h) => h.isIncomplete === true && h.isDeleted === false,
+      );
+
+      // 进一步按状态过滤
+      const finalHotels =
+        statusFilter === "all"
+          ? filteredHotels
+          : filteredHotels.filter((h) => h.completionStatus === statusFilter);
+
+      setIncompleteHotels(finalHotels);
+
+      // 添加日志以便调试
+      console.log("加载待完善酒店:", {
+        totalHotels: hotels.length,
+        incompleteHotels: filteredHotels.length,
+        filteredHotels: finalHotels.length,
+        statusFilter,
+      });
     } catch (error) {
       console.error("获取待完善酒店失败:", error);
-      message.error("获取待完善酒店失败");
+      message.error("获取待完善酒店失败，请重试");
     } finally {
       setLoading(false);
     }
@@ -182,7 +215,13 @@ const IncompleteHotels: React.FC = () => {
                 description={
                   <div>
                     <div>暂无待完善酒店</div>
-                    <div style={{ fontSize: "12px", color: "#999", marginTop: "8px" }}>
+                    <div
+                      style={{
+                        fontSize: "12px",
+                        color: "#999",
+                        marginTop: "8px",
+                      }}
+                    >
                       您可以通过"房型发布"菜单中的"批量创建酒店"功能导入酒店
                     </div>
                   </div>

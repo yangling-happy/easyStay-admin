@@ -6,7 +6,16 @@
  */
 
 import React from "react";
-import { Modal, Table, Tag, Button, Space, Card, Typography } from "antd";
+import {
+  Modal,
+  Table,
+  Tag,
+  Button,
+  Space,
+  Card,
+  Typography,
+  message,
+} from "antd";
 import {
   ExclamationCircleOutlined,
   CheckCircleOutlined,
@@ -26,8 +35,6 @@ interface ImportPreviewModalProps {
   validationErrors: ValidationError[];
   /** 关闭弹窗的回调函数 */
   onCancel: () => void;
-  /** 导航到下一步的回调函数 */
-  onNext?: () => void;
   /** 导入的酒店数据 */
   hotels?: Hotel[];
 }
@@ -38,7 +45,6 @@ const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
   importResults,
   validationErrors,
   onCancel,
-  onNext,
   hotels,
 }) => {
   console.log("ImportPreviewModal渲染:", {
@@ -420,7 +426,19 @@ const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
         <Button key="close" onClick={onCancel}>
           关闭
         </Button>,
-      ]}
+        importResults.length > 0 &&
+          importResults.every((result) => result.status === "success") && (
+            <Button
+              key="goToIncomplete"
+              type="primary"
+              onClick={() => {
+                window.location.href = "/hotels/incomplete?status=all";
+              }}
+            >
+              前往待完善酒店
+            </Button>
+          ),
+      ].filter(Boolean)}
     >
       {renderModalContent()}
     </Modal>

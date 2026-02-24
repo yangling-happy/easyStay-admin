@@ -59,9 +59,17 @@ router.post("/", auth, async (req: AuthRequest, res: Response) => {
 
     await notifyAdminsOfPendingHotel(String(savedHotel._id), savedHotel.name);
 
+    console.log("酒店保存成功:", {
+      id: savedHotel._id,
+      name: savedHotel.name,
+      isIncomplete: savedHotel.isIncomplete,
+      completionStatus: savedHotel.completionStatus,
+    });
+
     res.status(201).json({ success: true, data: savedHotel });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : "未知错误";
+    console.error("保存酒店失败:", error);
     res.status(500).json({ success: false, message: errorMessage });
   }
 });
