@@ -28,6 +28,7 @@ export const ROOM_TYPE_FIELDS = [
   ["roomTypes", "photos"],
 ];
 const RoomTypeFormList: React.FC = () => {
+  const form = Form.useFormInstance();
   const { getOptions } = useSelectOptions();
   const bedTypeOptions = getOptions("bedTypes");
   const roomTagOptions = getOptions("roomTags");
@@ -39,6 +40,29 @@ const RoomTypeFormList: React.FC = () => {
 
   const handleBatchImportClose = () => {
     setBatchImportModalVisible(false);
+  };
+
+  /**
+   * 处理批量导入成功
+   * @param importedRoomTypes 导入的房型数据
+   */
+  const handleImportSuccess = (importedRoomTypes: any[]) => {
+    // 获取当前表单中的房型数据
+    const currentRoomTypes = form.getFieldValue("roomTypes") || [];
+
+    // 合并当前房型和导入的房型
+    const updatedRoomTypes = [...currentRoomTypes, ...importedRoomTypes];
+
+    // 更新表单数据
+    form.setFieldsValue({
+      roomTypes: updatedRoomTypes,
+    });
+
+    // 关闭导入模态框
+    setBatchImportModalVisible(false);
+
+    // 触发表单验证，确保添加的数据符合规则
+    form.validateFields([["roomTypes"]]);
   };
 
   return (
@@ -267,8 +291,9 @@ const RoomTypeFormList: React.FC = () => {
         style={{
           maxWidth: 1200,
         }}
+        destroyOnClose
       >
-        <RoomBatchImport />
+        <RoomBatchImport onImportSuccess={handleImportSuccess} />
       </Modal>
     </>
   );

@@ -54,9 +54,14 @@ const styles = {
   },
 };
 
-interface RoomBatchImportProps {}
+interface RoomBatchImportProps {
+  /** 导入成功后的回调函数，传递导入的房型数据 */
+  onImportSuccess?: (roomTypes: any[]) => void;
+}
 
-const RoomBatchImport: React.FC<RoomBatchImportProps> = () => {
+const RoomBatchImport: React.FC<RoomBatchImportProps> = ({
+  onImportSuccess,
+}) => {
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [previewData, setPreviewData] = useState<any[]>([]);
@@ -159,19 +164,32 @@ const RoomBatchImport: React.FC<RoomBatchImportProps> = () => {
       }
 
       setProgress(100);
-      setPreviewData(roomData);
-      setImportResults(
-        roomData.map((row: any) => ({
-          hotelName: row["酒店名称"],
-          status: "success",
-          message: `房型"${row["房型名称"]}"导入成功，等待上传图片`,
-        })),
-      );
+
+      // 将导入的数据转换为表单格式
+      const formattedRoomTypes = roomData.map((row: any) => ({
+        name: row["房型名称"]?.trim() || "",
+        price: parseFloat(row["每晚价格"]) || 0,
+        stock: parseInt(row["剩余库存"], 10) || 0,
+        capacity: parseInt(row["标准入住人数"], 10) || 2,
+        bedType: row["床型"] || "big",
+        tags: row["配套权益"]
+          ? row["配套权益"]
+              .split(",")
+              .map((s: string) => s.trim())
+              .filter(Boolean)
+          : [],
+        photos: [], // 照片稍后上传
+      }));
+
+      // 调用成功回调，将房型数据传递给父组件
+      if (onImportSuccess) {
+        onImportSuccess(formattedRoomTypes);
+      }
 
       message.success(
-        `批量导入成功！共导入 ${roomData.length} 个房型的基础信息`,
+        `批量导入成功！共导入 ${roomData.length} 个房型，已添加到房型配置列表`,
+        3,
       );
-      setShowPreview(true);
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : "未知错误";
       message.error("文件解析失败: " + errorMessage);
@@ -274,16 +292,19 @@ const RoomBatchImport: React.FC<RoomBatchImportProps> = () => {
         </div>
       </Space>
 
-      <ImportPreviewModal
-        visible={showPreview}
-        previewData={previewData}
-        importResults={importResults}
-        validationErrors={validationErrors}
-        hotels={[]}
-        onCancel={() => {
-          setShowPreview(false);
-        }}
-      />
+      {/* 仅在有验证错误时显示预览模态框 */}
+      {validationErrors.length > 0 && (
+        <ImportPreviewModal
+          visible={showPreview}
+          previewData={previewData}
+          importResults={importResults}
+          validationErrors={validationErrors}
+          hotels={[]}
+          onCancel={() => {
+            setShowPreview(false);
+          }}
+        />
+      )}
     </>
   );
 };
