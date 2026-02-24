@@ -116,6 +116,26 @@ router.get("/records", auth, async (req: AuthRequest, res: Response) => {
   }
 });
 
+router.get("/owner/:ownerId", async (req: AuthRequest, res: Response) => {
+  try {
+    const { ownerId } = req.params;
+
+    // 获取所有可用于关联反馈的酒店：处于审核中、已批准、已下线、已拒绝状态
+    const hotels = await HotelModel.find({
+      ownerId,
+      isDeleted: false,
+      isIncomplete: false,
+      status: { $in: ["pending", "approved", "rejected", "offline"] },
+    }).select("_id name");
+
+    res.json({ success: true, data: hotels });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "未知错误";
+    console.error("获取所有者酒店失败:", error);
+    res.status(500).json({ success: false, message: errorMessage });
+  }
+});
+
 router.get("/detail/:id", auth, async (req: AuthRequest, res: Response) => {
   try {
     const hotel = await HotelModel.findOne({

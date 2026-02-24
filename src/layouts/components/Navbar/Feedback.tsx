@@ -20,11 +20,16 @@ const Feedback: React.FC = () => {
       const user = JSON.parse(userStr);
       const res: any = await axiosInstance.get(`/hotels/owner/${user.id}`);
 
-      if (res.success) {
+      if (res.success && Array.isArray(res.data)) {
+        // 后端已经过滤了状态，只返回可用的酒店
         setHotels(res.data);
+      } else {
+        console.warn("获取酒店数据失败或数据格式不正确", res);
+        setHotels([]);
       }
     } catch (err) {
       console.error("加载酒店失败", err);
+      setHotels([]);
     }
   };
 
@@ -36,7 +41,9 @@ const Feedback: React.FC = () => {
 
   const showModal = () => setIsModalOpen(true);
   const handlePreview = (file: any) => {
-    const src = file.url ?? file.thumbUrl ??
+    const src =
+      file.url ??
+      file.thumbUrl ??
       (file.originFileObj ? URL.createObjectURL(file.originFileObj) : "");
     setPreviewImage(src);
     setPreviewOpen(true);
@@ -78,7 +85,9 @@ const Feedback: React.FC = () => {
       const { type, title, description, hotelId, files } = values;
 
       const contentLines: string[] = [];
-      contentLines.push(`【类型】${type === "bug" ? "意见" : type === "ui" ? "问题" : "其他"}`);
+      contentLines.push(
+        `【类型】${type === "bug" ? "意见" : type === "ui" ? "问题" : "其他"}`,
+      );
       contentLines.push(`【标题】${title}`);
       if (description) {
         contentLines.push(`【详细描述】${description}`);
@@ -165,9 +174,9 @@ const Feedback: React.FC = () => {
               placeholder="请选择您的酒店"
               showSearch
               optionFilterProp="label"
-              options={hotels.map(h => ({
+              options={hotels.map((h) => ({
                 value: h.id,
-                label: h.name
+                label: h.name,
               }))}
             />
           </Form.Item>
