@@ -6,13 +6,15 @@
  */
 
 import React from "react";
-import { Modal, Table, Tag, Button } from "antd";
+import { Modal, Table, Tag, Button, Space, Card, Typography } from "antd";
 import {
   ExclamationCircleOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
 } from "@ant-design/icons";
 import type { ValidationError, ImportResult } from "../batchImport/types";
+import type { Hotel } from "../../../types/hotel";
+import HotelDetailView from "../../../components/HotelDetailView";
 
 interface ImportPreviewModalProps {
   /** 控制弹窗显示/隐藏 */
@@ -27,6 +29,8 @@ interface ImportPreviewModalProps {
   onCancel: () => void;
   /** 导航到下一步的回调函数 */
   onNext?: () => void;
+  /** 导入的酒店数据 */
+  hotels?: Hotel[];
 }
 
 const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
@@ -36,6 +40,7 @@ const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
   validationErrors,
   onCancel,
   onNext,
+  hotels,
 }) => {
   console.log("ImportPreviewModal渲染:", {
     visible,
@@ -170,12 +175,191 @@ const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
   const renderModalContent = () => {
     if (importResults.length > 0) {
       return (
-        <Table
-          dataSource={importResults}
-          columns={resultColumns}
-          rowKey={(record) => record.hotelName}
-          pagination={false}
-        />
+        <div>
+          <Table
+            dataSource={importResults}
+            columns={resultColumns}
+            rowKey={(record) => record.hotelName}
+            pagination={false}
+            style={{ marginBottom: 24 }}
+          />
+
+          {hotels && hotels.length > 0 && (
+            <div>
+              <Typography.Title level={4} style={{ marginBottom: 16 }}>
+                酒店详细信息
+              </Typography.Title>
+              <Space
+                direction="vertical"
+                size="large"
+                style={{ width: "100%" }}
+              >
+                {hotels.map((hotel, index) => (
+                  <Card
+                    key={index}
+                    title={`酒店 ${index + 1}: ${hotel.name}`}
+                    size="small"
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 12,
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "row",
+                          gap: 24,
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <div style={{ flex: 1, minWidth: 200 }}>
+                          <div style={{ fontWeight: "bold", marginBottom: 4 }}>
+                            酒店中文名
+                          </div>
+                          <div>{hotel.name}</div>
+                        </div>
+                        <div style={{ flex: 1, minWidth: 200 }}>
+                          <div style={{ fontWeight: "bold", marginBottom: 4 }}>
+                            酒店英文名
+                          </div>
+                          <div>{hotel.nameEn || "未提供"}</div>
+                        </div>
+                      </div>
+
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "row",
+                          gap: 24,
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <div style={{ flex: 1, minWidth: 200 }}>
+                          <div style={{ fontWeight: "bold", marginBottom: 4 }}>
+                            酒店星级
+                          </div>
+                          <div>
+                            {hotel.star === 1
+                              ? "一星级/基础"
+                              : hotel.star === 2
+                                ? "二星级/普通"
+                                : hotel.star === 3
+                                  ? "三星级/舒适"
+                                  : hotel.star === 4
+                                    ? "四星级/高档"
+                                    : hotel.star === 5
+                                      ? "五星级/豪华"
+                                      : "未设置"}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 8,
+                        }}
+                      >
+                        <div style={{ fontWeight: "bold" }}>酒店地址</div>
+                        <div>
+                          {hotel.location && hotel.location.length > 0 && (
+                            <div style={{ marginBottom: 4 }}>
+                              <span style={{ marginRight: 8 }}>
+                                所在省份: {hotel.location[0]}
+                              </span>
+                              <span style={{ marginRight: 8 }}>
+                                所在城市: {hotel.location[1]}
+                              </span>
+                              <span>所在区县: {hotel.location[2]}</span>
+                            </div>
+                          )}
+                          <div>{hotel.address || "未提供"}</div>
+                        </div>
+                      </div>
+
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "row",
+                          gap: 24,
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <div style={{ flex: 1, minWidth: 200 }}>
+                          <div style={{ fontWeight: "bold", marginBottom: 4 }}>
+                            开业时间
+                          </div>
+                          <div>{hotel.openingDate || "未提供"}</div>
+                        </div>
+                        <div style={{ flex: 1, minWidth: 200 }}>
+                          <div style={{ fontWeight: "bold", marginBottom: 4 }}>
+                            联系电话
+                          </div>
+                          <div>{hotel.phone || "未提供"}</div>
+                        </div>
+                      </div>
+
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 8,
+                        }}
+                      >
+                        <div style={{ fontWeight: "bold" }}>酒店设施</div>
+                        <div>
+                          {hotel.amenities && hotel.amenities.length > 0 ? (
+                            <div
+                              style={{
+                                display: "flex",
+                                gap: 8,
+                                flexWrap: "wrap",
+                              }}
+                            >
+                              {hotel.amenities.map((amenity, idx) => (
+                                <span
+                                  key={idx}
+                                  style={{
+                                    padding: "4px 12px",
+                                    backgroundColor: "#f0f0f0",
+                                    borderRadius: 16,
+                                  }}
+                                >
+                                  {amenity === "WiFi"
+                                    ? "WiFi"
+                                    : amenity === "Parking"
+                                      ? "停车场"
+                                      : amenity === "Breakfast"
+                                        ? "早餐"
+                                        : amenity}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <div>未设置</div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 8,
+                        }}
+                      >
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </Space>
+            </div>
+          )}
+        </div>
       );
     }
 
@@ -242,7 +426,7 @@ const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
           importResults.every((result) => result.status === "success") &&
           onNext && (
             <Button key="next" type="primary" onClick={onNext}>
-              下一步
+              下一步：上传酒店图片
             </Button>
           ),
       ].filter(Boolean)}

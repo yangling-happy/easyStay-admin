@@ -551,6 +551,7 @@ const BatchImport: React.FC<BatchImportProps> = ({ onCancel }) => {
           previewData={previewData}
           importResults={importResults}
           validationErrors={validationErrors}
+          hotels={importedHotels}
           onCancel={() => {
             setShowPreview(false);
             if (onCancel) {
