@@ -12,19 +12,14 @@ import {
   Upload,
   message,
   Progress,
-  Table,
   Space,
-  Modal,
-  Tag,
   Tabs,
+  Divider,
 } from "antd";
 import {
   DownloadOutlined,
   UploadOutlined,
-  CheckCircleOutlined,
-  CloseCircleOutlined,
   SettingOutlined,
-  ExclamationCircleOutlined,
 } from "@ant-design/icons";
 import * as XLSX from "xlsx";
 import { useSelectOptions } from "../hooks/useSelectOptions";
@@ -47,6 +42,58 @@ import {
 } from "../batchImport/templateDownloader";
 import type { Hotel } from "../../../types/hotel";
 import PhotoUploadModal from "./PhotoUploadModal";
+import ImportPreviewModal from "./ImportPreviewModal";
+
+// 样式定义
+const styles = {
+  container: {
+    width: "100%",
+  },
+  card: {
+    borderRadius: "8px",
+    boxShadow: "0 2px 8px rgba(0, 0, 0, 0.09)",
+    overflow: "hidden",
+  },
+  space: {
+    width: "100%",
+  },
+  section: {
+    marginBottom: "24px",
+    padding: "16px",
+    backgroundColor: "#fafafa",
+    borderRadius: "6px",
+  },
+  title: {
+    marginBottom: "16px",
+    color: "#262626",
+    fontWeight: 600,
+  },
+  steps: {
+    marginBottom: "20px",
+  },
+  notice: {
+    marginTop: "20px",
+  },
+  buttonGroup: {
+    marginTop: "20px",
+    marginBottom: "20px",
+  },
+  uploadSection: {
+    padding: "20px",
+    border: "1px dashed #d9d9d9",
+    borderRadius: "6px",
+    textAlign: "center" as const,
+    margin: "20px 0",
+    transition: "all 0.3s",
+    "&:hover": {
+      borderColor: "#1890ff",
+      backgroundColor: "#e6f7ff",
+    },
+  },
+  divider: {
+    margin: "24px 0",
+  },
+};
 
 interface BatchImportProps {
   onSuccess?: () => void;
@@ -190,393 +237,250 @@ const BatchImport: React.FC<BatchImportProps> = ({ onSuccess, onCancel }) => {
     return false;
   };
 
-  /**
-   * 酒店数据预览列配置
-   */
-  const previewColumns = [
-    {
-      title: "酒店中文名",
-      dataIndex: "酒店中文名",
-      key: "hotelName",
-      width: 150,
-    },
-    {
-      title: "房型名称",
-      dataIndex: "房型名称",
-      key: "roomTypeName",
-      width: 120,
-    },
-    {
-      title: "价格",
-      dataIndex: "每晚价格",
-      key: "price",
-      width: 80,
-    },
-    {
-      title: "库存",
-      dataIndex: "剩余库存",
-      key: "stock",
-      width: 80,
-    },
-  ];
-
-  /**
-   * 选项数据预览列配置
-   */
-  const optionPreviewColumns = [
-    {
-      title: "选项类型",
-      dataIndex: "选项类型",
-      key: "optionType",
-      width: 120,
-    },
-    {
-      title: "选项值",
-      dataIndex: "选项值",
-      key: "optionValue",
-      width: 120,
-    },
-    {
-      title: "选项标签",
-      dataIndex: "选项标签",
-      key: "optionLabel",
-      width: 150,
-    },
-  ];
-
-  /**
-   * 错误列配置
-   */
-  const errorColumns = [
-    {
-      title: "行号",
-      dataIndex: "row",
-      key: "row",
-      width: 80,
-      render: (row: number) => (row === 1 ? "整体" : row),
-    },
-    {
-      title: "字段",
-      dataIndex: "field",
-      key: "field",
-      width: 120,
-    },
-    {
-      title: "错误信息",
-      dataIndex: "message",
-      key: "message",
-    },
-    {
-      title: "严重程度",
-      key: "severity",
-      width: 100,
-      render: (_: any, record: ValidationError) => {
-        const isCritical =
-          record.field === "酒店房型" ||
-          record.field === "酒店中文名" ||
-          record.field === "酒店英文名";
-        return (
-          <Tag color={isCritical ? "red" : "orange"}>
-            {isCritical ? "严重" : "警告"}
-          </Tag>
-        );
-      },
-    },
-  ];
-
-  /**
-   * 结果列配置
-   */
-  const resultColumns = [
-    {
-      title: "酒店名称",
-      dataIndex: "hotelName",
-      key: "hotelName",
-      width: 200,
-    },
-    {
-      title: "状态",
-      dataIndex: "status",
-      key: "status",
-      width: 100,
-      render: (status: string) => (
-        <Tag
-          icon={
-            status === "success" ? (
-              <CheckCircleOutlined />
-            ) : (
-              <CloseCircleOutlined />
-            )
-          }
-          color={status === "success" ? "success" : "error"}
-        >
-          {status === "success" ? "成功" : "失败"}
-        </Tag>
-      ),
-    },
-    {
-      title: "消息",
-      dataIndex: "message",
-      key: "message",
-    },
-  ];
-
   return (
-    <Card title="批量导入" className="batch-import-container">
-      <Space direction="vertical" size="large" style={{ width: "100%" }}>
-        <Tabs
-          activeKey={importMode}
-          onChange={(key) => setImportMode(key as ImportMode)}
-          items={[
-            {
-              key: "hotel",
-              label: "酒店数据导入",
-              children: (
-                <>
-                  <div>
-                    <h3>操作步骤：</h3>
-                    <ol>
-                      <li>点击下方按钮下载 Excel 模板</li>
-                      <li>在本地填写酒店和房型信息</li>
-                      <li>上传填写好的 Excel 文件</li>
-                      <li>系统自动验证并批量提交</li>
-                    </ol>
-                  </div>
-
-                  <Button
-                    type="primary"
-                    icon={<DownloadOutlined />}
-                    onClick={downloadTemplate}
-                    size="large"
-                  >
-                    下载 Excel 模板
-                  </Button>
-
-                  <div>
-                    <h3>上传文件：</h3>
-                    <Upload
-                      accept=".xlsx,.xls"
-                      beforeUpload={handleFileUpload}
-                      showUploadList={false}
-                      disabled={uploading}
-                    >
-                      <Button
-                        icon={<UploadOutlined />}
-                        size="large"
-                        loading={uploading}
-                        disabled={uploading}
-                      >
-                        {uploading ? "处理中..." : "选择 Excel 文件上传"}
-                      </Button>
-                    </Upload>
-
-                    {uploading && (
-                      <div style={{ marginTop: 16 }}>
-                        <Progress percent={progress} status="active" />
-                      </div>
-                    )}
-                  </div>
-
-                  <div>
-                    <h3>注意事项：</h3>
-                    <ul>
-                      <li>同一酒店可以有多个房型，请在 Excel 中按行填写</li>
-                      <li>酒店星级必须是 1-5 之间的数字</li>
-                      <li>
-                        床型可选：big(1.8m大床)、double(1.2m双床)、king(2.0m超大床)
-                      </li>
-                      <li>标准入住人数必须是 1-4 之间的整数</li>
-                      <li>酒店设施和配套权益用逗号分隔</li>
-                      <li>照片需要在批量导入成功后单独上传</li>
-                      <li>酒店照片：建议上传3-8张大堂或外景图</li>
-                      <li>房型照片：建议上传3-5张，展示客房细节、卫浴等</li>
-                      <li>每个酒店必须至少包含一种房型</li>
-                    </ul>
-                  </div>
-                </>
-              ),
-            },
-            {
-              key: "options",
-              label: "Select选项导入",
-              children: (
-                <>
-                  <div>
-                    <h3>功能说明：</h3>
-                    <p>
-                      通过Excel批量导入Select组件的选项，支持酒店设施、床型、配套权益等选项的自定义扩展。
-                    </p>
-                  </div>
-
-                  <Button
-                    type="primary"
-                    icon={<DownloadOutlined />}
-                    onClick={downloadTemplate}
-                    size="large"
-                  >
-                    下载选项模板
-                  </Button>
-
-                  <div>
-                    <h3>上传文件：</h3>
-                    <Upload
-                      accept=".xlsx,.xls"
-                      beforeUpload={handleFileUpload}
-                      showUploadList={false}
-                      disabled={uploading}
-                    >
-                      <Button
-                        icon={<UploadOutlined />}
-                        size="large"
-                        loading={uploading}
-                        disabled={uploading}
-                      >
-                        {uploading ? "处理中..." : "选择 Excel 文件上传"}
-                      </Button>
-                    </Upload>
-
-                    {uploading && (
-                      <div style={{ marginTop: 16 }}>
-                        <Progress percent={progress} status="active" />
-                      </div>
-                    )}
-                  </div>
-
-                  <div>
-                    <h3>Excel格式说明：</h3>
-                    <ul>
-                      <li>
-                        <strong>选项类型</strong>
-                        ：必须是"酒店设施"、"床型"、"配套权益"之一
-                      </li>
-                      <li>
-                        <strong>选项值</strong>
-                        ：选项的实际值（英文或数字），如"Spa"、"queen"
-                      </li>
-                      <li>
-                        <strong>选项标签</strong>
-                        ：选项显示的中文标签，如"水疗中心"、"1.5m特大床"
-                      </li>
-                      <li>
-                        导入后的选项将自动应用到BasicInfoForm和RoomTypeFormList的Select组件
-                      </li>
-                      <li>选项数据保存在localStorage中，刷新页面不会丢失</li>
-                    </ul>
-                  </div>
-
-                  <div>
-                    <Button
-                      danger
-                      icon={<SettingOutlined />}
-                      onClick={resetToDefault}
-                    >
-                      重置为默认选项
-                    </Button>
-                  </div>
-                </>
-              ),
-            },
-          ]}
-        />
-      </Space>
-
-      <Modal
-        title={
-          importMode === "options"
-            ? "选项导入预览"
-            : importResults.length > 0
-              ? "批量导入结果"
-              : "数据预览"
-        }
-        open={showPreview}
-        onCancel={() => setShowPreview(false)}
-        width={1000}
-        footer={[
-          <Button
-            key="close"
-            onClick={() => {
-              setShowPreview(false);
-              if (onCancel) {
-                onCancel();
-              }
-            }}
-          >
-            关闭
-          </Button>,
-        ]}
+    <div style={styles.container}>
+      <Card
+        title="批量导入"
+        className="batch-import-container"
+        style={styles.card}
       >
-        {importMode === "options" ? (
-          <Table
-            dataSource={previewData}
-            columns={optionPreviewColumns}
-            rowKey={(_record: any, index?: number) => index ?? 0}
-            pagination={{ pageSize: 10 }}
-            scroll={{ y: 400 }}
-          />
-        ) : importResults.length > 0 ? (
-          <Table
-            dataSource={importResults}
-            columns={resultColumns}
-            rowKey={(record) => record.hotelName}
-            pagination={false}
-          />
-        ) : validationErrors.length > 0 ? (
-          <div>
-            <div
-              style={{
-                marginBottom: 16,
-                padding: 16,
-                backgroundColor: "#fff2f0",
-                borderRadius: 8,
-              }}
-            >
-              <h4
-                style={{
-                  color: "#ff4d4f",
-                  marginBottom: 8,
-                  display: "flex",
-                  alignItems: "center",
-                }}
-              >
-                <ExclamationCircleOutlined style={{ marginRight: 8 }} />
-                发现 {validationErrors.length} 个验证错误
-              </h4>
-              <p style={{ margin: 0, color: "#666" }}>
-                请修复以下错误后重新上传文件。标记为"严重"的错误必须修复，标记为"警告"的错误建议修复。
-              </p>
-            </div>
-            <Table
-              dataSource={validationErrors}
-              columns={errorColumns}
-              rowKey={(record) => `${record.row}-${record.field}`}
-              pagination={{ pageSize: 10 }}
-              scroll={{ y: 400 }}
-            />
-          </div>
-        ) : (
-          <Table
-            dataSource={previewData}
-            columns={previewColumns}
-            rowKey={(_record: any, index?: number) => index ?? 0}
-            pagination={{ pageSize: 10 }}
-            scroll={{ y: 400 }}
-          />
-        )}
-      </Modal>
+        <Space direction="vertical" size="large" style={styles.space}>
+          <Tabs
+            activeKey={importMode}
+            onChange={(key) => setImportMode(key as ImportMode)}
+            items={[
+              {
+                key: "hotel",
+                label: "酒店数据导入",
+                children: (
+                  <>
+                    <div style={styles.section}>
+                      <h3 style={styles.title}>操作步骤：</h3>
+                      <ol style={styles.steps}>
+                        <li style={{ marginBottom: "8px" }}>
+                          点击下方按钮下载 Excel 模板
+                        </li>
+                        <li style={{ marginBottom: "8px" }}>
+                          在本地填写酒店和房型信息
+                        </li>
+                        <li style={{ marginBottom: "8px" }}>
+                          上传填写好的 Excel 文件
+                        </li>
+                        <li>系统自动验证并批量提交</li>
+                      </ol>
+                    </div>
 
-      {/* 照片上传模态框 */}
-      <PhotoUploadModal
-        visible={photoUploadModalVisible}
-        hotels={importedHotels}
-        onClose={() => setPhotoUploadModalVisible(false)}
-        onComplete={() => {
-          setPhotoUploadModalVisible(false);
-          if (onCancel) {
-            onCancel();
-          }
-        }}
-      />
-    </Card>
+                    <div style={styles.buttonGroup}>
+                      <Button
+                        type="primary"
+                        icon={<DownloadOutlined />}
+                        onClick={downloadTemplate}
+                        size="large"
+                        style={{ padding: "0 24px", height: "40px" }}
+                      >
+                        下载 Excel 模板
+                      </Button>
+                    </div>
+
+                    <Divider style={styles.divider} />
+
+                    <div style={styles.section}>
+                      <h3 style={styles.title}>上传文件：</h3>
+                      <div style={styles.uploadSection}>
+                        <Upload
+                          accept=".xlsx,.xls"
+                          beforeUpload={handleFileUpload}
+                          showUploadList={false}
+                          disabled={uploading}
+                        >
+                          <Button
+                            type="default"
+                            icon={<UploadOutlined />}
+                            size="large"
+                            loading={uploading}
+                            disabled={uploading}
+                            style={{ marginBottom: "16px" }}
+                          >
+                            {uploading ? "处理中..." : "选择 Excel 文件上传"}
+                          </Button>
+                        </Upload>
+
+                        {uploading && (
+                          <div style={{ marginTop: 16 }}>
+                            <Progress
+                              percent={progress}
+                              status="active"
+                              strokeColor="#1890ff"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <Divider style={styles.divider} />
+
+                    <div style={styles.section}>
+                      <h3 style={styles.title}>注意事项：</h3>
+                      <ul style={styles.notice}>
+                        <li style={{ marginBottom: "6px" }}>
+                          同一酒店可以有多个房型，请在 Excel 中按行填写
+                        </li>
+                        <li style={{ marginBottom: "6px" }}>
+                          酒店星级必须是 1-5 之间的数字
+                        </li>
+                        <li style={{ marginBottom: "6px" }}>
+                          床型可选：big(1.8m大床)、double(1.2m双床)、king(2.0m超大床)
+                        </li>
+                        <li style={{ marginBottom: "6px" }}>
+                          标准入住人数必须是 1-4 之间的整数
+                        </li>
+                        <li style={{ marginBottom: "6px" }}>
+                          酒店设施和配套权益用逗号分隔
+                        </li>
+                        <li style={{ marginBottom: "6px" }}>
+                          照片需要在批量导入成功后单独上传
+                        </li>
+                        <li style={{ marginBottom: "6px" }}>
+                          酒店照片：建议上传3-8张大堂或外景图
+                        </li>
+                        <li style={{ marginBottom: "6px" }}>
+                          房型照片：建议上传3-5张，展示客房细节、卫浴等
+                        </li>
+                        <li>每个酒店必须至少包含一种房型</li>
+                      </ul>
+                    </div>
+                  </>
+                ),
+              },
+              {
+                key: "options",
+                label: "Select选项导入",
+                children: (
+                  <>
+                    <div style={styles.section}>
+                      <h3 style={styles.title}>功能说明：</h3>
+                      <p style={{ lineHeight: "1.6" }}>
+                        通过Excel批量导入Select组件的选项，支持酒店设施、床型、配套权益等选项的自定义扩展。
+                      </p>
+                    </div>
+
+                    <div style={styles.buttonGroup}>
+                      <Button
+                        type="primary"
+                        icon={<DownloadOutlined />}
+                        onClick={downloadTemplate}
+                        size="large"
+                        style={{ padding: "0 24px", height: "40px" }}
+                      >
+                        下载选项模板
+                      </Button>
+                    </div>
+
+                    <Divider style={styles.divider} />
+
+                    <div style={styles.section}>
+                      <h3 style={styles.title}>上传文件：</h3>
+                      <div style={styles.uploadSection}>
+                        <Upload
+                          accept=".xlsx,.xls"
+                          beforeUpload={handleFileUpload}
+                          showUploadList={false}
+                          disabled={uploading}
+                        >
+                          <Button
+                            type="default"
+                            icon={<UploadOutlined />}
+                            size="large"
+                            loading={uploading}
+                            disabled={uploading}
+                            style={{ marginBottom: "16px" }}
+                          >
+                            {uploading ? "处理中..." : "选择 Excel 文件上传"}
+                          </Button>
+                        </Upload>
+
+                        {uploading && (
+                          <div style={{ marginTop: 16 }}>
+                            <Progress
+                              percent={progress}
+                              status="active"
+                              strokeColor="#1890ff"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <Divider style={styles.divider} />
+
+                    <div style={styles.section}>
+                      <h3 style={styles.title}>Excel格式说明：</h3>
+                      <ul style={styles.notice}>
+                        <li style={{ marginBottom: "8px" }}>
+                          <strong>选项类型</strong>
+                          ：必须是"酒店设施"、"床型"、"配套权益"之一
+                        </li>
+                        <li style={{ marginBottom: "8px" }}>
+                          <strong>选项值</strong>
+                          ：选项的实际值（英文或数字），如"Spa"、"queen"
+                        </li>
+                        <li style={{ marginBottom: "8px" }}>
+                          <strong>选项标签</strong>
+                          ：选项显示的中文标签，如"水疗中心"、"1.5m特大床"
+                        </li>
+                        <li style={{ marginBottom: "8px" }}>
+                          导入后的选项将自动应用到BasicInfoForm和RoomTypeFormList的Select组件
+                        </li>
+                        <li>选项数据保存在localStorage中，刷新页面不会丢失</li>
+                      </ul>
+                    </div>
+
+                    <div style={{ marginTop: "20px" }}>
+                      <Button
+                        danger
+                        icon={<SettingOutlined />}
+                        onClick={resetToDefault}
+                        style={{ padding: "0 16px" }}
+                      >
+                        重置为默认选项
+                      </Button>
+                    </div>
+                  </>
+                ),
+              },
+            ]}
+            tabBarStyle={{ marginBottom: "24px" }}
+          />
+        </Space>
+
+        <ImportPreviewModal
+          visible={showPreview}
+          importMode={importMode}
+          previewData={previewData}
+          importResults={importResults}
+          validationErrors={validationErrors}
+          onCancel={() => {
+            setShowPreview(false);
+            if (onCancel) {
+              onCancel();
+            }
+          }}
+        />
+
+        {/* 照片上传模态框 */}
+        <PhotoUploadModal
+          visible={photoUploadModalVisible}
+          hotels={importedHotels}
+          onClose={() => setPhotoUploadModalVisible(false)}
+          onComplete={() => {
+            setPhotoUploadModalVisible(false);
+            if (onCancel) {
+              onCancel();
+            }
+          }}
+        />
+      </Card>
+    </div>
   );
 };
 
