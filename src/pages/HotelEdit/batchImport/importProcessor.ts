@@ -69,12 +69,14 @@ export const validateHotelData = (
               .filter(Boolean)
           : [],
         roomTypes: [],
-        photos: [], // 照片需要单独上传
+        photos: [],
         status: "pending",
+        isActive: false,
+        isIncomplete: true,
+        completionStatus: "draft",
         ownerId: localStorage.getItem("userId") || "user_001",
         createTime: new Date().toISOString(),
         updateTime: new Date().toISOString(),
-        isActive: true,
         isDeleted: false,
       };
       hotelMap.set(hotelKey, newHotel);

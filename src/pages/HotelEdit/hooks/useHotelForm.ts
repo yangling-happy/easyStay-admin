@@ -101,13 +101,20 @@ export const useHotelForm = () => {
         })),
         photos: values.photos || [],
         updateTime: new Date().toISOString(),
-        isActive: true,
+        isActive: false,
         isDeleted: false,
       };
 
       if (!isUpdate) {
         payload.createTime = new Date().toISOString();
-      } else if (values.version) {
+        payload.isIncomplete = true;
+        payload.completionStatus = "draft";
+      } else {
+        payload.isIncomplete = false;
+        payload.completionStatus = null;
+      }
+
+      if (values.version) {
         payload.version = values.version;
       }
 

@@ -70,6 +70,15 @@ const hotelSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  isIncomplete: {
+    type: Boolean,
+    default: false,
+  },
+  completionStatus: {
+    type: String,
+    enum: ["draft", "incomplete", "rejected"],
+    default: null,
+  },
   ownerId: {
     type: String,
     required: false,

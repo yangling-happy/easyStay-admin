@@ -1,4 +1,6 @@
 export type HotelStatus = "pending" | "approved" | "rejected";
+export type CompletionStatus = "draft" | "incomplete" | "rejected";
+
 export interface HotelImage {
   url: string;
   isPrimary?: boolean;
@@ -17,7 +19,13 @@ export interface RoomType {
 }
 
 export interface AuditHistoryItem {
-  action: "create" | "update" | "audit_approved" | "audit_rejected" | "offline" | "online";
+  action:
+    | "create"
+    | "update"
+    | "audit_approved"
+    | "audit_rejected"
+    | "offline"
+    | "online";
   status: HotelStatus;
   rejectReason?: string;
   operatorId?: string;
@@ -43,6 +51,8 @@ export interface Hotel {
   rejectReason?: string; // 不通过原因
   isActive: boolean; // 发布/下线状态
   isDeleted: boolean; // 虚拟删除
+  isIncomplete: boolean; // 是否为待完善酒店
+  completionStatus?: CompletionStatus; // 完善状态：draft(草稿)、incomplete(信息不全)、rejected(被驳回)
 
   // --- 关联与审计 ---
   ownerId: string; // 所属商户ID
@@ -51,10 +61,10 @@ export interface Hotel {
   roomTypes: RoomType[]; // 现在包含 photos 字段
   createTime?: string | Date; // 创建时间
   updateTime?: string | Date; // 更新时间
-  
+
   // --- 版本控制 ---
   version?: number; // 数据版本号
-  
+
   // --- 审核历史 ---
   auditHistory?: AuditHistoryItem[]; // 审核历史记录
 }

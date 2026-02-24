@@ -57,10 +57,7 @@ router.post("/", auth, async (req: AuthRequest, res: Response) => {
     const hotel = new HotelModel(hotelData);
     const savedHotel = await hotel.save();
 
-    await notifyAdminsOfPendingHotel(
-      String(savedHotel._id),
-      savedHotel.name,
-    );
+    await notifyAdminsOfPendingHotel(String(savedHotel._id), savedHotel.name);
 
     res.status(201).json({ success: true, data: savedHotel });
   } catch (error: unknown) {
@@ -383,6 +380,8 @@ router.put("/:id", auth, async (req: AuthRequest, res: Response) => {
       rejectReason: "",
       updateTime: new Date(),
       version: existingHotel.version + 1,
+      isIncomplete: false,
+      completionStatus: null,
       $push: {
         auditHistory: {
           action: "update",
@@ -469,7 +468,7 @@ router.get("/detail/:id", async (req: Request, res: Response) => {
       amenities: hotel.amenities,
       roomTypes: {
         available,
-        unavailable
+        unavailable,
       },
       status: hotel.status,
       isActive: hotel.isActive,
@@ -491,6 +490,39 @@ router.get("/owner/:ownerId", async (req, res) => {
     res.json({ success: true, data: hotels });
   } catch (error) {
     res.status(500).json({ success: false, message: "获取酒店失败" });
+  }
+});
+
+router.delete("/:id", auth, async (req: AuthRequest, res: Response) => {
+  try {
+    const hotel = await HotelModel.findOne({
+      _id: req.params.id,
+      ownerId: req.user?.userId,
+    });
+
+    if (!hotel) {
+      return res.status(404).json({ success: false, message: "未找到酒店" });
+    }
+
+    // 只允许删除待完善状态的酒店
+    if (!hotel.isIncomplete) {
+      return res
+        .status(400)
+        .json({ success: false, message: "只能删除待完善状态的酒店" });
+    }
+
+    await HotelModel.findOneAndUpdate(
+      { _id: req.params.id, ownerId: req.user?.userId },
+      {
+        isDeleted: true,
+        updateTime: new Date(),
+      },
+    );
+
+    res.json({ success: true, message: "酒店已删除" });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "未知错误";
+    res.status(500).json({ success: false, message: errorMessage });
   }
 });
 

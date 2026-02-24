@@ -1,5 +1,5 @@
 import type { Hotel } from "../../types/hotel";
-import { post, get, put, patch} from "../http/request";
+import { post, get, put, patch, del } from "../http/request";
 
 /**
  * 酒店业务逻辑封装 (Service 层)
@@ -25,6 +25,31 @@ export const hotelService = {
       });
     } catch (error) {
       console.error("获取在线酒店失败:", error);
+      return [];
+    }
+  },
+
+  getIncompleteHotels: async (): Promise<Hotel[]> => {
+    try {
+      const hotels = await hotelService.getMyHotels();
+      return hotels.filter(
+        (h) => h.isIncomplete === true && h.isDeleted === false,
+      );
+    } catch (error) {
+      console.error("获取待完善酒店失败:", error);
+      return [];
+    }
+  },
+
+  getIncompleteHotelsByStatus: async (status: string): Promise<Hotel[]> => {
+    try {
+      const hotels = await hotelService.getIncompleteHotels();
+      if (status === "all") {
+        return hotels;
+      }
+      return hotels.filter((h) => h.completionStatus === status);
+    } catch (error) {
+      console.error("按状态获取待完善酒店失败:", error);
       return [];
     }
   },
@@ -122,6 +147,15 @@ export const hotelService = {
         return null;
       }
       console.error("无法获取酒店详情，请检查 ID 是否正确");
+      throw error;
+    }
+  },
+
+  deleteHotel: async (id: string): Promise<void> => {
+    try {
+      await del(`/hotels/${id}`);
+    } catch (error) {
+      console.error("删除酒店失败:", error);
       throw error;
     }
   },

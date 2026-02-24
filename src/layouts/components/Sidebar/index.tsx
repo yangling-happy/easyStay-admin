@@ -5,6 +5,7 @@ import {
   PlusCircleOutlined,
   DatabaseOutlined,
   AuditOutlined,
+  EditOutlined,
 } from "@ant-design/icons";
 
 const { Sider } = Layout;
@@ -34,10 +35,16 @@ const Sidebar: React.FC = () => {
       onClick: () => navigate("/hotels"),
     },
     {
-      key: "/merchant/records", // 统一 key
+      key: "/hotels/incomplete",
+      icon: <EditOutlined />,
+      label: "待完善酒店",
+      onClick: () => navigate("/hotels/incomplete?status=all"),
+    },
+    {
+      key: "/merchant/records",
       icon: <AuditOutlined />,
       label: "申请记录",
-      onClick: () => navigate("/merchant/records"), // 修改这里：指向商户记录页
+      onClick: () => navigate("/merchant/records"),
     },
     {
       key: "/hotels/new",
@@ -81,7 +88,6 @@ const Sidebar: React.FC = () => {
       theme="dark"
       breakpoint="lg"
       collapsedWidth="64"
-      // 保持位置固定
       style={{ height: "100vh", position: "sticky", top: 0, left: 0 }}
     >
       <div

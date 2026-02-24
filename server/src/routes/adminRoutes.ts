@@ -253,9 +253,14 @@ router.post("/hotels/:id/audit", async (req, res) => {
 
     if (status === "rejected") {
       updateData.rejectReason = rejectReason;
+      updateData.isIncomplete = true;
+      updateData.completionStatus = "rejected";
+      updateData.isActive = false;
     } else {
       updateData.rejectReason = undefined;
       updateData.isActive = true;
+      updateData.isIncomplete = false;
+      updateData.completionStatus = null;
     }
 
     const updatedHotel = await HotelModel.findByIdAndUpdate(id, updateData, {

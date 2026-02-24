@@ -184,12 +184,14 @@ const BatchImport: React.FC<BatchImportProps> = ({ onCancel }) => {
                   .filter(Boolean)
               : [],
             roomTypes: [],
-            photos: [], // 照片需要单独上传
+            photos: [],
             status: "pending",
+            isActive: false,
+            isIncomplete: true,
+            completionStatus: "draft",
             ownerId: localStorage.getItem("userId") || "user_001",
             createTime: new Date().toISOString(),
             updateTime: new Date().toISOString(),
-            isActive: true,
             isDeleted: false,
           };
 
@@ -224,7 +226,7 @@ const BatchImport: React.FC<BatchImportProps> = ({ onCancel }) => {
         console.log("导入的酒店数据:", validHotels);
 
         message.success(
-          `批量导入成功！共导入 ${validHotels.length} 家酒店的基础信息`,
+          `批量导入成功！共导入 ${validHotels.length} 家酒店的基础信息，请去"待完善酒店"完善照片和房型`,
         );
         setShowPreview(true);
       } else if (fileType === "room") {

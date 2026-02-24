@@ -14,7 +14,6 @@ import {
 } from "@ant-design/icons";
 import type { ValidationError, ImportResult } from "../batchImport/types";
 import type { Hotel } from "../../../types/hotel";
-import HotelDetailView from "../../../components/HotelDetailView";
 
 interface ImportPreviewModalProps {
   /** 控制弹窗显示/隐藏 */
@@ -351,8 +350,7 @@ const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
                           flexDirection: "column",
                           gap: 8,
                         }}
-                      >
-                      </div>
+                      ></div>
                     </div>
                   </Card>
                 ))}
@@ -422,14 +420,7 @@ const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
         <Button key="close" onClick={onCancel}>
           关闭
         </Button>,
-        importResults.length > 0 &&
-          importResults.every((result) => result.status === "success") &&
-          onNext && (
-            <Button key="next" type="primary" onClick={onNext}>
-              下一步：上传酒店图片
-            </Button>
-          ),
-      ].filter(Boolean)}
+      ]}
     >
       {renderModalContent()}
     </Modal>
