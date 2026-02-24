@@ -361,7 +361,7 @@ const IncompleteHotels: React.FC = () => {
               options={[
                 { value: "all", label: "全部" },
                 { value: "draft", label: "草稿" },
-                { value: "incomplete", label: "信息不全" },
+                // { value: "incomplete", label: "信息不全" },
                 { value: "rejected", label: "被驳回" },
               ]}
             />
