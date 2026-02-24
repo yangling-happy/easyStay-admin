@@ -264,7 +264,7 @@ router.patch("/:id/offline", auth, async (req: AuthRequest, res: Response) => {
         type: "hotel_offline",
         hotelId: hotel._id.toString(),
         hotelName: hotel.name,
-        ownerId: hotel.ownerId.toString(),
+        ownerId: hotel.ownerId ? hotel.ownerId.toString() : "",
         status: "unread",
         message,
       });
