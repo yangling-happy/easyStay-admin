@@ -16,7 +16,7 @@ import {
 import { DeleteOutlined, UploadOutlined } from "@ant-design/icons";
 import PhotoUploader from "./PhotoUploader";
 import { useSelectOptions } from "../hooks/useSelectOptions";
-import BatchImport from "./BatchImport";
+import RoomBatchImport from "./RoomBatchImport";
 export const ROOM_TYPE_FIELD = "roomTypes";
 
 export const ROOM_TYPE_FIELDS = [
@@ -263,9 +263,12 @@ const RoomTypeFormList: React.FC = () => {
         open={batchImportModalVisible}
         onCancel={handleBatchImportClose}
         footer={null}
-        width={800}
+        width="90%"
+        style={{
+          maxWidth: 1200,
+        }}
       >
-        <BatchImport onCancel={handleBatchImportClose} />
+        <RoomBatchImport />
       </Modal>
     </>
   );

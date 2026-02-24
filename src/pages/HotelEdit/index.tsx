@@ -4,7 +4,7 @@ import { PlusOutlined } from "@ant-design/icons";
 import HotelSelector from "./components/HotelSelector";
 import BasicInfoForm from "./components/BasicInfoForm";
 import RoomTypeFormList from "./components/RoomTypeFormList";
-import BatchImport from "./components/BatchImport";
+import HotelBatchImport from "./components/HotelBatchImport";
 import { useHotelForm } from "./hooks/useHotelForm";
 import { BASIC_INFO_FIELDS } from "./components/BasicInfoForm";
 import { ROOM_TYPE_FIELDS } from "./components/RoomTypeFormList";
@@ -202,7 +202,7 @@ const HotelEdit: React.FC = () => {
           }}
           extra={<Button onClick={handleBatchImportCancel}>关闭</Button>}
         >
-          <BatchImport onCancel={handleBatchImportCancel} />
+          <HotelBatchImport />
         </Card>
       )}
 
