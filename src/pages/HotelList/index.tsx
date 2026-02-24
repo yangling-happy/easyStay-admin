@@ -173,6 +173,7 @@ const HotelList: React.FC = () => {
       title: "酒店地址",
       dataIndex: "address",
       key: "address",
+      width: 220,
       render: (address: string, record: any) => (
         <div>
           <div>{address || "-"}</div>
