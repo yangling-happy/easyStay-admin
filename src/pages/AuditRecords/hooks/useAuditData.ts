@@ -15,7 +15,8 @@ export const useAuditData = () => {
       if (res.success) {
         const filtered = (res.data || []).filter((hotel: any) => {
           if (!hotel?.status) return false;
-          if (hotel.status === "rejected") return true;
+          if (hotel.status === "rejected" || hotel.status === "offline")
+            return true;
           if (hotel.status === "pending" || hotel.status === "approved") {
             return hotel.isIncomplete === false;
           }

@@ -103,7 +103,8 @@ router.get("/records", auth, async (req: AuthRequest, res: Response) => {
     };
 
     if (scope === "audit") {
-      query.status = { $in: ["pending", "approved", "rejected"] };
+      // 包括所有需要显示在管理面板中的状态：待审核、已批准、已拒绝、已下线
+      query.status = { $in: ["pending", "approved", "rejected", "offline"] };
     }
 
     const hotels = await HotelModel.find(query).sort({ createTime: -1 });
@@ -256,6 +257,21 @@ router.patch("/:id/offline", auth, async (req: AuthRequest, res: Response) => {
       { new: true },
     );
 
+    // 发送通知给商户：酒店已下线
+    try {
+      const message = `您的酒店"${hotel.name}"已下线，旅客将无法预订。如需恢复上线，请在酒店列表中提交申请。`;
+      await NotificationModel.create({
+        type: "hotel_offline",
+        hotelId: hotel._id.toString(),
+        hotelName: hotel.name,
+        ownerId: hotel.ownerId.toString(),
+        status: "unread",
+        message,
+      });
+    } catch (notifyError) {
+      console.error("发送下线通知失败:", notifyError);
+    }
+
     const auditEntry = {
       action: "offline",
       status: "offline",
@@ -277,7 +293,7 @@ router.patch("/:id/offline", auth, async (req: AuthRequest, res: Response) => {
       { $push: { auditHistory: auditEntry } },
     );
 
-    res.json({ success: true, data: updatedHotel });
+    res.json({ success: true, data: updatedHotel, message: "酒店已下线" });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : "未知错误";
     console.error("下线酒店失败:", error);
@@ -361,10 +377,12 @@ router.post("/:id/re-apply", auth, async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ success: false, message: "未找到酒店" });
     }
 
-    if (hotel.status !== "rejected") {
-      return res
-        .status(400)
-        .json({ success: false, message: "只能重新申请已拒绝的酒店" });
+    // 支持 rejected 和 offline 两种状态的重新申请/恢复上线
+    if (hotel.status !== "rejected" && hotel.status !== "offline") {
+      return res.status(400).json({
+        success: false,
+        message: "只能重新申请已拒绝的酒店或恢复已下线的酒店上线",
+      });
     }
 
     const updatedHotel = await HotelModel.findOneAndUpdate(
@@ -407,7 +425,11 @@ router.post("/:id/re-apply", auth, async (req: AuthRequest, res: Response) => {
       { $push: { auditHistory: auditEntry } },
     );
 
-    res.json({ success: true, data: updatedHotel });
+    res.json({
+      success: true,
+      data: updatedHotel,
+      message: "申请已提交，请关注审核记录",
+    });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : "未知错误";
     console.error("申请恢复上线失败:", error);
