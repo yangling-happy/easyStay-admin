@@ -287,23 +287,24 @@ const BatchImport: React.FC<BatchImportProps> = ({ onSuccess, onCancel }) => {
                     <div style={styles.section}>
                       <h3 style={styles.title}>上传文件：</h3>
                       <div style={styles.uploadSection}>
-                        <Upload
+                        <Upload.Dragger
                           accept=".xlsx,.xls"
                           beforeUpload={handleFileUpload}
                           showUploadList={false}
                           disabled={uploading}
                         >
-                          <Button
-                            type="default"
-                            icon={<UploadOutlined />}
-                            size="large"
-                            loading={uploading}
-                            disabled={uploading}
-                            style={{ marginBottom: "16px" }}
-                          >
-                            {uploading ? "处理中..." : "选择 Excel 文件上传"}
-                          </Button>
-                        </Upload>
+                          <p className="ant-upload-drag-icon">
+                            <UploadOutlined />
+                          </p>
+                          <p className="ant-upload-text">
+                            {uploading
+                              ? "处理中..."
+                              : "点击或拖拽文件到此区域上传"}
+                          </p>
+                          <p className="ant-upload-hint">
+                            支持 .xlsx, .xls 格式的 Excel 文件
+                          </p>
+                        </Upload.Dragger>
 
                         {uploading && (
                           <div style={{ marginTop: 16 }}>
@@ -381,23 +382,24 @@ const BatchImport: React.FC<BatchImportProps> = ({ onSuccess, onCancel }) => {
                     <div style={styles.section}>
                       <h3 style={styles.title}>上传文件：</h3>
                       <div style={styles.uploadSection}>
-                        <Upload
+                        <Upload.Dragger
                           accept=".xlsx,.xls"
                           beforeUpload={handleFileUpload}
                           showUploadList={false}
                           disabled={uploading}
                         >
-                          <Button
-                            type="default"
-                            icon={<UploadOutlined />}
-                            size="large"
-                            loading={uploading}
-                            disabled={uploading}
-                            style={{ marginBottom: "16px" }}
-                          >
-                            {uploading ? "处理中..." : "选择 Excel 文件上传"}
-                          </Button>
-                        </Upload>
+                          <p className="ant-upload-drag-icon">
+                            <UploadOutlined />
+                          </p>
+                          <p className="ant-upload-text">
+                            {uploading
+                              ? "处理中..."
+                              : "点击或拖拽文件到此区域上传"}
+                          </p>
+                          <p className="ant-upload-hint">
+                            支持 .xlsx, .xls 格式的 Excel 文件
+                          </p>
+                        </Upload.Dragger>
 
                         {uploading && (
                           <div style={{ marginTop: 16 }}>
