@@ -20,7 +20,7 @@ import { formatDateTime } from "@/utils/dateUtils";
 import { message } from "antd";
 import { getFullAddress } from "@/utils/addressData";
 import HotelSearchInput from "@/components/HotelSearchInput";
-import { filterHotelsByKeyword } from "@/utils/filterHotelsByKeyword."; 
+import { filterHotelsByKeyword } from "@/utils/filterHotelsByKeyword.";
 
 const { Title } = Typography;
 
@@ -77,35 +77,37 @@ const AuditRecords: React.FC = () => {
         );
       },
     },
-{
-    title: "酒店名称",
-    dataIndex: "name",
-    width: 200,
-    ellipsis: true,
-    render: (name: string, record: any) => (
-      <div>
-        <div>{name}</div> 
-        {record.nameEn && (
-          <div style={{ color: "#888", fontSize: "12px" }}>
-            {record.nameEn}
-          </div>
-        )}
-      </div>
-    ),
-  },
     {
-      title: "地区",
-      key: "location",
+      title: "酒店名称",
+      dataIndex: "name",
       width: 200,
-      render: (_: unknown, record: any) => {
-        return getFullAddress(record.location) || "未设置";
-      },
+      ellipsis: true,
+      render: (name: string, record: any) => (
+        <div>
+          <div>{name}</div>
+          {record.nameEn && (
+            <div style={{ color: "#888", fontSize: "12px" }}>
+              {record.nameEn}
+            </div>
+          )}
+        </div>
+      ),
     },
+
     {
       title: "酒店地址",
       dataIndex: "address",
       key: "address",
-      render: (address: string) => address || "-",
+      render: (address: string, record: any) => (
+        <div>
+          <div>{address || "-"}</div>
+          {record.location && record.location.length > 0 && (
+            <div style={{ color: "#888", fontSize: "12px" }}>
+              {getFullAddress(record.location)}
+            </div>
+          )}
+        </div>
+      ),
     },
     {
       title: "申请时间",

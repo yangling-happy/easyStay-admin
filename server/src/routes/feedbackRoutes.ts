@@ -2,7 +2,32 @@ import { Router } from "express";
 import { FeedbackModel } from "../models/Feedback.js";
 import { NotificationModel } from "../models/Notification.js";
 import { HotelModel } from "../models/Hotel.js";
+import { User } from "../models/User.js";
+
 const router = Router();
+
+async function notifyAdminsOfNewFeedback(feedbackId: string, hotelId?: string, hotelName?: string) {
+  try {
+    const admins = await User.find({ role: "admin" }).select("_id");
+    if (admins.length === 0) return;
+    const message = hotelName
+      ? `有新的商户反馈待处理（酒店：${hotelName}）`
+      : "有新的商户反馈待处理";
+    await NotificationModel.insertMany(
+      admins.map((a) => ({
+        type: "new_feedback",
+        hotelId: hotelId ?? undefined,
+        hotelName: hotelName ?? undefined,
+        ownerId: a._id.toString(),
+        status: "unread",
+        message,
+        relatedId: feedbackId,
+      })),
+    );
+  } catch (e: unknown) {
+    console.error("通知管理员新反馈失败:", e);
+  }
+}
 
 /**
  * @route   POST /api/feedback
@@ -10,15 +35,27 @@ const router = Router();
  */
 router.post("/", async (req, res) => {
   try {
-    const { hotelId, ownerId, content, notificationId } = req.body;
+    const { hotelId, ownerId, content, notificationId, images } = req.body;
 
     const newFeedback = await FeedbackModel.create({
       hotelId,
       ownerId,
       content,
       notificationId,
+      images: Array.isArray(images) ? images : [],
       status: "pending",
     });
+
+    let hotelName: string | undefined;
+    if (hotelId) {
+      const hotel = await HotelModel.findById(hotelId).select("name");
+      hotelName = hotel?.name;
+    }
+    await notifyAdminsOfNewFeedback(
+      String(newFeedback._id),
+      hotelId ? String(hotelId) : undefined,
+      hotelName,
+    );
 
     res.status(201).json({ success: true, data: newFeedback });
   } catch (error) {
@@ -35,8 +72,35 @@ router.get("/list", async (req, res) => {
     const { status } = req.query;
     const filter = status ? { status } : {};
 
-    const list = await FeedbackModel.find(filter).sort({ createdAt: -1 });
-    res.json({ success: true, data: list });
+    const list = await FeedbackModel.find(filter).sort({ createdAt: -1 }).lean();
+
+    const listWithHotelName = await Promise.all(
+      list.map(async (item: any) => {
+        let hotelName = "";
+        let hotelNameEn = "";
+        if (item.hotelId) {
+          try {
+            const hotel = await HotelModel.findById(item.hotelId)
+              .select("name nameEn")
+              .lean();
+            if (hotel) {
+              if (hotel.name) hotelName = hotel.name;
+              if ((hotel as any).nameEn) hotelNameEn = (hotel as any).nameEn;
+            }
+          } catch (_) {
+            // invalid ObjectId, ignore
+          }
+        }
+        return {
+          ...item,
+          id: item._id ? item._id.toString() : item.id,
+          hotelName,
+          hotelNameEn,
+        };
+      })
+    );
+
+    res.json({ success: true, data: listWithHotelName });
   } catch (error) {
     res.status(500).json({ success: false, message: "获取列表失败" });
   }

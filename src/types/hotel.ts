@@ -13,6 +13,7 @@ export interface RoomType {
   capacity?: number; // 可住人数
   bedType?: "big" | "double" | "king"; // 床型
   tags?: string[]; // 标签，如：免费取消、有窗、独立卫浴、免费WiFi
+  isActive?: boolean; // 上线状态
 }
 
 export interface AuditHistoryItem {
@@ -36,7 +37,6 @@ export interface Hotel {
   star: 1 | 2 | 3 | 4 | 5;
   openingDate: string; // 格式：YYYY-MM-DD
   photos: HotelImage[]; // 酒店整体照片
-  description: string; // 酒店描述
   amenities: string[]; // 酒店设施，如：健身房、泳池
   // --- 审核与状态 ---
   status: HotelStatus; // 审核状态

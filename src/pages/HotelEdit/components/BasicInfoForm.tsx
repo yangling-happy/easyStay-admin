@@ -10,6 +10,7 @@ import {
 } from "antd";
 import { cityOptions } from "../../../utils/addressData";
 import PhotoUploader from "./PhotoUploader";
+import { useSelectOptions } from "../hooks/useSelectOptions";
 export const BASIC_INFO_FIELDS = [
   "name",
   "nameEn",
@@ -25,6 +26,8 @@ interface Props {
   form?: any;
 }
 const BasicInfoForm: React.FC<Props> = () => {
+  const { getOptions } = useSelectOptions();
+  const amenitiesOptions = getOptions("amenities");
   return (
     <>
       {/* 隐藏字段：保存 id 和 version */}
@@ -127,16 +130,7 @@ const BasicInfoForm: React.FC<Props> = () => {
           mode="tags"
           style={{ width: "100%" }}
           placeholder="请选择或输入酒店设施"
-          options={[
-            { value: "WiFi", label: "WiFi" },
-            { value: "Parking", label: "停车场" },
-            { value: "Breakfast", label: "早餐" },
-            { value: "Family", label: "亲子友好" },
-            { value: "Gym", label: "健身房" },
-            { value: "Pool", label: "泳池" },
-            { value: "Pets", label: "可带宠物" },
-            { value: "Airport", label: "机场接送" },
-          ]}
+          options={amenitiesOptions}
         />
       </Form.Item>
     </>
