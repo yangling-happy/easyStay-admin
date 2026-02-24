@@ -3,7 +3,28 @@ import type { Request } from "express";
 import type { Response } from "express";
 import { HotelModel } from "../models/Hotel.js";
 import { NotificationModel } from "../models/Notification.js";
+import { User } from "../models/User.js";
 import { auth } from "../middleware/authMiddleware.js";
+
+async function notifyAdminsOfPendingHotel(hotelId: string, hotelName: string) {
+  try {
+    const admins = await User.find({ role: "admin" }).select("_id");
+    if (admins.length === 0) return;
+    const message = `有新的酒店"${hotelName}"待审核`;
+    await NotificationModel.insertMany(
+      admins.map((a) => ({
+        type: "pending_audit",
+        hotelId,
+        hotelName,
+        ownerId: a._id.toString(),
+        status: "unread",
+        message,
+      })),
+    );
+  } catch (e: unknown) {
+    console.error("通知管理员待审核失败:", e);
+  }
+}
 
 interface AuthRequest extends Request {
   user?: {
@@ -35,6 +56,11 @@ router.post("/", auth, async (req: AuthRequest, res: Response) => {
 
     const hotel = new HotelModel(hotelData);
     const savedHotel = await hotel.save();
+
+    await notifyAdminsOfPendingHotel(
+      String(savedHotel._id),
+      savedHotel.name,
+    );
 
     res.status(201).json({ success: true, data: savedHotel });
   } catch (error: unknown) {
@@ -268,6 +294,11 @@ router.post("/:id/re-apply", auth, async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ success: false, message: "更新酒店失败" });
     }
 
+    await notifyAdminsOfPendingHotel(
+      String(updatedHotel._id),
+      updatedHotel.name,
+    );
+
     res.json({
       success: true,
       message: "已提交重新上线申请",
@@ -380,6 +411,11 @@ router.put("/:id", auth, async (req: AuthRequest, res: Response) => {
         message: "数据已被其他用户修改，请刷新后重试",
       });
     }
+
+    await notifyAdminsOfPendingHotel(
+      String(updatedHotel._id),
+      updatedHotel.name,
+    );
 
     res.json({
       success: true,

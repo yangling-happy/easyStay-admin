@@ -7,7 +7,9 @@ export interface INotification extends Document {
     | "feedback_reply"
     | "system"
     | "hotel_offline"
-    | "hotel_online"; // 通知类型
+    | "hotel_online"
+    | "pending_audit"   // 待审核酒店，通知管理员
+    | "new_feedback";  // 新反馈，通知管理员
   hotelId?: string; // 关联的酒店 ID（可选）
   hotelName?: string; // 冗余存储酒店名称（可选）
   ownerId: string; // 商户 ID（接收通知的用户）
@@ -30,6 +32,8 @@ const NotificationSchema = new Schema<INotification>(
         "system",
         "hotel_offline",
         "hotel_online",
+        "pending_audit",
+        "new_feedback",
       ],
       required: true,
       default: "feedback_reply",

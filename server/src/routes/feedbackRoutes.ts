@@ -2,7 +2,32 @@ import { Router } from "express";
 import { FeedbackModel } from "../models/Feedback.js";
 import { NotificationModel } from "../models/Notification.js";
 import { HotelModel } from "../models/Hotel.js";
+import { User } from "../models/User.js";
+
 const router = Router();
+
+async function notifyAdminsOfNewFeedback(feedbackId: string, hotelId?: string, hotelName?: string) {
+  try {
+    const admins = await User.find({ role: "admin" }).select("_id");
+    if (admins.length === 0) return;
+    const message = hotelName
+      ? `有新的商户反馈待处理（酒店：${hotelName}）`
+      : "有新的商户反馈待处理";
+    await NotificationModel.insertMany(
+      admins.map((a) => ({
+        type: "new_feedback",
+        hotelId: hotelId ?? undefined,
+        hotelName: hotelName ?? undefined,
+        ownerId: a._id.toString(),
+        status: "unread",
+        message,
+        relatedId: feedbackId,
+      })),
+    );
+  } catch (e: unknown) {
+    console.error("通知管理员新反馈失败:", e);
+  }
+}
 
 /**
  * @route   POST /api/feedback
@@ -20,6 +45,17 @@ router.post("/", async (req, res) => {
       images: Array.isArray(images) ? images : [],
       status: "pending",
     });
+
+    let hotelName: string | undefined;
+    if (hotelId) {
+      const hotel = await HotelModel.findById(hotelId).select("name");
+      hotelName = hotel?.name;
+    }
+    await notifyAdminsOfNewFeedback(
+      String(newFeedback._id),
+      hotelId ? String(hotelId) : undefined,
+      hotelName,
+    );
 
     res.status(201).json({ success: true, data: newFeedback });
   } catch (error) {
