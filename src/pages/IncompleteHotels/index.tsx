@@ -9,16 +9,21 @@ import {
   Tag,
   Select,
   Empty,
+  Tooltip,
 } from "antd";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   EditOutlined,
   DeleteOutlined,
   ExclamationCircleOutlined,
+  CopyOutlined,
+  EyeOutlined,
 } from "@ant-design/icons";
 import { hotelService } from "@/api/services/hotelService";
 import { getFullAddress } from "@/utils/addressData";
 import { formatDateTime } from "@/utils/dateUtils";
+import HotelDetailView from "@/components/HotelDetailView";
+import HotelSearchInput from "@/components/HotelSearchInput";
 
 const IncompleteHotels: React.FC = () => {
   const navigate = useNavigate();
@@ -26,7 +31,11 @@ const IncompleteHotels: React.FC = () => {
   const statusFilter = searchParams.get("status") || "all";
 
   const [incompleteHotels, setIncompleteHotels] = useState<any[]>([]);
+  const [filteredHotels, setFilteredHotels] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isDetailVisible, setIsDetailVisible] = useState(false);
+  const [selectedHotel, setSelectedHotel] = useState<any>(null);
+  const [searchText, setSearchText] = useState("");
 
   const loadIncompleteHotels = async () => {
     setLoading(true);
@@ -44,6 +53,9 @@ const IncompleteHotels: React.FC = () => {
           : filteredHotels.filter((h) => h.completionStatus === statusFilter);
 
       setIncompleteHotels(finalHotels);
+
+      // 应用搜索过滤
+      filterHotelsBySearch(finalHotels);
 
       // 添加日志以便调试
       console.log("加载待完善酒店:", {
@@ -63,6 +75,10 @@ const IncompleteHotels: React.FC = () => {
   useEffect(() => {
     loadIncompleteHotels();
   }, [statusFilter]);
+
+  useEffect(() => {
+    filterHotelsBySearch(incompleteHotels);
+  }, [searchText, incompleteHotels]);
 
   const handleCompleteInfo = (record: any) => {
     navigate(`/hotels/edit/${record._id || record.id}`);
@@ -89,6 +105,30 @@ const IncompleteHotels: React.FC = () => {
     });
   };
 
+  const showDetail = (record: any) => {
+    setSelectedHotel(record);
+    setIsDetailVisible(true);
+  };
+
+  const filterHotelsBySearch = (hotels: any[]) => {
+    if (!searchText.trim()) {
+      setFilteredHotels(hotels);
+      return;
+    }
+
+    const filtered = hotels.filter((hotel) => {
+      const searchLower = searchText.toLowerCase();
+      return (
+        hotel.name.toLowerCase().includes(searchLower) ||
+        hotel.nameEn?.toLowerCase().includes(searchLower) ||
+        hotel.address?.toLowerCase().includes(searchLower) ||
+        (hotel._id || hotel.id)?.toString().toLowerCase().includes(searchLower)
+      );
+    });
+
+    setFilteredHotels(filtered);
+  };
+
   const getCompletionStatusTag = (status: string) => {
     const statusMap: Record<string, { color: string; text: string }> = {
       draft: { color: "default", text: "草稿" },
@@ -100,6 +140,43 @@ const IncompleteHotels: React.FC = () => {
   };
 
   const columns = [
+    {
+      title: "酒店编号",
+      dataIndex: "id",
+      key: "id",
+      width: 120,
+      render: (id: string, record: any) => {
+        const displayId = id || record._id;
+        const shortId = displayId?.slice(-6).toUpperCase();
+        const fullId = displayId;
+
+        return (
+          <Tooltip title={`完整编号: ${fullId}`}>
+            <Space>
+              <code
+                style={{
+                  color: "#1890ff",
+                  cursor: "pointer",
+                  textDecoration: "underline",
+                }}
+                onClick={() => {
+                  navigator.clipboard.writeText(fullId);
+                  message.success("编号已复制");
+                }}
+              >
+                {shortId}
+              </code>
+              <CopyOutlined
+                style={{ color: "#1890ff", cursor: "pointer" }}
+                onClick={() => {
+                  navigator.clipboard.writeText(fullId);
+                }}
+              />
+            </Space>
+          </Tooltip>
+        );
+      },
+    },
     {
       title: "酒店名称",
       dataIndex: "name",
@@ -149,11 +226,11 @@ const IncompleteHotels: React.FC = () => {
     {
       title: "操作",
       key: "action",
-      width: 200,
+      width: 250,
       render: (_: unknown, record: any) => (
         <Space size="middle">
           <Button
-            type="primary"
+            type="link"
             size="small"
             icon={<EditOutlined />}
             onClick={() => handleCompleteInfo(record)}
@@ -161,7 +238,15 @@ const IncompleteHotels: React.FC = () => {
             完善信息
           </Button>
           <Button
+            type="link"
+            icon={<EyeOutlined />}
+            onClick={() => showDetail(record)}
+          >
+            查看详情
+          </Button>
+          <Button
             danger
+            type="link"
             size="small"
             icon={<DeleteOutlined />}
             onClick={() => handleDelete(record)}
@@ -182,29 +267,39 @@ const IncompleteHotels: React.FC = () => {
               待完善酒店
             </span>
             <Tag color="cyan" style={{ fontSize: "14px", padding: "0 8px" }}>
-              共 {incompleteHotels.length} 家
+              共 {filteredHotels.length} 家
             </Tag>
           </Space>
         }
         extra={
-          <Select
-            value={statusFilter}
-            onChange={(value) => {
-              navigate(`/hotels/incomplete?status=${value}`);
-            }}
-            style={{ width: 120 }}
-            options={[
-              { value: "all", label: "全部" },
-              { value: "draft", label: "草稿" },
-              { value: "incomplete", label: "信息不全" },
-              { value: "rejected", label: "被驳回" },
-            ]}
-          />
+          <Space>
+            {/* 状态筛选 */}
+            <Select
+              value={statusFilter}
+              onChange={(value) => {
+                navigate(`/hotels/incomplete?status=${value}`);
+              }}
+              style={{ width: 120 }}
+              options={[
+                { value: "all", label: "全部" },
+                { value: "draft", label: "草稿" },
+                { value: "incomplete", label: "信息不全" },
+                { value: "rejected", label: "被驳回" },
+              ]}
+            />
+            {/* 搜索组件 */}
+            <HotelSearchInput
+              placeholder="搜索酒店名称或编号"
+              onSearch={(value) => setSearchText(value)}
+              onChange={(value) => setSearchText(value)}
+              style={{ width: 300 }}
+            />
+          </Space>
         }
       >
         <Table
           columns={columns}
-          dataSource={incompleteHotels}
+          dataSource={filteredHotels}
           rowKey={(record) => record._id || record.id}
           loading={loading}
           pagination={{ pageSize: 10 }}
@@ -231,6 +326,17 @@ const IncompleteHotels: React.FC = () => {
           }}
         />
       </Card>
+
+      {/* --- 详情展示弹窗 --- */}
+      <Modal
+        title="酒店详细资产信息"
+        open={isDetailVisible}
+        onCancel={() => setIsDetailVisible(false)}
+        footer={null}
+        width={800}
+      >
+        <HotelDetailView data={selectedHotel} type="list" />
+      </Modal>
     </div>
   );
 };
