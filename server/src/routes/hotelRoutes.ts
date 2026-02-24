@@ -97,27 +97,133 @@ router.post("/", auth, async (req: AuthRequest, res: Response) => {
 router.get("/records", auth, async (req: AuthRequest, res: Response) => {
   try {
     const { scope } = req.query as { scope?: string };
-    const query = {
+    const query: any = {
       ownerId: req.user?.userId,
       isDeleted: false,
     };
 
-    let hotels = await HotelModel.find(query).sort({ updateTime: -1 });
-
     if (scope === "audit") {
-      hotels = hotels.filter((hotel) => {
-        if (!hotel.status) return false;
-        if (hotel.status === "rejected") return true;
-        if (hotel.status === "pending" || hotel.status === "approved") {
-          return hotel.isIncomplete === false;
-        }
-        return false;
-      });
+      query.status = { $in: ["pending", "approved", "rejected"] };
     }
 
+    const hotels = await HotelModel.find(query).sort({ createTime: -1 });
     res.json({ success: true, data: hotels });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : "未知错误";
+    console.error("获取酒店记录失败:", error);
+    res.status(500).json({ success: false, message: errorMessage });
+  }
+});
+
+router.get("/detail/:id", auth, async (req: AuthRequest, res: Response) => {
+  try {
+    const hotel = await HotelModel.findOne({
+      _id: req.params.id,
+      ownerId: req.user?.userId,
+    });
+
+    if (!hotel) {
+      return res.status(404).json({ success: false, message: "未找到酒店" });
+    }
+
+    res.json({ success: true, data: hotel });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "未知错误";
+    console.error("获取酒店详情失败:", error);
+    res.status(500).json({ success: false, message: errorMessage });
+  }
+});
+
+router.put(":id", auth, async (req: AuthRequest, res: Response) => {
+  try {
+    const hotel = await HotelModel.findOne({
+      _id: req.params.id,
+      ownerId: req.user?.userId,
+    });
+
+    if (!hotel) {
+      return res.status(404).json({ success: false, message: "未找到酒店" });
+    }
+
+    const currentVersion = hotel.version || 0;
+    const newVersion = req.body.version || 0;
+
+    if (newVersion !== currentVersion) {
+      return res
+        .status(409)
+        .json({ success: false, message: "数据已被更新，请刷新页面后重试" });
+    }
+
+    const isIncomplete =
+      req.body?.isIncomplete === true ||
+      ["draft", "incomplete", "rejected"].includes(req.body?.completionStatus);
+
+    const completionStatus = isIncomplete
+      ? req.body?.completionStatus || "draft"
+      : null;
+
+    const { ownerId: _ownerId, ...restBody } = req.body || {};
+
+    const updateData: any = {
+      ...restBody,
+      ownerId: hotel.ownerId,
+      updateTime: new Date(),
+    };
+
+    if (isIncomplete) {
+      updateData.isIncomplete = true;
+      updateData.completionStatus = completionStatus;
+      updateData.isActive = false;
+    } else {
+      updateData.isIncomplete = false;
+      updateData.completionStatus = null;
+    }
+
+    const updatedHotel = await HotelModel.findOneAndUpdate(
+      { _id: req.params.id, ownerId: req.user?.userId },
+      updateData,
+      { new: true },
+    );
+
+    if (!updatedHotel) {
+      return res.status(404).json({ success: false, message: "未找到酒店" });
+    }
+
+    const auditEntry = {
+      action: "update",
+      status: updatedHotel.status,
+      operatorId: req.user?.userId,
+      operatorRole: req.user?.role || "merchant",
+      timestamp: new Date(),
+      beforeStatus: {
+        status: hotel.status,
+        isIncomplete: hotel.isIncomplete,
+        completionStatus: hotel.completionStatus,
+      },
+      afterStatus: {
+        status: updatedHotel.status,
+        isIncomplete: updatedHotel.isIncomplete,
+        completionStatus: updatedHotel.completionStatus,
+      },
+    };
+
+    await HotelModel.updateOne(
+      { _id: req.params.id },
+      { $push: { auditHistory: auditEntry } },
+    );
+
+    console.log("酒店更新成功:", {
+      id: updatedHotel._id,
+      name: updatedHotel.name,
+      isIncomplete: updatedHotel.isIncomplete,
+      completionStatus: updatedHotel.completionStatus,
+      status: updatedHotel.status,
+    });
+
+    res.json({ success: true, data: updatedHotel });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "未知错误";
+    console.error("更新酒店失败:", error);
     res.status(500).json({ success: false, message: errorMessage });
   }
 });
@@ -133,69 +239,47 @@ router.patch("/:id/offline", auth, async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ success: false, message: "未找到酒店" });
     }
 
-    const beforeStatus = hotel.isActive;
-    const afterStatus = false;
-
-    const snapshot = hotel.toObject();
-    const snapshotWithoutId = { ...snapshot };
-    delete (snapshotWithoutId as any)._id;
-    delete (snapshotWithoutId as any).__v;
-    delete (snapshotWithoutId as any).auditHistory;
+    if (hotel.status !== "approved") {
+      return res
+        .status(400)
+        .json({ success: false, message: "只能下线已上线的酒店" });
+    }
 
     const updatedHotel = await HotelModel.findOneAndUpdate(
       { _id: req.params.id, ownerId: req.user?.userId },
       {
         isActive: false,
+        status: "offline",
         updateTime: new Date(),
-        $push: {
-          auditHistory: {
-            action: "offline",
-            status: hotel.status,
-            operatorId: req.user?.userId,
-            operatorRole: "merchant",
-            timestamp: new Date(),
-            beforeStatus,
-            afterStatus,
-            snapshot: snapshotWithoutId,
-          },
-        },
       },
       { new: true },
     );
 
-    if (updatedHotel) {
-      try {
-        if (updatedHotel.ownerId) {
-          const ownerIdStr = String(updatedHotel.ownerId);
-          const message = `您的酒店"${updatedHotel.name}"已由您本人下线`;
-          await NotificationModel.create({
-            type: "hotel_offline",
-            hotelId: String(req.params.id),
-            hotelName: updatedHotel.name,
-            ownerId: ownerIdStr,
-            status: "unread",
-            message,
-            operatorId: req.user?.userId,
-            operatorRole: "merchant",
-          });
-          console.log(`已为商户创建下线通知:`, {
-            ownerId: ownerIdStr,
-            hotelName: updatedHotel.name,
-            message,
-          });
-        }
-      } catch (notificationError: any) {
-        console.error("创建下线通知失败:", {
-          error: notificationError.message,
-          ownerId: updatedHotel.ownerId,
-          hotelId: req.params.id,
-        });
-      }
-    }
+    const auditEntry = {
+      action: "offline",
+      status: "offline",
+      operatorId: req.user?.userId,
+      operatorRole: req.user?.role || "merchant",
+      timestamp: new Date(),
+      beforeStatus: {
+        status: hotel.status,
+        isActive: hotel.isActive,
+      },
+      afterStatus: {
+        status: "offline",
+        isActive: false,
+      },
+    };
 
-    res.json({ success: true, message: "酒店已成功下线", data: updatedHotel });
+    await HotelModel.updateOne(
+      { _id: req.params.id },
+      { $push: { auditHistory: auditEntry } },
+    );
+
+    res.json({ success: true, data: updatedHotel });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : "未知错误";
+    console.error("下线酒店失败:", error);
     res.status(500).json({ success: false, message: errorMessage });
   }
 });
@@ -211,75 +295,56 @@ router.patch("/:id/online", auth, async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ success: false, message: "未找到酒店" });
     }
 
-    if (hotel.status !== "approved") {
+    if (hotel.status !== "offline" && hotel.status !== "approved") {
       return res
         .status(400)
-        .json({ success: false, message: "只有审核通过的酒店才能直接上线" });
+        .json({ success: false, message: "只能上线已下线或已上线的酒店" });
     }
-
-    const beforeStatus = hotel.isActive;
-    const afterStatus = true;
-
-    const snapshot = hotel.toObject();
-    const snapshotWithoutId = { ...snapshot };
-    delete (snapshotWithoutId as any)._id;
-    delete (snapshotWithoutId as any).__v;
-    delete (snapshotWithoutId as any).auditHistory;
 
     const updatedHotel = await HotelModel.findOneAndUpdate(
       { _id: req.params.id, ownerId: req.user?.userId },
       {
         isActive: true,
+        status: "pending",
         updateTime: new Date(),
-        $push: {
-          auditHistory: {
-            action: "online",
-            status: hotel.status,
-            operatorId: req.user?.userId,
-            operatorRole: "merchant",
-            timestamp: new Date(),
-            beforeStatus,
-            afterStatus,
-            snapshot: snapshotWithoutId,
-          },
-        },
       },
       { new: true },
     );
 
-    if (updatedHotel) {
-      try {
-        if (updatedHotel.ownerId) {
-          const ownerIdStr = String(updatedHotel.ownerId);
-          const message = `您的酒店"${updatedHotel.name}"已由您本人上线`;
-          await NotificationModel.create({
-            type: "hotel_online",
-            hotelId: String(req.params.id),
-            hotelName: updatedHotel.name,
-            ownerId: ownerIdStr,
-            status: "unread",
-            message,
-            operatorId: req.user?.userId,
-            operatorRole: "merchant",
-          });
-          console.log(`已为商户创建上线通知:`, {
-            ownerId: ownerIdStr,
-            hotelName: updatedHotel.name,
-            message,
-          });
-        }
-      } catch (notificationError: any) {
-        console.error("创建上线通知失败:", {
-          error: notificationError.message,
-          ownerId: updatedHotel.ownerId,
-          hotelId: req.params.id,
-        });
-      }
+    if (!updatedHotel) {
+      return res.status(404).json({ success: false, message: "更新酒店失败" });
     }
 
-    res.json({ success: true, message: "酒店已成功上线", data: updatedHotel });
+    await notifyAdminsOfPendingHotel(
+      String(updatedHotel._id),
+      updatedHotel.name,
+    );
+
+    const auditEntry = {
+      action: "online",
+      status: "pending",
+      operatorId: req.user?.userId,
+      operatorRole: req.user?.role || "merchant",
+      timestamp: new Date(),
+      beforeStatus: {
+        status: hotel.status,
+        isActive: hotel.isActive,
+      },
+      afterStatus: {
+        status: "pending",
+        isActive: true,
+      },
+    };
+
+    await HotelModel.updateOne(
+      { _id: req.params.id },
+      { $push: { auditHistory: auditEntry } },
+    );
+
+    res.json({ success: true, data: updatedHotel });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : "未知错误";
+    console.error("上线酒店失败:", error);
     res.status(500).json({ success: false, message: errorMessage });
   }
 });
@@ -295,34 +360,18 @@ router.post("/:id/re-apply", auth, async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ success: false, message: "未找到酒店" });
     }
 
-    const snapshot = hotel.toObject();
-    const snapshotWithoutId = { ...snapshot };
-    delete (snapshotWithoutId as any)._id;
-    delete (snapshotWithoutId as any).__v;
-    delete (snapshotWithoutId as any).auditHistory;
-
-    const beforeStatus = hotel.status;
-    const afterStatus = "pending";
+    if (hotel.status !== "rejected") {
+      return res
+        .status(400)
+        .json({ success: false, message: "只能重新申请已拒绝的酒店" });
+    }
 
     const updatedHotel = await HotelModel.findOneAndUpdate(
       { _id: req.params.id, ownerId: req.user?.userId },
       {
         status: "pending",
         isActive: false,
-        rejectReason: "",
         updateTime: new Date(),
-        $push: {
-          auditHistory: {
-            action: "reapply_online",
-            status: "pending",
-            operatorId: req.user?.userId,
-            operatorRole: "merchant",
-            timestamp: new Date(),
-            beforeStatus,
-            afterStatus,
-            snapshot: snapshotWithoutId,
-          },
-        },
       },
       { new: true },
     );
@@ -336,200 +385,88 @@ router.post("/:id/re-apply", auth, async (req: AuthRequest, res: Response) => {
       updatedHotel.name,
     );
 
-    res.json({
-      success: true,
-      message: "已提交重新上线申请",
-      data: updatedHotel,
-    });
+    const auditEntry = {
+      action: "re-apply",
+      status: "pending",
+      operatorId: req.user?.userId,
+      operatorRole: req.user?.role || "merchant",
+      timestamp: new Date(),
+      beforeStatus: {
+        status: hotel.status,
+        isActive: hotel.isActive,
+      },
+      afterStatus: {
+        status: "pending",
+        isActive: false,
+      },
+    };
+
+    await HotelModel.updateOne(
+      { _id: req.params.id },
+      { $push: { auditHistory: auditEntry } },
+    );
+
+    res.json({ success: true, data: updatedHotel });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : "未知错误";
-    console.error("提交重新上线申请失败:", error);
+    console.error("申请恢复上线失败:", error);
     res.status(500).json({ success: false, message: errorMessage });
   }
 });
 
-router.put("/:id", auth, async (req: AuthRequest, res: Response) => {
+router.post("/restore", auth, async (req: AuthRequest, res: Response) => {
   try {
-    const { id } = req.params;
-    const { version, ...updateData } = req.body;
+    const { id } = req.body;
 
-    if (updateData.id && updateData.id !== id) {
-      return res.status(400).json({
-        success: false,
-        message: "不允许修改酒店 ID",
-      });
-    }
-
-    const existingHotel = await HotelModel.findOne({
+    const hotel = await HotelModel.findOne({
       _id: id,
       ownerId: req.user?.userId,
+      isDeleted: true,
     });
 
-    if (!existingHotel) {
-      return res.status(404).json({
-        success: false,
-        message: "未找到酒店或无权修改",
-      });
+    if (!hotel) {
+      return res
+        .status(404)
+        .json({ success: false, message: "未找到已删除的酒店" });
     }
-
-    if (version !== undefined && existingHotel.version !== version) {
-      return res.status(409).json({
-        success: false,
-        message: "数据已被其他用户修改，请刷新后重试",
-        currentVersion: existingHotel.version,
-      });
-    }
-
-    const isIdentical = Object.keys(updateData).every((key) => {
-      if (
-        [
-          "_id",
-          "__v",
-          "createTime",
-          "updateTime",
-          "version",
-          "auditHistory",
-        ].includes(key)
-      ) {
-        return true;
-      }
-      return (
-        JSON.stringify(updateData[key]) ===
-        JSON.stringify((existingHotel as any)[key])
-      );
-    });
-
-    if (isIdentical) {
-      return res.json({
-        success: true,
-        data: existingHotel,
-        message: "数据未发生变化",
-      });
-    }
-
-    const snapshot = existingHotel.toObject();
-    const snapshotWithoutId = { ...snapshot };
-    delete (snapshotWithoutId as any)._id;
-    delete (snapshotWithoutId as any).__v;
-    delete (snapshotWithoutId as any).auditHistory;
-
-    const finalUpdateData: any = {
-      ...updateData,
-      ownerId: req.user?.userId,
-      status: "pending",
-      rejectReason: "",
-      updateTime: new Date(),
-      version: existingHotel.version + 1,
-      isIncomplete: false,
-      completionStatus: null,
-      $push: {
-        auditHistory: {
-          action: "update",
-          status: "pending",
-          operatorId: req.user?.userId,
-          operatorRole: "merchant",
-          timestamp: new Date(),
-          snapshot: snapshotWithoutId,
-        },
-      },
-    };
 
     const updatedHotel = await HotelModel.findOneAndUpdate(
+      { _id: id, ownerId: req.user?.userId, isDeleted: true },
       {
-        _id: id,
-        ownerId: req.user?.userId,
-        ...(version !== undefined ? { version } : {}),
+        isDeleted: false,
+        updateTime: new Date(),
       },
-      finalUpdateData,
       { new: true },
     );
 
     if (!updatedHotel) {
-      return res.status(409).json({
-        success: false,
-        message: "数据已被其他用户修改，请刷新后重试",
-      });
+      return res.status(404).json({ success: false, message: "恢复酒店失败" });
     }
 
-    await notifyAdminsOfPendingHotel(
-      String(updatedHotel._id),
-      updatedHotel.name,
-    );
-
-    res.json({
-      success: true,
-      data: updatedHotel,
-      message: "酒店信息已更新，等待审核",
-    });
-  } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : "未知错误";
-    console.error("更新酒店失败:", error);
-    res.status(500).json({ success: false, message: errorMessage });
-  }
-});
-
-router.get("/detail/:id", async (req: Request, res: Response) => {
-  try {
-    const hotel = await HotelModel.findById(req.params.id);
-
-    if (!hotel) {
-      return res.status(404).json({ success: false, message: "未找到酒店" });
-    }
-
-    // 从请求参数中获取 rooms 和 guests
-    const rooms = parseInt(req.query.rooms as string) || 1;
-    const guests = parseInt(req.query.guests as string) || 1;
-
-    // 将房型分为 available 和 unavailable 两个数组
-    const available: any[] = [];
-    const unavailable: any[] = [];
-
-    hotel.roomTypes.forEach((room: any) => {
-      // 检查库存和容量是否符合要求
-      if (room.stock >= rooms && room.capacity >= guests) {
-        available.push(room);
-      } else {
-        unavailable.push(room);
-      }
-    });
-
-    // 对两个数组按价格从低到高排序
-    available.sort((a, b) => a.price - b.price);
-    unavailable.sort((a, b) => a.price - b.price);
-
-    const publicHotelData = {
-      id: hotel._id.toString(),
-      name: hotel.name,
-      nameEn: hotel.nameEn,
-      address: hotel.address,
-      star: hotel.star,
-      openingDate: hotel.openingDate,
-      photos: hotel.photos,
-      amenities: hotel.amenities,
-      roomTypes: {
-        available,
-        unavailable,
+    const auditEntry = {
+      action: "restore",
+      status: updatedHotel.status,
+      operatorId: req.user?.userId,
+      operatorRole: req.user?.role || "merchant",
+      timestamp: new Date(),
+      beforeStatus: {
+        isDeleted: true,
       },
-      status: hotel.status,
-      isActive: hotel.isActive,
+      afterStatus: {
+        isDeleted: false,
+      },
     };
 
-    res.json({ success: true, data: publicHotelData });
+    await HotelModel.updateOne(
+      { _id: id },
+      { $push: { auditHistory: auditEntry } },
+    );
+
+    res.json({ success: true, data: updatedHotel });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : "未知错误";
+    console.error("恢复酒店失败:", error);
     res.status(500).json({ success: false, message: errorMessage });
-  }
-});
-
-// 获取指定商户的酒店列表
-router.get("/owner/:ownerId", async (req, res) => {
-  try {
-    const { ownerId } = req.params;
-    // 只查对应的 ownerId，并且只返回 name 和 _id 提高效率
-    const hotels = await HotelModel.find({ ownerId }, "name _id");
-    res.json({ success: true, data: hotels });
-  } catch (error) {
-    res.status(500).json({ success: false, message: "获取酒店失败" });
   }
 });
 
@@ -542,13 +479,6 @@ router.delete("/:id", auth, async (req: AuthRequest, res: Response) => {
 
     if (!hotel) {
       return res.status(404).json({ success: false, message: "未找到酒店" });
-    }
-
-    // 只允许删除待完善状态的酒店
-    if (!hotel.isIncomplete) {
-      return res
-        .status(400)
-        .json({ success: false, message: "只能删除待完善状态的酒店" });
     }
 
     await HotelModel.findOneAndUpdate(
@@ -576,13 +506,11 @@ router.post("/batch-delete", auth, async (req: AuthRequest, res: Response) => {
         .json({ success: false, message: "请提供要删除的酒店ID列表" });
     }
 
-    // 权限检查：商户只能删除自己的酒店，管理员可以删除所有
     const query: any = {
       _id: { $in: ids },
       isDeleted: false,
     };
 
-    // 如果不是管理员，只能删除自己的酒店
     if (req.user?.role !== "admin") {
       query.ownerId = req.user?.userId;
     }
@@ -602,14 +530,6 @@ router.post("/batch-delete", auth, async (req: AuthRequest, res: Response) => {
 
     for (const hotel of hotels) {
       try {
-        // 只允许删除待完善状态的酒店
-        if (!hotel.isIncomplete) {
-          failedCount++;
-          failedIds.push(String(hotel._id));
-          continue;
-        }
-
-        // 记录删除前的数据
         deleteLogs.push({
           hotelId: hotel._id,
           hotelName: hotel.name,
@@ -620,7 +540,6 @@ router.post("/batch-delete", auth, async (req: AuthRequest, res: Response) => {
           deleteTime: new Date(),
         });
 
-        // 执行软删除
         await HotelModel.updateOne(
           { _id: hotel._id, ownerId: hotel.ownerId },
           {
@@ -637,7 +556,6 @@ router.post("/batch-delete", auth, async (req: AuthRequest, res: Response) => {
       }
     }
 
-    // 记录删除日志（这里可以集成到日志系统）
     console.log("批量删除日志:", {
       totalCount: ids.length,
       successCount,

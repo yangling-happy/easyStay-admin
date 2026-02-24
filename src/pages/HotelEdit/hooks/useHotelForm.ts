@@ -110,6 +110,13 @@ export const useHotelForm = () => {
           : values.openingDate;
     }
 
+    const normalizedStar =
+      values.star === "" || values.star === undefined || values.star === null
+        ? undefined
+        : typeof values.star === "string"
+          ? parseInt(values.star, 10)
+          : values.star;
+
     const isUpdate =
       values.id !== undefined && values.id !== null && values.id !== "";
 
@@ -121,13 +128,9 @@ export const useHotelForm = () => {
       phone: values.phone?.trim() || "",
       location: values.location || [],
       amenities: values.amenities || [],
-      star:
-        typeof values.star === "string"
-          ? parseInt(values.star, 10)
-          : values.star,
+      star: normalizedStar,
       openingDate: openingDateStr,
       status: statusOptions.status,
-      ownerId: localStorage.getItem("userId") || "user_001",
       roomTypes: (values.roomTypes || []).map((room: any) => ({
         name: room.name?.trim() || "",
         price: room.price || 0,
@@ -364,7 +367,6 @@ export const useHotelForm = () => {
             : values.star,
         openingDate: openingDateStr,
         status: "pending" as const,
-        ownerId: localStorage.getItem("userId") || "user_001",
         roomTypes: (values.roomTypes || []).map((room: any) => ({
           name: room.name?.trim() || "",
           price: room.price || 0,
