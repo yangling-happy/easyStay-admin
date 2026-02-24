@@ -134,7 +134,7 @@ router.get("/detail/:id", auth, async (req: AuthRequest, res: Response) => {
   }
 });
 
-router.put(":id", auth, async (req: AuthRequest, res: Response) => {
+router.put("/:id", auth, async (req: AuthRequest, res: Response) => {
   try {
     const hotel = await HotelModel.findOne({
       _id: req.params.id,
@@ -168,6 +168,7 @@ router.put(":id", auth, async (req: AuthRequest, res: Response) => {
       ...restBody,
       ownerId: hotel.ownerId,
       updateTime: new Date(),
+      version: (currentVersion || 0) + 1,
     };
 
     if (isIncomplete) {

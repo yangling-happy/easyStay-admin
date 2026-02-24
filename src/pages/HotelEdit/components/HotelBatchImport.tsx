@@ -144,6 +144,7 @@ const HotelBatchImport: React.FC<HotelBatchImportProps> = () => {
           createTime: new Date().toISOString(),
           updateTime: new Date().toISOString(),
           isDeleted: false,
+          version: 1,
         };
 
         validHotels.push(newHotel);

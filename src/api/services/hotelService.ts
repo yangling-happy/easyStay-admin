@@ -69,15 +69,25 @@ export const hotelService = {
   },
   updateHotel: async (id: string, hotel: Partial<Hotel>): Promise<Hotel> => {
     try {
+      if (!id || !id.trim()) {
+        throw new Error("酒店ID不能为空");
+      }
+
       const hotelData = {
         ...hotel,
         status: "pending",
         updateTime: new Date().toISOString(),
       };
 
+      console.log("更新酒店请求：", { id, hotelData });
       return await put<Hotel>(`/hotels/${id}`, hotelData);
-    } catch (error) {
-      console.error("更新酒店失败:", error);
+    } catch (error: any) {
+      console.error("更新酒店失败:", {
+        id,
+        error: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+      });
       throw error;
     }
   },
