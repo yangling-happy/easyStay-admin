@@ -101,7 +101,20 @@ const BatchImport: React.FC<BatchImportProps> = ({ onCancel }) => {
   const [photoUploadModalVisible, setPhotoUploadModalVisible] = useState(false);
   const [importedHotels, setImportedHotels] = useState<Hotel[]>([]);
 
-  const resolveCompletionStatus = (hotel: Hotel) => {
+  /**
+   * 判断批量导入酒店的完成状态
+   * 业务规则：
+   * 1. 没有房型配置 → incomplete（每个酒店必须有房型）
+   * 2. 有房型但缺少其他必填项 → incomplete
+   * 3. 批量导入的数据通常都是 incomplete，因为缺少照片等资源
+   */
+  const resolveCompletionStatus = (hotel: Hotel): "incomplete" | "draft" => {
+    // 业务要求：每个酒店必须有房型
+    if (!hotel.roomTypes || hotel.roomTypes.length === 0) {
+      return "incomplete";
+    }
+
+    // 检查其他必填字段
     const missingRequiredFields =
       !hotel.name?.trim() ||
       !hotel.nameEn?.trim() ||
@@ -113,11 +126,10 @@ const BatchImport: React.FC<BatchImportProps> = ({ onCancel }) => {
       hotel.location.length < 2 ||
       !hotel.photos ||
       hotel.photos.length === 0 ||
-      !hotel.roomTypes ||
-      hotel.roomTypes.length === 0 ||
       hotel.roomTypes.some((room) => !room.photos || room.photos.length === 0);
 
-    return missingRequiredFields ? "incomplete" : "draft";
+    // 批量导入的数据，由于是系统检测到的不完整，标记为 incomplete
+    return missingRequiredFields ? "incomplete" : "incomplete";
   };
 
   /**
@@ -270,13 +282,15 @@ const BatchImport: React.FC<BatchImportProps> = ({ onCancel }) => {
         ).length;
 
         if (errorCount === 0) {
-          message.success(
-            `批量导入成功！共导入 ${successCount} 家酒店的基础信息，请去"待完善酒店"完善照片和房型`,
-          );
+          message.success({
+            content: `批量导入成功！共导入 ${successCount} 家酒店的基础信息。由于业务要求每个酒店必须有房型配置，这些酒店已标记为"信息不全"状态，请前往"待完善酒店"列表补充房型信息。`,
+            duration: 6,
+          });
         } else {
-          message.warning(
-            `批量导入完成：成功 ${successCount} 家，失败 ${errorCount} 家。请前往"待完善酒店"查看成功导入的酒店。`,
-          );
+          message.warning({
+            content: `批量导入完成：成功 ${successCount} 家，失败 ${errorCount} 家。成功导入的酒店已标记为"信息不全"状态，请前往"待完善酒店"列表补充房型信息。`,
+            duration: 6,
+          });
         }
         setShowPreview(true);
       } else if (fileType === "room") {

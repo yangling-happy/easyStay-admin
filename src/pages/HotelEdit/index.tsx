@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Card, Steps, Button, message, Form, Typography } from "antd";
+import { Card, Steps, Button, message, Form, Typography, Alert } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import HotelSelector from "./components/HotelSelector";
 import BasicInfoForm from "./components/BasicInfoForm";
@@ -22,7 +22,14 @@ const HotelEdit: React.FC = () => {
 
   const [current, setCurrent] = useState(loadSavedStep());
   const [showBatchImport, setShowBatchImport] = useState(false);
-  const { form, handleSave, saveFormData, isSubmitting } = useHotelForm();
+  const [lastSaveTime, setLastSaveTime] = useState<string>("");
+  const {
+    form,
+    handleSaveDraft,
+    handleSubmitForReview,
+    saveFormData,
+    isSubmitting,
+  } = useHotelForm();
 
   //保存当前步骤
   const saveStep = (step: number) => {
@@ -30,11 +37,15 @@ const HotelEdit: React.FC = () => {
     setCurrent(step);
   };
 
-  //自动保存：每3秒保存一次表单数据
+  //自动保存：每3秒保存一次表单数据到本地
   useEffect(() => {
     const interval = setInterval(() => {
       const values = form.getFieldsValue();
       saveFormData(values);
+      // 更新最后保存时间
+      const now = new Date();
+      const timeStr = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}:${now.getSeconds().toString().padStart(2, "0")}`;
+      setLastSaveTime(timeStr);
     }, 3000);
 
     return () => clearInterval(interval);
@@ -140,13 +151,79 @@ const HotelEdit: React.FC = () => {
             </div>
           </div>
 
-          {/* 第1步：子组件不需要传递 form */}
+          {/* 第1步：基础信息 */}
           <div style={{ display: current === 1 ? "block" : "none" }}>
+            <Alert
+              message=" 温馨提示"
+              description={
+                <div>
+                  <p style={{ marginBottom: 8 }}>
+                    • <strong>自动保存</strong>
+                    ：系统每3秒自动保存表单数据到本地，防止数据丢失
+                  </p>
+                  <p style={{ marginBottom: 8 }}>
+                    • <strong>保存草稿</strong>
+                    ：保存当前进度到服务器，可随时在"待完善酒店"列表中继续编辑（最低要求：酒店名称）
+                  </p>
+                  <p style={{ marginBottom: 0 }}>
+                    • <strong>下一步</strong>
+                    ：验证当前页面必填信息后，进入房型配置步骤
+                  </p>
+                  {lastSaveTime && (
+                    <p
+                      style={{
+                        marginTop: 8,
+                        marginBottom: 0,
+                        color: "#52c41a",
+                      }}
+                    >
+                       最后自动保存时间：{lastSaveTime}
+                    </p>
+                  )}
+                </div>
+              }
+              type="info"
+              showIcon
+              style={{ marginBottom: 16 }}
+            />
             <BasicInfoForm />
           </div>
 
-          {/* 第2步：子组件不需要传递 form */}
+          {/* 第2步：房型配置 */}
           <div style={{ display: current === 2 ? "block" : "none" }}>
+            <Alert
+              message=" 温馨提示"
+              description={
+                <div>
+                  <p style={{ marginBottom: 8 }}>
+                    • <strong>自动保存</strong>
+                    ：系统每3秒自动保存表单数据到本地，防止数据丢失
+                  </p>
+                  <p style={{ marginBottom: 8 }}>
+                    • <strong>保存草稿</strong>
+                    ：保存当前进度到服务器，可随时继续编辑（最低要求：酒店名称）
+                  </p>
+                  <p style={{ marginBottom: 0 }}>
+                    • <strong>提交审核</strong>
+                    ：必须填写完整所有必填信息（酒店照片、房型配置和房型照片）
+                  </p>
+                  {lastSaveTime && (
+                    <p
+                      style={{
+                        marginTop: 8,
+                        marginBottom: 0,
+                        color: "#52c41a",
+                      }}
+                    >
+                      最后自动保存时间：{lastSaveTime}
+                    </p>
+                  )}
+                </div>
+              }
+              type="info"
+              showIcon
+              style={{ marginBottom: 16 }}
+            />
             <RoomTypeFormList />
           </div>
         </Form>
@@ -165,21 +242,43 @@ const HotelEdit: React.FC = () => {
             </Button>
           )}
 
+          {/* 第1步：基础信息，可以保存草稿或下一步 */}
           {current === 1 && (
-            <Button type="primary" onClick={handleNext}>
-              下一步
-            </Button>
+            <>
+              <Button
+                style={{ margin: "0 8px" }}
+                onClick={handleSaveDraft}
+                loading={isSubmitting}
+                disabled={isSubmitting}
+              >
+                保存草稿
+              </Button>
+              <Button type="primary" onClick={handleNext}>
+                下一步
+              </Button>
+            </>
           )}
 
+          {/* 第2步：房型配置，可以保存草稿或继续下一步 */}
           {current === 2 && (
-            <Button
-              type="primary"
-              onClick={handleSave}
-              loading={isSubmitting}
-              disabled={isSubmitting}
-            >
-              完成并提交审核
-            </Button>
+            <>
+              <Button
+                style={{ margin: "0 8px" }}
+                onClick={handleSaveDraft}
+                loading={isSubmitting}
+                disabled={isSubmitting}
+              >
+                保存草稿
+              </Button>
+              <Button
+                type="primary"
+                onClick={handleSubmitForReview}
+                loading={isSubmitting}
+                disabled={isSubmitting}
+              >
+                提交审核
+              </Button>
+            </>
           )}
         </div>
       </Card>
