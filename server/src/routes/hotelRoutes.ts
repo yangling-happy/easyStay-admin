@@ -566,4 +566,100 @@ router.delete("/:id", auth, async (req: AuthRequest, res: Response) => {
   }
 });
 
+router.post("/batch-delete", auth, async (req: AuthRequest, res: Response) => {
+  try {
+    const { ids } = req.body;
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res
+        .status(400)
+        .json({ success: false, message: "请提供要删除的酒店ID列表" });
+    }
+
+    // 权限检查：商户只能删除自己的酒店，管理员可以删除所有
+    const query: any = {
+      _id: { $in: ids },
+      isDeleted: false,
+    };
+
+    // 如果不是管理员，只能删除自己的酒店
+    if (req.user?.role !== "admin") {
+      query.ownerId = req.user?.userId;
+    }
+
+    const hotels = await HotelModel.find(query);
+
+    if (hotels.length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: "未找到可删除的酒店" });
+    }
+
+    let successCount = 0;
+    let failedCount = 0;
+    const failedIds: string[] = [];
+    const deleteLogs: any[] = [];
+
+    for (const hotel of hotels) {
+      try {
+        // 只允许删除待完善状态的酒店
+        if (!hotel.isIncomplete) {
+          failedCount++;
+          failedIds.push(String(hotel._id));
+          continue;
+        }
+
+        // 记录删除前的数据
+        deleteLogs.push({
+          hotelId: hotel._id,
+          hotelName: hotel.name,
+          ownerId: hotel.ownerId,
+          beforeData: hotel.toObject(),
+          operatorId: req.user?.userId,
+          operatorRole: req.user?.role,
+          deleteTime: new Date(),
+        });
+
+        // 执行软删除
+        await HotelModel.updateOne(
+          { _id: hotel._id, ownerId: hotel.ownerId },
+          {
+            isDeleted: true,
+            updateTime: new Date(),
+          },
+        );
+
+        successCount++;
+      } catch (error) {
+        console.error(`删除酒店 ${hotel._id} 失败:`, error);
+        failedCount++;
+        failedIds.push(String(hotel._id));
+      }
+    }
+
+    // 记录删除日志（这里可以集成到日志系统）
+    console.log("批量删除日志:", {
+      totalCount: ids.length,
+      successCount,
+      failedCount,
+      failedIds,
+      deleteLogs,
+    });
+
+    res.json({
+      success: true,
+      message: `成功删除 ${successCount} 家酒店${failedCount > 0 ? `，失败 ${failedCount} 家` : ""}`,
+      data: {
+        successCount,
+        failedCount,
+        failedIds,
+      },
+    });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "未知错误";
+    console.error("批量删除失败:", error);
+    res.status(500).json({ success: false, message: errorMessage });
+  }
+});
+
 export default router;

@@ -159,4 +159,26 @@ export const hotelService = {
       throw error;
     }
   },
+
+  batchDeleteHotels: async (
+    ids: string[],
+  ): Promise<{
+    success: boolean;
+    successCount: number;
+    failedCount: number;
+    failedIds: string[];
+  }> => {
+    try {
+      const res = await post<any>("/hotels/batch-delete", { ids });
+      return {
+        success: res.success || true,
+        successCount: res.data?.successCount || 0,
+        failedCount: res.data?.failedCount || 0,
+        failedIds: res.data?.failedIds || [],
+      };
+    } catch (error) {
+      console.error("批量删除酒店失败:", error);
+      throw error;
+    }
+  },
 };

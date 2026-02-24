@@ -18,6 +18,7 @@ import {
   ExclamationCircleOutlined,
   CopyOutlined,
   EyeOutlined,
+  DeleteFilled,
 } from "@ant-design/icons";
 import { hotelService } from "@/api/services/hotelService";
 import { getFullAddress } from "@/utils/addressData";
@@ -36,6 +37,8 @@ const IncompleteHotels: React.FC = () => {
   const [isDetailVisible, setIsDetailVisible] = useState(false);
   const [selectedHotel, setSelectedHotel] = useState<any>(null);
   const [searchText, setSearchText] = useState("");
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+  const [batchDeleteLoading, setBatchDeleteLoading] = useState(false);
 
   const loadIncompleteHotels = async () => {
     setLoading(true);
@@ -124,6 +127,80 @@ const IncompleteHotels: React.FC = () => {
           loadIncompleteHotels();
         } catch (error: any) {
           message.error(error.response?.data?.message || "删除失败");
+        }
+      },
+    });
+  };
+
+  const handleBatchDelete = async () => {
+    if (selectedRowKeys.length === 0) {
+      message.warning("请至少选择一个酒店");
+      return;
+    }
+
+    const selectedHotels = filteredHotels.filter((hotel) =>
+      selectedRowKeys.includes(hotel._id || hotel.id),
+    );
+
+    Modal.confirm({
+      title: "批量删除确认",
+      icon: <ExclamationCircleOutlined />,
+      width: 600,
+      content: (
+        <div>
+          <p>
+            您已选择 <strong>{selectedRowKeys.length}</strong>{" "}
+            家酒店，确定要批量删除吗？
+          </p>
+          <div
+            style={{ maxHeight: "200px", overflowY: "auto", marginTop: "16px" }}
+          >
+            {selectedHotels.map((hotel) => (
+              <div
+                key={hotel._id || hotel.id}
+                style={{
+                  padding: "8px 0",
+                  borderBottom: "1px solid #f0f0f0",
+                }}
+              >
+                <div style={{ fontWeight: 500 }}>{hotel.name}</div>
+                <div style={{ fontSize: "12px", color: "#888" }}>
+                  {hotel.address || "无地址信息"}
+                </div>
+              </div>
+            ))}
+          </div>
+          <p style={{ marginTop: "16px", color: "#ff4d4f", fontSize: "12px" }}>
+            <ExclamationCircleOutlined /> 删除后将无法恢复，请谨慎操作
+          </p>
+        </div>
+      ),
+      okText: "确认批量删除",
+      okButtonProps: { danger: true, loading: batchDeleteLoading },
+      cancelText: "取消",
+      onOk: async () => {
+        setBatchDeleteLoading(true);
+        try {
+          const result = await hotelService.batchDeleteHotels(
+            selectedRowKeys as string[],
+          );
+
+          if (result.success) {
+            message.success(
+              `成功删除 ${result.successCount} 家酒店${result.failedCount > 0 ? `，失败 ${result.failedCount} 家` : ""}`,
+            );
+            setSelectedRowKeys([]);
+            loadIncompleteHotels();
+          } else {
+            message.error("批量删除失败，请重试");
+          }
+        } catch (error: any) {
+          console.error("批量删除失败:", error);
+          message.error(
+            error.response?.data?.message || "批量删除失败，请重试",
+          );
+        } finally {
+          setBatchDeleteLoading(false);
         }
       },
     });
@@ -297,6 +374,16 @@ const IncompleteHotels: React.FC = () => {
         }
         extra={
           <Space>
+            {/* 批量删除按钮 */}
+            <Button
+              danger
+              icon={<DeleteFilled />}
+              type="link"
+              disabled={selectedRowKeys.length === 0}
+              onClick={handleBatchDelete}
+            >
+              批量删除 ({selectedRowKeys.length})
+            </Button>
             {/* 状态筛选 */}
             <Select
               value={statusFilter}
@@ -327,6 +414,15 @@ const IncompleteHotels: React.FC = () => {
           rowKey={(record) => record._id || record.id}
           loading={loading}
           pagination={{ pageSize: 10 }}
+          rowSelection={{
+            selectedRowKeys,
+            onChange: (keys) => setSelectedRowKeys(keys),
+            selections: [
+              Table.SELECTION_ALL,
+              Table.SELECTION_INVERT,
+              Table.SELECTION_NONE,
+            ],
+          }}
           locale={{
             emptyText: (
               <Empty
