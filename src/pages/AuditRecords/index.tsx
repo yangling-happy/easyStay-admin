@@ -21,8 +21,6 @@ import { message } from "antd";
 import { getFullAddress } from "@/utils/addressData";
 import HotelSearchInput from "@/components/HotelSearchInput";
 import { filterHotelsByKeyword } from "@/utils/filterHotelsByKeyword.";
-import BatchDelete from "@/components/BatchDelete";
-import { hotelService } from "@/api/services/hotelService";
 
 const { Title } = Typography;
 
@@ -31,52 +29,11 @@ const AuditRecords: React.FC = () => {
   const [searchText, setSearchText] = useState("");
   const [isDetailVisible, setIsDetailVisible] = useState(false);
   const [selectedHotel, setSelectedHotel] = useState<any>(null);
-  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
-  const [batchDeleteLoading, setBatchDeleteLoading] = useState(false);
 
   // 查看详情处理逻辑
   const showDetail = (record: any) => {
     setSelectedHotel(record);
     setIsDetailVisible(true);
-  };
-
-  // 批量删除处理逻辑
-  const handleBatchDelete = async (
-    ids: string[],
-  ): Promise<{
-    success: boolean;
-    successCount: number;
-    failedCount: number;
-    failedIds: string[];
-  }> => {
-    setBatchDeleteLoading(true);
-    try {
-      const result = await hotelService.batchDeleteHotels(ids);
-
-      if (result.success) {
-        message.success(
-          `成功删除 ${result.successCount} 家酒店${result.failedCount > 0 ? `，失败 ${result.failedCount} 家` : ""}`,
-        );
-        // 清空选中状态
-        setSelectedRowKeys([]);
-        // 重新加载数据
-        window.location.reload();
-      } else {
-        message.error("批量删除失败，请重试");
-      }
-      return result;
-    } catch (error: any) {
-      console.error("批量删除失败:", error);
-      message.error(error.response?.data?.message || "批量删除失败，请重试");
-      return {
-        success: false,
-        successCount: 0,
-        failedCount: ids.length,
-        failedIds: ids,
-      };
-    } finally {
-      setBatchDeleteLoading(false);
-    }
   };
 
   // 搜索过滤逻辑（支持酒店名称和编号搜索）
@@ -210,23 +167,12 @@ const AuditRecords: React.FC = () => {
           <Title level={4} style={{ margin: 0 }}>
             酒店上线申请记录
           </Title>
-          <Space>
-            <BatchDelete
-              selectedRowKeys={selectedRowKeys}
-              dataSource={filteredData}
-              onBatchDelete={handleBatchDelete}
-              itemName="酒店"
-              getDisplayName={(item) => item.name}
-              getDisplayInfo={(item) => item.address || "无地址信息"}
-              loading={batchDeleteLoading}
-            />
-            <HotelSearchInput
-              placeholder="搜索酒店名称或编号"
-              onSearch={(value) => setSearchText(value)}
-              onChange={(value) => setSearchText(value)}
-              style={{ width: 300 }}
-            />
-          </Space>
+          <HotelSearchInput
+            placeholder="搜索酒店名称或编号"
+            onSearch={(value) => setSearchText(value)}
+            onChange={(value) => setSearchText(value)}
+            style={{ width: 300 }}
+          />
         </div>
         <Table
           columns={columns}
@@ -234,15 +180,6 @@ const AuditRecords: React.FC = () => {
           loading={loading}
           rowKey="_id"
           pagination={{ pageSize: 10 }}
-          rowSelection={{
-            selectedRowKeys,
-            onChange: (keys) => setSelectedRowKeys(keys),
-            selections: [
-              Table.SELECTION_ALL,
-              Table.SELECTION_INVERT,
-              Table.SELECTION_NONE,
-            ],
-          }}
         />
       </Card>
 
