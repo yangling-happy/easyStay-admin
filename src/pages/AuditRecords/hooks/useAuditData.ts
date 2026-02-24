@@ -11,9 +11,17 @@ export const useAuditData = () => {
     setLoading(true);
     try {
       // 这里的路径要对应后端路由，后端现在是通过 Token 自动识别 ownerId 的
-      const res: any = await get("/hotels/records");
+      const res: any = await get("/hotels/records", { scope: "audit" });
       if (res.success) {
-        setData(res.data);
+        const filtered = (res.data || []).filter((hotel: any) => {
+          if (!hotel?.status) return false;
+          if (hotel.status === "rejected") return true;
+          if (hotel.status === "pending" || hotel.status === "approved") {
+            return hotel.isIncomplete === false;
+          }
+          return false;
+        });
+        setData(filtered);
       } else {
         message.error(res.message || "获取记录失败");
       }

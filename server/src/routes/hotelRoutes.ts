@@ -54,19 +54,21 @@ router.post("/", auth, async (req: AuthRequest, res: Response) => {
       isActive: isIncomplete ? false : (req.body?.isActive ?? false),
       createTime: new Date(),
       updateTime: new Date(),
-      ...(isIncomplete
-        ? {}
-        : {
-            auditHistory: [
-              {
-                action: "create",
-                status: "pending",
-                operatorId: req.user?.userId,
-                operatorRole: "merchant",
-                timestamp: new Date(),
-              },
-            ],
-          }),
+      auditHistory: [
+        {
+          action: "create",
+          status: "pending",
+          operatorId: req.user?.userId,
+          operatorRole: "merchant",
+          timestamp: new Date(),
+          beforeStatus: null,
+          afterStatus: {
+            status: "pending",
+            isIncomplete,
+            completionStatus,
+          },
+        },
+      ],
     };
 
     const hotel = new HotelModel(hotelData);
@@ -94,12 +96,24 @@ router.post("/", auth, async (req: AuthRequest, res: Response) => {
 
 router.get("/records", auth, async (req: AuthRequest, res: Response) => {
   try {
+    const { scope } = req.query as { scope?: string };
     const query = {
       ownerId: req.user?.userId,
       isDeleted: false,
     };
 
-    const hotels = await HotelModel.find(query).sort({ updateTime: -1 });
+    let hotels = await HotelModel.find(query).sort({ updateTime: -1 });
+
+    if (scope === "audit") {
+      hotels = hotels.filter((hotel) => {
+        if (!hotel.status) return false;
+        if (hotel.status === "rejected") return true;
+        if (hotel.status === "pending" || hotel.status === "approved") {
+          return hotel.isIncomplete === false;
+        }
+        return false;
+      });
+    }
 
     res.json({ success: true, data: hotels });
   } catch (error: unknown) {

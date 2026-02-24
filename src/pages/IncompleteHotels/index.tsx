@@ -81,7 +81,31 @@ const IncompleteHotels: React.FC = () => {
   }, [searchText, incompleteHotels]);
 
   const handleCompleteInfo = (record: any) => {
-    navigate(`/hotels/edit/${record._id || record.id}`);
+    const hotelId = record._id || record.id;
+    const formData = {
+      id: hotelId,
+      version: record.version,
+      name: record.name,
+      nameEn: record.nameEn,
+      location: record.location,
+      address: record.address,
+      phone: record.phone,
+      openingDate: record.openingDate,
+      star: record.star?.toString?.() ?? record.star,
+      photos: record.photos,
+      amenities: record.amenities,
+      roomTypes: record.roomTypes,
+      isActive: record.isActive,
+    };
+
+    try {
+      localStorage.setItem("hotel_edit_form_data", JSON.stringify(formData));
+      localStorage.setItem("hotel_edit_current_step", "1");
+    } catch (error) {
+      console.error("预填酒店信息失败:", error);
+    }
+
+    navigate(`/hotels/edit/${hotelId}`);
   };
 
   const handleDelete = (record: any) => {
