@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Card, Steps, Button, message, Form, Typography, Alert } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
+import { useParams } from "react-router-dom";
 import HotelSelector from "./components/HotelSelector";
 import BasicInfoForm from "./components/BasicInfoForm";
 import RoomTypeFormList from "./components/RoomTypeFormList";
@@ -10,10 +11,13 @@ import { BASIC_INFO_FIELDS } from "./components/BasicInfoForm";
 import { ROOM_TYPE_FIELDS } from "./components/RoomTypeFormList";
 
 const HotelEdit: React.FC = () => {
+  const { id: routeHotelId } = useParams();
+
   // 加载保存的步骤
   const loadSavedStep = () => {
     try {
-      const step = localStorage.getItem("hotel_edit_current_step");
+      const stepKey = `hotel_edit_current_step_${routeHotelId ?? "new"}`;
+      const step = localStorage.getItem(stepKey);
       return step ? parseInt(step, 10) : 0;
     } catch {
       return 0;
@@ -29,11 +33,12 @@ const HotelEdit: React.FC = () => {
     handleSubmitForReview,
     saveFormData,
     isSubmitting,
-  } = useHotelForm();
+  } = useHotelForm({ routeHotelId });
 
   //保存当前步骤
   const saveStep = (step: number) => {
-    localStorage.setItem("hotel_edit_current_step", step.toString());
+    const stepKey = `hotel_edit_current_step_${routeHotelId ?? "new"}`;
+    localStorage.setItem(stepKey, step.toString());
     setCurrent(step);
   };
 
@@ -177,7 +182,7 @@ const HotelEdit: React.FC = () => {
                         color: "#52c41a",
                       }}
                     >
-                       最后自动保存时间：{lastSaveTime}
+                      最后自动保存时间：{lastSaveTime}
                     </p>
                   )}
                 </div>

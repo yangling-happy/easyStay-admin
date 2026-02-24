@@ -102,8 +102,11 @@ const IncompleteHotels: React.FC = () => {
     };
 
     try {
-      localStorage.setItem("hotel_edit_form_data", JSON.stringify(formData));
-      localStorage.setItem("hotel_edit_current_step", "1");
+      localStorage.setItem(
+        `hotel_edit_form_data_${hotelId}`,
+        JSON.stringify(formData),
+      );
+      localStorage.setItem(`hotel_edit_current_step_${hotelId}`, "1");
     } catch (error) {
       console.error("预填酒店信息失败:", error);
     }

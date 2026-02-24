@@ -4,6 +4,15 @@ import { useEffect, useCallback, useState } from "react";
 import { hotelService } from "../../../api/services/hotelService";
 import dayjs from "dayjs";
 
+type UseHotelFormOptions = {
+  routeHotelId?: string;
+};
+
+const buildDraftKey = (id?: string | number | null) =>
+  `hotel_edit_form_data_${id ?? "new"}`;
+const buildStepKey = (id?: string | number | null) =>
+  `hotel_edit_current_step_${id ?? "new"}`;
+
 const debounce = (func: Function, wait: number) => {
   let timeout: NodeJS.Timeout;
   return (...args: any[]) => {
@@ -12,10 +21,30 @@ const debounce = (func: Function, wait: number) => {
   };
 };
 
-export const useHotelForm = () => {
+export const useHotelForm = (options?: UseHotelFormOptions) => {
   const [form] = Form.useForm();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const routeHotelId = options?.routeHotelId;
+
+  const resolveDraftKey = (data?: any) => {
+    const dataId = data?.id ?? routeHotelId;
+    return buildDraftKey(
+      dataId !== undefined && dataId !== null && dataId !== "" ? dataId : "new",
+    );
+  };
+
+  const clearDraftKeys = (data?: any) => {
+    try {
+      const dataId = data?.id ?? routeHotelId;
+      localStorage.removeItem("hotel_edit_form_data");
+      localStorage.removeItem("hotel_edit_current_step");
+      localStorage.removeItem(resolveDraftKey(data));
+      localStorage.removeItem(buildStepKey(dataId ?? "new"));
+    } catch (error) {
+      console.error("清理草稿缓存失败:", error);
+    }
+  };
   const saveFormData = useCallback(
     debounce((data: any) => {
       try {
@@ -32,18 +61,48 @@ export const useHotelForm = () => {
         }, {} as any);
 
         localStorage.setItem(
-          "hotel_edit_form_data",
+          resolveDraftKey(cleanedData),
           JSON.stringify(cleanedData),
         );
       } catch (error) {
         console.error("保存表单数据失败:", error);
       }
     }, 500),
-    [],
+    [routeHotelId],
   );
 
   useEffect(() => {
-    const savedData = localStorage.getItem("hotel_edit_form_data");
+    const loadSavedData = () => {
+      const preferredKey = buildDraftKey(
+        routeHotelId !== undefined &&
+          routeHotelId !== null &&
+          routeHotelId !== ""
+          ? routeHotelId
+          : "new",
+      );
+      const scopedData = localStorage.getItem(preferredKey);
+      if (scopedData) {
+        return scopedData;
+      }
+
+      const legacyData = localStorage.getItem("hotel_edit_form_data");
+      if (!legacyData) return null;
+
+      try {
+        const parsedLegacy = JSON.parse(legacyData);
+        if (routeHotelId) {
+          if (parsedLegacy?.id?.toString?.() !== routeHotelId) {
+            return null;
+          }
+        }
+        return legacyData;
+      } catch (error) {
+        console.error("解析旧草稿数据失败:", error);
+        return null;
+      }
+    };
+
+    const savedData = loadSavedData();
     if (savedData) {
       try {
         const parsedData = JSON.parse(savedData);
@@ -55,7 +114,7 @@ export const useHotelForm = () => {
         console.error("恢复表单数据失败:", error);
       }
     }
-  }, [form]);
+  }, [form, routeHotelId]);
 
   /**
    * 验证数据完整性
@@ -303,8 +362,7 @@ export const useHotelForm = () => {
         form.setFieldsValue({ version: newVersion });
       }
 
-      localStorage.removeItem("hotel_edit_form_data");
-      localStorage.removeItem("hotel_edit_current_step");
+      clearDraftKeys(values);
 
       message.success("提交成功！酒店信息已提交审核");
 
@@ -352,7 +410,6 @@ export const useHotelForm = () => {
 
       const isUpdate =
         values.id !== undefined && values.id !== null && values.id !== "";
-
       const payload: any = {
         ...values,
         name: values.name?.trim() || "",
@@ -417,8 +474,7 @@ export const useHotelForm = () => {
         form.setFieldsValue({ version: newVersion });
       }
 
-      localStorage.removeItem("hotel_edit_form_data");
-      localStorage.removeItem("hotel_edit_current_step");
+      clearDraftKeys(values);
 
       message.success(
         isUpdate
