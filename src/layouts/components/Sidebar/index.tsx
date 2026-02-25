@@ -61,18 +61,6 @@ const Sidebar: React.FC = () => {
       label: "酒店审核",
       onClick: () => navigate("/hotels/audit"),
     },
-    {
-      key: "/users",
-      icon: <DatabaseOutlined />,
-      label: "平台监控",
-      onClick: () => navigate("/users"),
-    },
-    {
-      key: "/users/audit",
-      icon: <AuditOutlined />,
-      label: "数据统计",
-      onClick: () => navigate("/users/audit"),
-    },
   ];
 
   const menuItems = role === "admin" ? adminMenuItems : merchantMenuItems;

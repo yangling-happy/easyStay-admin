@@ -48,7 +48,7 @@ const LeftPanel: React.FC = () => {
                     管理员功能
                   </Text>
                   <Text className="feature-description">
-                    商户审核、平台监控、数据统计
+                    商户审核
                   </Text>
                 </div>
               </div>
