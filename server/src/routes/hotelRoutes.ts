@@ -199,6 +199,15 @@ router.put("/:id", auth, async (req: AuthRequest, res: Response) => {
 
     const { ownerId: _ownerId, ...restBody } = req.body || {};
 
+    const isMerchant = (req.user?.role || "merchant") === "merchant";
+    const shouldForcePending = isMerchant && !isIncomplete;
+
+    const beforeSnapshot = hotel.toObject();
+    const beforeSnapshotWithoutId = { ...beforeSnapshot } as any;
+    delete beforeSnapshotWithoutId._id;
+    delete beforeSnapshotWithoutId.__v;
+    delete beforeSnapshotWithoutId.auditHistory;
+
     const updateData: any = {
       ...restBody,
       ownerId: hotel.ownerId,
@@ -213,6 +222,12 @@ router.put("/:id", auth, async (req: AuthRequest, res: Response) => {
     } else {
       updateData.isIncomplete = false;
       updateData.completionStatus = null;
+    }
+
+    if (shouldForcePending) {
+      updateData.status = "pending";
+      updateData.isActive = false;
+      updateData.rejectReason = "";
     }
 
     const updatedHotel = await HotelModel.findOneAndUpdate(
@@ -241,12 +256,20 @@ router.put("/:id", auth, async (req: AuthRequest, res: Response) => {
         isIncomplete: updatedHotel.isIncomplete,
         completionStatus: updatedHotel.completionStatus,
       },
+      snapshot: beforeSnapshotWithoutId,
     };
 
     await HotelModel.updateOne(
       { _id: req.params.id },
       { $push: { auditHistory: auditEntry } },
     );
+
+    if (shouldForcePending) {
+      await notifyAdminsOfPendingHotel(
+        String(updatedHotel._id),
+        updatedHotel.name,
+      );
+    }
 
     console.log("酒店更新成功:", {
       id: updatedHotel._id,
