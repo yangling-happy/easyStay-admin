@@ -6,6 +6,11 @@ import { NotificationModel } from "../models/Notification.js";
 import { User } from "../models/User.js";
 import { auth } from "../middleware/authMiddleware.js";
 
+/**
+ * @description 通知管理员待审核酒店
+ * @param hotelId 酒店ID
+ * @param hotelName 酒店名称
+ */
 async function notifyAdminsOfPendingHotel(hotelId: string, hotelName: string) {
   try {
     const admins = await User.find({ role: "admin" }).select("_id");
@@ -26,6 +31,9 @@ async function notifyAdminsOfPendingHotel(hotelId: string, hotelName: string) {
   }
 }
 
+/**
+ * @description 认证请求
+ */
 interface AuthRequest extends Request {
   user?: {
     userId: string;
@@ -35,6 +43,9 @@ interface AuthRequest extends Request {
 
 const router = express.Router();
 
+/**
+ * @description 创建酒店
+ */
 router.post("/", auth, async (req: AuthRequest, res: Response) => {
   try {
     const hotelData = {
@@ -69,6 +80,9 @@ router.post("/", auth, async (req: AuthRequest, res: Response) => {
   }
 });
 
+/**
+ * @description 获取商户的酒店列表
+ */
 router.get("/records", auth, async (req: AuthRequest, res: Response) => {
   try {
     const query = {
@@ -85,6 +99,9 @@ router.get("/records", auth, async (req: AuthRequest, res: Response) => {
   }
 });
 
+/**
+ * @description 下线酒店
+ */
 router.patch("/:id/offline", auth, async (req: AuthRequest, res: Response) => {
   try {
     const hotel = await HotelModel.findOne({
@@ -163,6 +180,9 @@ router.patch("/:id/offline", auth, async (req: AuthRequest, res: Response) => {
   }
 });
 
+/**
+ * @description 上线酒店
+ */
 router.patch("/:id/online", auth, async (req: AuthRequest, res: Response) => {
   try {
     const hotel = await HotelModel.findOne({
@@ -247,6 +267,9 @@ router.patch("/:id/online", auth, async (req: AuthRequest, res: Response) => {
   }
 });
 
+/**
+ * @description 重新上线酒店
+ */
 router.post("/:id/re-apply", auth, async (req: AuthRequest, res: Response) => {
   try {
     const hotel = await HotelModel.findOne({
@@ -311,6 +334,9 @@ router.post("/:id/re-apply", auth, async (req: AuthRequest, res: Response) => {
   }
 });
 
+/**
+ * @description 更新酒店
+ */
 router.put("/:id", auth, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
@@ -429,6 +455,9 @@ router.put("/:id", auth, async (req: AuthRequest, res: Response) => {
   }
 });
 
+/**
+ * @description 获取酒店详情
+ */
 router.get("/detail/:id", async (req: Request, res: Response) => {
   try {
     const hotel = await HotelModel.findById(req.params.id);

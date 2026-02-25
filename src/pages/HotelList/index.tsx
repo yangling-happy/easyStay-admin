@@ -23,7 +23,6 @@ import {
 import { hotelService } from "@/api/services/hotelService";
 import { useActiveHotels } from "./hooks/useActiveHotels";
 import HotelDetailView from "@/components/HotelDetailView";
-import { getFullAddress } from "@/utils/addressData";
 import { formatDateTime } from "@/utils/dateUtils";
 import HotelSearchInput from "@/components/HotelSearchInput";
 import { filterHotelsByKeyword } from "@/utils/filterHotelsByKeyword.";
@@ -173,13 +172,19 @@ const HotelList: React.FC = () => {
       title: "酒店地址",
       dataIndex: "address",
       key: "address",
-      render: (address: string) => address || "-",
+      width: 200,
+      ellipsis: true,
+      render: (address: string) => (
+        <Tooltip title={address || "-"}>
+          <span>{address || "-"}</span>
+        </Tooltip>
+      ),
     },
 
     {
       title: "当前状态",
       key: "isActive",
-      width: 180,
+      width: 160,
       render: (_: unknown, record: any) => (
         <Space>
           <Tooltip
@@ -209,7 +214,7 @@ const HotelList: React.FC = () => {
     {
       title: "资产操作",
       key: "action",
-      width: 220,
+      width: 230,
       render: (_: unknown, record: any) => (
         <Space size="middle">
           <Tooltip title="编辑信息将导致重新审核">
@@ -234,7 +239,7 @@ const HotelList: React.FC = () => {
   ];
 
   return (
-    <div style={{ padding: "24px" }}>
+    <div style={{ padding: "24px", overflow: "auto" }}>
       <Card
         title={
           <Space size="middle">
@@ -283,6 +288,7 @@ const HotelList: React.FC = () => {
           rowKey={(record) => record._id || record.id}
           loading={loading}
           pagination={{ pageSize: 8 }}
+          scroll={{ x: 1100 }}
           footer={() => (
             <div style={{ padding: "8px 0" }}>
               <Text

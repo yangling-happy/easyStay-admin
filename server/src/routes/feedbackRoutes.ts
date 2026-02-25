@@ -6,6 +6,12 @@ import { User } from "../models/User.js";
 
 const router = Router();
 
+/**
+ * @description 通知管理员新反馈
+ * @param feedbackId 反馈ID
+ * @param hotelId 酒店ID
+ * @param hotelName 酒店名称
+ */
 async function notifyAdminsOfNewFeedback(feedbackId: string, hotelId?: string, hotelName?: string) {
   try {
     const admins = await User.find({ role: "admin" }).select("_id");

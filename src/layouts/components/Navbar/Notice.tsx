@@ -61,7 +61,9 @@ const Notice: React.FC = () => {
       setLoading(false);
     }
   };
-
+  /**
+   * @description 全部标记已读
+   */
   const handleMarkAllAsRead = async () => {
     if (unreadCount === 0) return;
     setMarkAllLoading(true);
@@ -89,6 +91,10 @@ const Notice: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
+  /**
+   * @description 标记单个通知为已读
+   * @param notificationId 通知ID
+   */
   const handleMarkAsRead = async (notificationId: string) => {
     try {
       await notificationService.markAsRead(notificationId);
@@ -105,7 +111,7 @@ const Notice: React.FC = () => {
     }
   };
 
-  // ✅ 新增：处理点击通知查看详情
+  //处理点击通知查看详情
   const handleNotificationClick = async (item: Notification) => {
     // 如果是未读，先标记为已读
     if (item.status === "unread") {
@@ -116,7 +122,7 @@ const Notice: React.FC = () => {
     setDetailModalVisible(true);
     setFeedbackDetail(null); // 重置反馈详情
 
-    // ✅ 如果是反馈回复类型，获取关联的反馈详情
+    // 如果是反馈回复类型，获取关联的反馈详情
     if (item.type === "feedback_reply" && item.relatedId) {
       setDetailLoading(true);
       try {
@@ -132,7 +138,7 @@ const Notice: React.FC = () => {
     }
   };
 
-  // ✅ 获取通知类型标签
+  // 获取通知类型标签
   const getTypeTag = (type: string) => {
     const typeMap: Record<string, { color: string; text: string }> = {
       audit_result: { color: "blue", text: "审核结果" },
