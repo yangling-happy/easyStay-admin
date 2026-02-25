@@ -26,7 +26,6 @@ export interface FormField {
 // 根据角色获取对应的表单字段
 export const getFormFieldsByRole = (
   role: "merchant" | "admin",
-  isEditing: boolean = false,
 ): FormField[] => {
   const commonFields: FormField[] = [
     {

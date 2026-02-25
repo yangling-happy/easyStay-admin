@@ -83,7 +83,8 @@ export const uploadService = {
         "Content-Type": "multipart/form-data",
       },
       onUploadProgress: (progressEvent) => {
-        const percent = progressEvent.total
+        // Calculate upload progress (not currently used)
+        progressEvent.total
           ? Math.round((progressEvent.loaded * 100) / progressEvent.total)
           : 0;
       },
