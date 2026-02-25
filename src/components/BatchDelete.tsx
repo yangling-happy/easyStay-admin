@@ -88,9 +88,6 @@ export function BatchDelete<T>({
           const result = await onBatchDelete(selectedRowKeys as string[]);
 
           if (result.success) {
-            message.success(
-              `成功删除 ${result.successCount} 个{itemName}${result.failedCount > 0 ? `，失败 ${result.failedCount} 个` : ""}`,
-            );
           } else {
             message.error(`批量删除失败，请重试`);
           }
