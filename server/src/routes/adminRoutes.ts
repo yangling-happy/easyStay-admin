@@ -19,49 +19,7 @@ interface AuthRequest extends Request {
 const router = express.Router();
 
 /**
- * @description 验证管理员权限
- */
-const requireAdmin = (req: AuthRequest, res: Response, next: () => void) => {
-  if (req.user?.role !== "admin") {
-    return res.status(403).json({ message: "无权限访问" });
-  }
-  next();
-};
-
-router.use(auth, requireAdmin);
-
-/**
- * @description 获取待审核酒店列表
- */
-router.get("/hotels/pending", async (req, res) => {
-  try {
-    const hotels = await HotelModel.find({
-      status: "pending",
-      isDeleted: false,
-      isIncomplete: false,
-    }).sort({ createTime: -1 });
-
-    const hotelsWithId = hotels.map((hotel) => {
-      const hotelObj = hotel.toObject();
-      return {
-        ...hotelObj,
-        id: hotelObj._id.toString(),
-        _id: undefined,
-      };
-    });
-
-    res.json(hotelsWithId);
-  } catch (error) {
-    console.error("获取待审核列表失败:", error);
-    res.status(500).json({
-      message: "获取待审核列表失败",
-      error,
-    });
-  }
-});
-
-/**
- * @description 获取已发布酒店列表
+ * @description 获取已发布酒店列表（无需鉴权）
  */
 router.get("/hotels/published", async (req, res) => {
   try {
@@ -173,6 +131,49 @@ router.get("/hotels/published", async (req, res) => {
     console.error("获取已发布酒店列表失败:", error);
     res.status(500).json({
       message: "获取已发布酒店列表失败",
+      error,
+    });
+  }
+});
+
+/**
+ * @description 验证管理员权限
+ */
+const requireAdmin = (req: AuthRequest, res: Response, next: () => void) => {
+  if (req.user?.role !== "admin") {
+    return res.status(403).json({ message: "无权限访问" });
+  }
+  next();
+};
+
+// 应用鉴权中间件（/hotels/published 除外）
+router.use(auth, requireAdmin);
+
+/**
+ * @description 获取待审核酒店列表
+ */
+router.get("/hotels/pending", async (req, res) => {
+  try {
+    const hotels = await HotelModel.find({
+      status: "pending",
+      isDeleted: false,
+      isIncomplete: false,
+    }).sort({ createTime: -1 });
+
+    const hotelsWithId = hotels.map((hotel) => {
+      const hotelObj = hotel.toObject();
+      return {
+        ...hotelObj,
+        id: hotelObj._id.toString(),
+        _id: undefined,
+      };
+    });
+
+    res.json(hotelsWithId);
+  } catch (error) {
+    console.error("获取待审核列表失败:", error);
+    res.status(500).json({
+      message: "获取待审核列表失败",
       error,
     });
   }

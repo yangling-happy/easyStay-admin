@@ -66,6 +66,7 @@ const HotelDetailView: React.FC<Props> = ({ data, type }) => {
     Pool: "泳池",
     Pets: "可带宠物",
     Airport: "机场接送",
+    subway: "靠近地铁",
     pool: "泳池",
     gym: "健身房",
     spa: "水疗",

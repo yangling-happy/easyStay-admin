@@ -169,6 +169,61 @@ router.get("/detail/:id", auth, async (req: AuthRequest, res: Response) => {
   }
 });
 
+/**
+ * @description 获取酒店详情信息（公共，无需认证）
+ */
+router.get("/public/:id", async (req: Request, res: Response) => {
+  try {
+    const hotel = await HotelModel.findById(req.params.id);
+
+    if (!hotel) {
+      return res.status(404).json({ success: false, message: "未找到酒店" });
+    }
+    // 从请求参数中获取 rooms 和 guests
+    const rooms = parseInt(req.query.rooms as string) || 1;
+    const guests = parseInt(req.query.guests as string) || 1;
+
+    // 将房型分为 available 和 unavailable 两个数组
+    const available: any[] = [];
+    const unavailable: any[] = [];
+
+    hotel.roomTypes.forEach((room: any) => {
+      // 检查库存和容量是否符合要求
+      if (room.stock >= rooms && room.capacity >= guests) {
+        available.push(room);
+      } else {
+        unavailable.push(room);
+      }
+    });
+
+    // 对两个数组按价格从低到高排序
+    available.sort((a, b) => a.price - b.price);
+    unavailable.sort((a, b) => a.price - b.price);
+
+    const publicHotelData = {
+      id: hotel._id.toString(),
+      name: hotel.name,
+      nameEn: hotel.nameEn,
+      address: hotel.address,
+      star: hotel.star,
+      openingDate: hotel.openingDate,
+      photos: hotel.photos,
+      roomTypes: {
+        available,
+        unavailable
+      },
+      amenities: hotel.amenities,
+      status: hotel.status,
+      isActive: hotel.isActive,
+    };
+
+    res.json({ success: true, data: publicHotelData });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "未知错误";
+    res.status(500).json({ success: false, message: errorMessage });
+  }
+});
+
 router.put("/:id", auth, async (req: AuthRequest, res: Response) => {
   try {
     const hotel = await HotelModel.findOne({
