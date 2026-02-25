@@ -61,14 +61,8 @@ const IncompleteHotels: React.FC = () => {
       filterHotelsBySearch(finalHotels);
 
       // 添加日志以便调试
-      console.log("加载待完善酒店:", {
-        totalHotels: hotels.length,
-        incompleteHotels: filteredHotels.length,
-        filteredHotels: finalHotels.length,
-        statusFilter,
-      });
+     
     } catch (error) {
-      console.error("获取待完善酒店失败:", error);
       message.error("获取待完善酒店失败，请重试");
     } finally {
       setLoading(false);

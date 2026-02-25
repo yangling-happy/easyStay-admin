@@ -79,7 +79,6 @@ export const hotelService = {
         updateTime: new Date().toISOString(),
       };
 
-      console.log("更新酒店请求：", { id, hotelData });
       return await put<Hotel>(`/hotels/${id}`, hotelData);
     } catch (error: any) {
       console.error("更新酒店失败:", {

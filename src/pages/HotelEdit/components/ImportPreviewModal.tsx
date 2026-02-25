@@ -41,13 +41,6 @@ const ImportPreviewModal: React.FC<ImportPreviewModalProps> = ({
 }) => {
   const navigate = useNavigate();
 
-  console.log("ImportPreviewModal渲染:", {
-    visible,
-    importResults,
-    validationErrors,
-    previewData,
-  });
-
   /**
    * 酒店数据预览列配置
    */

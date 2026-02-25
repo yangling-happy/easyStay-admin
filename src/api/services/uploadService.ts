@@ -61,8 +61,6 @@ export const uploadService = {
 
   // 上传酒店图片（优化版本）
   async uploadHotelImages(files: File[]): Promise<string[]> {
-    console.log("开始上传酒店图片，数量:", files.length);
-
     // 批量压缩
     const compressedFiles = await compressImages(files, {
       maxWidth: 1200,
@@ -77,8 +75,6 @@ export const uploadService = {
       formData.append("images", file);
     });
 
-    console.log("上传 URL:", "/api/upload/room-type");
-    console.log("type 参数:", "room");
 
     formData.append("type", "hotel");
 
@@ -90,21 +86,14 @@ export const uploadService = {
         const percent = progressEvent.total
           ? Math.round((progressEvent.loaded * 100) / progressEvent.total)
           : 0;
-        console.log(`上传进度: ${percent}%`);
       },
       timeout: 60000,
     });
-
-    console.log("上传成功:", response.data);
-    console.log("后端返回:", response.data);
-    // 确保所有 URL 都是完整的
     return response.data.data.map((item: any) => ensureFullUrl(item.url));
   },
 
   // 上传房型图片（压缩得更小）
   async uploadRoomImages(files: File[]): Promise<string[]> {
-    console.log("开始上传房型图片，数量:", files.length);
-
     const compressedFiles = await compressImages(files, {
       maxWidth: 800,
       maxHeight: 600,

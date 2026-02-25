@@ -190,7 +190,6 @@ const HotelDetailView: React.FC<Props> = ({ data, type }) => {
     return changes;
   };
 
-  console.log("酒店详情数据:", data);
 
   return (
     <>
