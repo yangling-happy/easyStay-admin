@@ -32,7 +32,7 @@ const LeftPanel: React.FC = () => {
                     商户功能
                   </Text>
                   <Text className="feature-description">
-                    酒店管理、房型发布、订单处理
+                    酒店管理、房型发布
                   </Text>
                 </div>
               </div>

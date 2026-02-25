@@ -52,12 +52,6 @@ const Sidebar: React.FC = () => {
       label: "房型发布",
       onClick: () => navigate("/hotels/new"),
     },
-    {
-      key: "/orders",
-      icon: <DatabaseOutlined />,
-      label: "订单处理",
-      onClick: () => navigate("/orders"),
-    },
   ];
 
   const adminMenuItems = [
