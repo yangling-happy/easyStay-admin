@@ -20,8 +20,20 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const app = express();
 
-// 1. CORS（最先）
-app.use(cors());
+// 1. CORS 配置（增强版）
+app.use(
+  cors({
+    // 允许 Vercel 前端和本地开发环境访问
+    origin: [
+      "https://easy-stay-admin.vercel.app",
+      "http://localhost:5173",
+      "http://localhost:3000",
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true, // 如果登录涉及 Cookie 或 Session，这一行必填
+  }),
+);
 
 // 2. JSON解析（必须在路由之前）
 app.use(express.json({ limit: "50mb" }));
