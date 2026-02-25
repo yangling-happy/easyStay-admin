@@ -34,7 +34,6 @@ app.use(cors({
   optionsSuccessStatus: 200
 }));
 
-app.options('*', cors());
 
 // 2. JSON解析（必须在路由之前）
 app.use(express.json({ limit: "50mb" }));
