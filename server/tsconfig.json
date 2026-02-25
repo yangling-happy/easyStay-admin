@@ -3,6 +3,8 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "target": "ESNext",
+    "outDir": "./dist",     
+    "rootDir": "./src",    
     "types": ["node"],
     "sourceMap": true,
     "declaration": true,
@@ -11,6 +13,8 @@
     "verbatimModuleSyntax": true,
     "isolatedModules": true,
     "allowSyntheticDefaultImports": true,
-    "skipLibCheck": true
-  }
+    "skipLibCheck": true,
+    "resolveJsonModule": true 
+  },
+  "include": ["src/**/*"]  
 }
