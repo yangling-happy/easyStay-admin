@@ -3,7 +3,7 @@ import { compressImages, compressImage } from "../../utils/imageCompressor";
 
 // 创建配置好的 axios 实例
 const api = axios.create({
-  baseURL: "http://localhost:3000",
+  baseURL: "https://easystay-admin-production.up.railway.app",
   timeout: 30000,
 });
 
@@ -16,7 +16,7 @@ const ensureFullUrl = (url: string): string => {
 
   // 如果是相对路径（以 /uploads/ 开头），加上 baseURL
   if (url.startsWith("/uploads/")) {
-    return `http://localhost:3000${url}`;
+    return `https://easystay-admin-production.up.railway.app${url}`;
   }
 
   // 其他情况，直接返回（可能是文件名）
@@ -74,7 +74,6 @@ export const uploadService = {
     compressedFiles.forEach((file) => {
       formData.append("images", file);
     });
-
 
     formData.append("type", "hotel");
 
