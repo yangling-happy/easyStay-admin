@@ -1,7 +1,7 @@
 // 导入行政区划数据
-import provincesRaw from 'china-division/dist/provinces.json';
-import citiesRaw from 'china-division/dist/cities.json';
-import areasRaw from 'china-division/dist/areas.json';
+import provincesRaw from 'china-division/dist/provinces.json' with { type: 'json' };
+import citiesRaw from 'china-division/dist/cities.json' with { type: 'json' };
+import areasRaw from 'china-division/dist/areas.json' with { type: 'json' };
 
 interface RawNode {
   code: string;
