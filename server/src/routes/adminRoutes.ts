@@ -4,16 +4,23 @@ import { HotelModel } from "../models/Hotel.js";
 import { NotificationModel } from "../models/Notification.js";
 import { parseAddress } from "../utils/addressUtils.js";
 import { auth } from "../middleware/authMiddleware.js";
-
+/**
+ * @description 认证请求
+ */
 interface AuthRequest extends Request {
   user?: {
     userId: string;
     role?: string;
   };
 }
-
+/**
+ * @description 路由
+ */
 const router = express.Router();
 
+/**
+ * @description 验证管理员权限
+ */
 const requireAdmin = (req: AuthRequest, res: Response, next: () => void) => {
   if (req.user?.role !== "admin") {
     return res.status(403).json({ message: "无权限访问" });
@@ -23,6 +30,9 @@ const requireAdmin = (req: AuthRequest, res: Response, next: () => void) => {
 
 router.use(auth, requireAdmin);
 
+/**
+ * @description 获取待审核酒店列表
+ */
 router.get("/hotels/pending", async (req, res) => {
   try {
     const hotels = await HotelModel.find({
@@ -50,6 +60,9 @@ router.get("/hotels/pending", async (req, res) => {
   }
 });
 
+/**
+ * @description 获取已发布酒店列表
+ */
 router.get("/hotels/published", async (req, res) => {
   try {
     const { location, keyword, rooms, guests, minPrice, maxPrice, stars } =
@@ -165,6 +178,9 @@ router.get("/hotels/published", async (req, res) => {
   }
 });
 
+/**
+ * @description 获取已拒绝酒店列表
+ */
 router.get("/hotels/rejected", async (req, res) => {
   try {
     const hotels = await HotelModel.find({
@@ -191,6 +207,9 @@ router.get("/hotels/rejected", async (req, res) => {
   }
 });
 
+/**
+ * @description 获取已下线酒店列表
+ */
 router.get("/hotels/offline", async (req, res) => {
   try {
     const hotels = await HotelModel.find({
@@ -218,6 +237,9 @@ router.get("/hotels/offline", async (req, res) => {
   }
 });
 
+/**
+ * @description 提交审核结果
+ */
 router.post("/hotels/:id/audit", async (req, res) => {
   try {
     const { id } = req.params;
@@ -326,6 +348,9 @@ router.post("/hotels/:id/audit", async (req, res) => {
   }
 });
 
+/**
+ * @description 切换酒店发布状态
+ */
 router.patch("/hotels/:id/toggle", async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
@@ -408,5 +433,7 @@ router.patch("/hotels/:id/toggle", async (req: AuthRequest, res: Response) => {
     res.status(500).json({ message: "切换发布状态失败", error });
   }
 });
-
+/**
+ * @description 导出路由
+ */
 export default router;
