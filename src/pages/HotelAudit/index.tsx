@@ -87,10 +87,10 @@ const HotelAudit = () => {
       (statusFilter === "published" &&
         hotel.status === "approved" &&
         hotel.isActive &&
-        !hotel.isDeleted) ||
+        !hotel.isDeleted) || //使用 isDeleted 判断酒店是否删除
       (statusFilter === "offline" &&
         hotel.status === "approved" &&
-        !hotel.isActive) || // 修改：使用 isActive 判断
+        !hotel.isActive) || //使用 isActive 判断酒店是否下线
       (statusFilter === "rejected" && hotel.status === "rejected");
 
     const matchSearch =
@@ -98,6 +98,7 @@ const HotelAudit = () => {
 
     return matchStatus && matchSearch;
   });
+  // 审核通过
   const handleApprove = (id: string) => {
     Modal.confirm({
       title: "确认通过",
@@ -124,7 +125,7 @@ const HotelAudit = () => {
     setCurrentHotel(hotel); // 设置当前酒店
     setRejectOpen(true); // 设置拒绝模态框显示
   };
-
+  // 提交拒绝
   const submitReject = async (reason: string) => {
     if (!currentHotel || !currentHotel.id) return;
 
@@ -148,6 +149,7 @@ const HotelAudit = () => {
     }
   };
 
+  // 下线酒店
   const handleOffline = (id: string) => {
     Modal.confirm({
       title: "确认下线",
@@ -166,6 +168,7 @@ const HotelAudit = () => {
     });
   };
 
+  // 恢复酒店上线
   const handleRestore = (id: string) => {
     Modal.confirm({
       title: "确认恢复",
@@ -184,6 +187,7 @@ const HotelAudit = () => {
     });
   };
 
+  // 查看详情
   const handleViewDetail = (hotel: Hotel) => {
     setCurrentHotel(hotel);
     setDetailOpen(true);
@@ -202,6 +206,7 @@ const HotelAudit = () => {
         <h2 style={{ margin: 0 }}>酒店审核管理</h2>
 
         <Space>
+          {/* 状态筛选 */}
           <Select
             value={statusFilter}
             onChange={setStatusFilter}
@@ -214,7 +219,7 @@ const HotelAudit = () => {
               { label: "已下线", value: "offline" },
             ]}
           />
-
+          {/* 搜索组件 */}
           <HotelSearchInput
             placeholder="搜索酒店名称或编号"
             onSearch={(value) => setSearchText(value)}
@@ -224,6 +229,7 @@ const HotelAudit = () => {
         </Space>
       </div>
 
+      {/* 表格 */}
       <Table
         rowKey="id"
         columns={getColumns(
@@ -241,6 +247,7 @@ const HotelAudit = () => {
         }}
       />
 
+      {/* 拒绝模态框 */}
       <RejectModal
         open={rejectOpen}
         onCancel={() => {
@@ -250,6 +257,7 @@ const HotelAudit = () => {
         onSubmit={submitReject}
       />
 
+      {/* 查看详情 */}
       <HotelDetailDrawer
         open={detailOpen}
         hotel={currentHotel}
