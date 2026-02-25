@@ -140,8 +140,10 @@ app.use("/api/feedback", feedbackRoutes);
 app.use("/api/notification", notificationRoutes);
 app.use("/api/orders", orderRoutes);
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`✅ 服务器启动: http://localhost:${PORT}`);
+
+// 显式加上 "0.0.0.0"，这是云端部署的“万能钥匙”
+app.listen(Number(PORT), "0.0.0.0", () => {
+  console.log(`✅ 服务器启动成功，端口: ${PORT}`);
   console.log(`📁 上传目录: ${uploadsDir}`);
   console.log(`🖼️  静态文件: http://localhost:${PORT}/uploads/`);
   console.log(`🔐 认证接口: http://localhost:${PORT}/api/auth/register`);
