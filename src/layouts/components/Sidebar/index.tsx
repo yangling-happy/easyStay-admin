@@ -84,7 +84,7 @@ const Sidebar: React.FC = () => {
           background: "#001529",
         }}
       >
-        易宿酒店管理平台
+        易宿酒店预订平台
       </div>
       <Menu
         theme="dark"

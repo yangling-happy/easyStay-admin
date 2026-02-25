@@ -12,10 +12,10 @@ const LeftPanel: React.FC = () => {
           <HomeOutlined className="main-icon" />
         </div>
         <Title level={2} className="main-title">
-          易宿酒店管理平台
+         易宿酒店预订平台
         </Title>
         <Text className="subtitle">
-          专业的酒店管理系统
+          专业的酒店预订系统
           <br />
           为酒店商户和管理员提供全方位的业务支持
         </Text>
