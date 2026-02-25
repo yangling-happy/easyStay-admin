@@ -26,6 +26,7 @@ import HotelDetailView from "@/components/HotelDetailView";
 import { formatDateTime } from "@/utils/dateUtils";
 import HotelSearchInput from "@/components/HotelSearchInput";
 import { filterHotelsByKeyword } from "@/utils/filterHotelsByKeyword.";
+import { getFullAddress } from "@/utils/addressData";
 const { Text } = Typography;
 
 const HotelList: React.FC = () => {
@@ -172,12 +173,16 @@ const HotelList: React.FC = () => {
       title: "酒店地址",
       dataIndex: "address",
       key: "address",
-      width: 200,
-      ellipsis: true,
-      render: (address: string) => (
-        <Tooltip title={address || "-"}>
-          <span>{address || "-"}</span>
-        </Tooltip>
+      width: 220,
+      render: (address: string, record: any) => (
+        <div>
+          <div>{address || "-"}</div>
+          {record.location && record.location.length > 0 && (
+            <div style={{ color: "#888", fontSize: "12px" }}>
+              {getFullAddress(record.location)}
+            </div>
+          )}
+        </div>
       ),
     },
 

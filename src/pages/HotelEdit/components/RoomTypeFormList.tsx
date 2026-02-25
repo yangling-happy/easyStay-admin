@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Input,
   InputNumber,
@@ -11,10 +11,12 @@ import {
   Checkbox,
   Row,
   Col,
+  Modal,
 } from "antd";
-import { PlusOutlined, DeleteOutlined } from "@ant-design/icons";
+import { DeleteOutlined, UploadOutlined } from "@ant-design/icons";
 import PhotoUploader from "./PhotoUploader";
-
+import { useSelectOptions } from "../hooks/useSelectOptions";
+import RoomBatchImport from "./RoomBatchImport";
 export const ROOM_TYPE_FIELD = "roomTypes";
 
 export const ROOM_TYPE_FIELDS = [
@@ -26,6 +28,43 @@ export const ROOM_TYPE_FIELDS = [
   ["roomTypes", "photos"],
 ];
 const RoomTypeFormList: React.FC = () => {
+  const form = Form.useFormInstance();
+  const { getOptions } = useSelectOptions();
+  const bedTypeOptions = getOptions("bedTypes");
+  const roomTagOptions = getOptions("roomTags");
+  const [batchImportModalVisible, setBatchImportModalVisible] = useState(false);
+
+  const handleBatchImport = () => {
+    setBatchImportModalVisible(true);
+  };
+
+  const handleBatchImportClose = () => {
+    setBatchImportModalVisible(false);
+  };
+
+  /**
+   * 处理批量导入成功
+   * @param importedRoomTypes 导入的房型数据
+   */
+  const handleImportSuccess = (importedRoomTypes: any[]) => {
+    // 获取当前表单中的房型数据
+    const currentRoomTypes = form.getFieldValue("roomTypes") || [];
+
+    // 合并当前房型和导入的房型
+    const updatedRoomTypes = [...currentRoomTypes, ...importedRoomTypes];
+
+    // 更新表单数据
+    form.setFieldsValue({
+      roomTypes: updatedRoomTypes,
+    });
+
+    // 关闭导入模态框
+    setBatchImportModalVisible(false);
+
+    // 触发表单验证，确保添加的数据符合规则
+    form.validateFields([["roomTypes"]]);
+  };
+
   return (
     <>
       <Divider orientation="left" style={{ marginTop: 40 }}>
@@ -46,6 +85,49 @@ const RoomTypeFormList: React.FC = () => {
       >
         {(fields, { add, remove }, { errors }) => (
           <>
+            {/* 顶部按钮区：批量导入和新增房型 */}
+            <div style={{ marginBottom: 24 }}>
+              <Row gutter={8}>
+                <Col span={12}>
+                  <Button
+                    type="dashed"
+                    icon={<UploadOutlined />}
+                    onClick={handleBatchImport}
+                    style={{
+                      width: "100%",
+                      height: 50,
+                      borderRadius: 8,
+                    }}
+                  >
+                    批量导入房型
+                  </Button>
+                </Col>
+                <Col span={12}>
+                  <Button
+                    type="dashed"
+                    onClick={() =>
+                      add({
+                        name: "",
+                        price: undefined,
+                        stock: 10,
+                        capacity: 2,
+                        bedType: "big",
+                        tags: ["wifi", "cancel"],
+                        photos: [],
+                      })
+                    }
+                    style={{
+                      width: "100%",
+                      height: 50,
+                      borderRadius: 8,
+                    }}
+                  >
+                    新增房型种类
+                  </Button>
+                </Col>
+              </Row>
+            </div>
+
             {fields.map(({ key, name, ...restField }) => (
               <Card
                 size="small"
@@ -156,11 +238,7 @@ const RoomTypeFormList: React.FC = () => {
                       label="床型"
                       rules={[{ required: true }]}
                     >
-                      <Select placeholder="选择床型">
-                        <Select.Option value="big">1.8m 大床</Select.Option>
-                        <Select.Option value="double">1.2m 双床</Select.Option>
-                        <Select.Option value="king">2.0m 超大床</Select.Option>
-                      </Select>
+                      <Select placeholder="选择床型" options={bedTypeOptions} />
                     </Form.Item>
                   </Col>
                 </Row>
@@ -174,11 +252,11 @@ const RoomTypeFormList: React.FC = () => {
                 >
                   <Checkbox.Group>
                     <Space direction="horizontal" wrap>
-                      <Checkbox value="breakfast">含早餐</Checkbox>
-                      <Checkbox value="cancel">免费取消</Checkbox>
-                      <Checkbox value="window">有窗</Checkbox>
-                      <Checkbox value="bathroom">独立卫浴</Checkbox>
-                      <Checkbox value="wifi">免费WiFi</Checkbox>
+                      {roomTagOptions.map((option) => (
+                        <Checkbox key={option.value} value={option.value}>
+                          {option.label}
+                        </Checkbox>
+                      ))}
                     </Space>
                   </Checkbox.Group>
                 </Form.Item>
@@ -197,30 +275,26 @@ const RoomTypeFormList: React.FC = () => {
             ))}
 
             <Form.Item>
-              <Button
-                type="dashed"
-                onClick={() =>
-                  add({
-                    name: "",
-                    price: undefined,
-                    stock: 10,
-                    capacity: 2,
-                    bedType: "big",
-                    tags: ["wifi", "cancel"],
-                    photos: [],
-                  })
-                }
-                block
-                icon={<PlusOutlined />}
-                style={{ height: 50, borderRadius: 8 }}
-              >
-                新增房型种类
-              </Button>
               <Form.ErrorList errors={errors} />
             </Form.Item>
           </>
         )}
       </Form.List>
+
+      {/* 批量导入模态框 */}
+      <Modal
+        title="批量导入房型"
+        open={batchImportModalVisible}
+        onCancel={handleBatchImportClose}
+        footer={null}
+        width="90%"
+        style={{
+          maxWidth: 1200,
+        }}
+        destroyOnClose
+      >
+        <RoomBatchImport onImportSuccess={handleImportSuccess} />
+      </Modal>
     </>
   );
 };

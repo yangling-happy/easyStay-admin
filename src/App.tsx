@@ -1,4 +1,3 @@
-// src/App.tsx
 import React from "react";
 import {
   BrowserRouter as Router,
@@ -20,6 +19,7 @@ import ProfilePage from "./pages/Profile/ProfilePage";
 import FeedbackManager from "./layouts/components/Navbar/FeedbackManager";
 import AuditRecords from "./pages/AuditRecords";
 import HotelList from "./pages/HotelList";
+import IncompleteHotels from "./pages/IncompleteHotels";
 import MerchantDashboard from "./pages/Dashboard/MerchantDashboard";
 import AdminDashboard from "./pages/Dashboard/AdminDashboard";
 import OrderList from "./pages/OrderList";
@@ -196,6 +196,14 @@ function App() {
                 element={
                   <PrivateRoute requiredRole="merchant">
                     <HotelList />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="incomplete"
+                element={
+                  <PrivateRoute requiredRole="merchant">
+                    <IncompleteHotels />
                   </PrivateRoute>
                 }
               />

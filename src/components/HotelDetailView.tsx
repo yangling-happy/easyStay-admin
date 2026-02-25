@@ -35,6 +35,12 @@ const HotelDetailView: React.FC<Props> = ({ data, type }) => {
     5: "五星级/豪华",
   };
 
+  const completionStatusMap: Record<string, { color: string; text: string }> = {
+    draft: { color: "default", text: "草稿" },
+    incomplete: { color: "orange", text: "信息不全" },
+    rejected: { color: "red", text: "被驳回" },
+  };
+
   const actionMap: Record<string, string> = {
     create: "创建酒店",
     update: "修改信息",
@@ -149,40 +155,40 @@ const HotelDetailView: React.FC<Props> = ({ data, type }) => {
     return String(value);
   };
 
-const getChangeDetails = (before: any, after: any) => {
-  if (!before || !after) return [];
+  const getChangeDetails = (before: any, after: any) => {
+    if (!before || !after) return [];
 
-  const fields = Object.keys(fieldLabels);
-  const changes = fields
-    .filter((field) => !isValueEqual(before?.[field], after?.[field]))
-    .map((field) => ({
-      field,
-      label: fieldLabels[field] || field,
-      before: getDisplayValue(field, before?.[field]),
-      after: getDisplayValue(field, after?.[field]),
-    }));
+    const fields = Object.keys(fieldLabels);
+    const changes = fields
+      .filter((field) => !isValueEqual(before?.[field], after?.[field]))
+      .map((field) => ({
+        field,
+        label: fieldLabels[field] || field,
+        before: getDisplayValue(field, before?.[field]),
+        after: getDisplayValue(field, after?.[field]),
+      }));
 
-  // 特殊处理：即使没有字段变更，也要记录状态变更
-  if (changes.length === 0 && before.status !== after.status) {
-    changes.push({
-      field: "status",
-      label: "审核状态",
-      before: getDisplayValue("status", before.status),
-      after: getDisplayValue("status", after.status),
-    });
-  }
+    // 特殊处理：即使没有字段变更，也要记录状态变更
+    if (changes.length === 0 && before.status !== after.status) {
+      changes.push({
+        field: "status",
+        label: "审核状态",
+        before: getDisplayValue("status", before.status),
+        after: getDisplayValue("status", after.status),
+      });
+    }
 
-  if (changes.length === 0 && before.isActive !== after.isActive) {
-    changes.push({
-      field: "isActive",
-      label: "发布状态",
-      before: getDisplayValue("isActive", before.isActive),
-      after: getDisplayValue("isActive", after.isActive),
-    });
-  }
+    if (changes.length === 0 && before.isActive !== after.isActive) {
+      changes.push({
+        field: "isActive",
+        label: "发布状态",
+        before: getDisplayValue("isActive", before.isActive),
+        after: getDisplayValue("isActive", after.isActive),
+      });
+    }
 
-  return changes;
-};
+    return changes;
+  };
 
   console.log("酒店详情数据:", data);
 
@@ -199,9 +205,20 @@ const getChangeDetails = (before: any, after: any) => {
 
         <Descriptions.Item label="当前状态">
           {type === "list" ? (
-            <Tag color={data.isActive ? "green" : "orange"}>
-              {data.isActive ? "销售中" : "已下线"}
-            </Tag>
+            (() => {
+              const completionStatus =
+                data.completionStatus ||
+                (data.isIncomplete ? "incomplete" : undefined);
+              if (completionStatus && completionStatusMap[completionStatus]) {
+                const { color, text } = completionStatusMap[completionStatus];
+                return <Tag color={color}>{text}</Tag>;
+              }
+              return (
+                <Tag color={data.isActive ? "green" : "orange"}>
+                  {data.isActive ? "销售中" : "已下线"}
+                </Tag>
+              );
+            })()
           ) : (
             <Tag
               color={
@@ -225,14 +242,15 @@ const getChangeDetails = (before: any, after: any) => {
           {data.star ? starMap[data.star as keyof typeof starMap] : "未选择"}
         </Descriptions.Item>
 
-        <Descriptions.Item label="所在地区">
-          {Array.isArray(data.location) && data.location.length > 0
-            ? getFullAddress(data.location)
-            : "未选择"}
-        </Descriptions.Item>
-
-        <Descriptions.Item label="详细地址">
-          {data.address || "未提供"}
+        <Descriptions.Item label="酒店地址">
+          <div>
+            <div>{data.address || "未提供"}</div>
+            {Array.isArray(data.location) && data.location.length > 0 && (
+              <div style={{ color: "#888", fontSize: "12px" }}>
+                {getFullAddress(data.location)}
+              </div>
+            )}
+          </div>
         </Descriptions.Item>
 
         <Descriptions.Item label="开业时间">
@@ -381,21 +399,38 @@ const getChangeDetails = (before: any, after: any) => {
                 children: (
                   <div>
                     <Space>
-                      <Tag
-                        color={
-                          record.status === "approved"
-                            ? "green"
-                            : record.status === "rejected"
-                              ? "red"
-                              : "orange"
+                      {(() => {
+                        if (record.status) {
+                          return (
+                            <Tag
+                              color={
+                                record.status === "approved"
+                                  ? "green"
+                                  : record.status === "rejected"
+                                    ? "red"
+                                    : "orange"
+                              }
+                            >
+                              {record.status === "approved"
+                                ? "已通过"
+                                : record.status === "rejected"
+                                  ? "已拒绝"
+                                  : "审核中"}
+                            </Tag>
+                          );
                         }
-                      >
-                        {record.status === "approved"
-                          ? "已通过"
-                          : record.status === "rejected"
-                            ? "已拒绝"
-                            : "审核中"}
-                      </Tag>
+                        const completionStatus =
+                          record.completionStatus || data.completionStatus;
+                        if (
+                          completionStatus &&
+                          completionStatusMap[completionStatus]
+                        ) {
+                          const { color, text } =
+                            completionStatusMap[completionStatus];
+                          return <Tag color={color}>{text}</Tag>;
+                        }
+                        return null;
+                      })()}
                       <Text strong>
                         {actionMap[record.action] || record.action}
                       </Text>

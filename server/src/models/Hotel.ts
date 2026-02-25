@@ -13,12 +13,16 @@ const hotelSchema = new mongoose.Schema({
   },
   nameEn: {
     type: String,
-    required: true,
+    required: function (this: any) {
+      return !this.isIncomplete;
+    },
     trim: true,
   },
   address: {
     type: String,
-    required: true,
+    required: function (this: any) {
+      return !this.isIncomplete;
+    },
     trim: true,
   },
 
@@ -26,11 +30,15 @@ const hotelSchema = new mongoose.Schema({
   star: {
     type: Number,
     enum: [1, 2, 3, 4, 5],
-    required: true,
+    required: function (this: any) {
+      return !this.isIncomplete;
+    },
   },
   openingDate: {
     type: String,
-    required: true,
+    required: function (this: any) {
+      return !this.isIncomplete;
+    },
   },
 
   // 酒店整体照片（新增）
@@ -53,7 +61,7 @@ const hotelSchema = new mongoose.Schema({
   // 审核状态
   status: {
     type: String,
-    enum: ["pending", "approved", "rejected"],
+    enum: ["pending", "approved", "rejected", "offline"],
     default: "pending",
   },
   rejectReason: {
@@ -69,6 +77,15 @@ const hotelSchema = new mongoose.Schema({
   isDeleted: {
     type: Boolean,
     default: false,
+  },
+  isIncomplete: {
+    type: Boolean,
+    default: false,
+  },
+  completionStatus: {
+    type: String,
+    enum: ["draft", "incomplete", "rejected"],
+    default: null,
   },
   ownerId: {
     type: String,
@@ -99,7 +116,7 @@ const hotelSchema = new mongoose.Schema({
       },
       status: {
         type: String,
-        enum: ["pending", "approved", "rejected"],
+        enum: ["pending", "approved", "rejected", "offline"],
         required: true,
       },
       rejectReason: {
@@ -143,12 +160,12 @@ const hotelSchema = new mongoose.Schema({
       price: {
         type: Number,
         required: true,
-        min: 0, // 价格不能为负数
+        min: 0,
       },
       stock: {
         type: Number,
         required: true,
-        min: 0, // 库存不能为负数
+        min: 0,
         default: 0,
       },
       capacity: {

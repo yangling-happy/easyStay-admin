@@ -98,7 +98,16 @@ const AuditRecords: React.FC = () => {
       title: "酒店地址",
       dataIndex: "address",
       key: "address",
-      render: (address: string) => address || "-",
+      render: (address: string, record: any) => (
+        <div>
+          <div>{address || "-"}</div>
+          {record.location && record.location.length > 0 && (
+            <div style={{ color: "#888", fontSize: "12px" }}>
+              {getFullAddress(record.location)}
+            </div>
+          )}
+        </div>
+      ),
     },
     {
       title: "申请时间",
@@ -165,7 +174,6 @@ const AuditRecords: React.FC = () => {
             style={{ width: 300 }}
           />
         </div>
-
         <Table
           columns={columns}
           dataSource={filteredData}
