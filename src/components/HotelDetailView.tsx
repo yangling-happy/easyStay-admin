@@ -49,6 +49,7 @@ const HotelDetailView: React.FC<Props> = ({ data, type }) => {
     offline: "下线酒店",
     online: "上线酒店",
     reapply_online: "申请恢复上线",
+    "re-apply": "重审上线",
   };
 
   const roleMap: Record<string, string> = {
@@ -189,7 +190,6 @@ const HotelDetailView: React.FC<Props> = ({ data, type }) => {
 
     return changes;
   };
-
 
   return (
     <>
