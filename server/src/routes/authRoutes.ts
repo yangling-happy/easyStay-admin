@@ -1,11 +1,12 @@
 import express from "express";
+import type { Router } from "express";
 import { User } from "../models/User.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import dotenv from "dotenv";
 
 dotenv.config();
-const router = express.Router();
+const router: Router = express.Router();
 
 // 辅助函数：生成Token
 const generateToken = (userId: string, role: string) => {

@@ -1,7 +1,8 @@
+import type { Router } from "express";
 /**
  * @description 路由
  */
-declare const router: import("express-serve-static-core").Router;
+declare const router: Router;
 /**
  * @description 导出路由
  */

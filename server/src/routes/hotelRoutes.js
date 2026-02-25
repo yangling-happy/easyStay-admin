@@ -178,7 +178,7 @@ router.get("/public/:id", async (req, res) => {
             photos: hotel.photos,
             roomTypes: {
                 available,
-                unavailable
+                unavailable,
             },
             amenities: hotel.amenities,
             status: hotel.status,

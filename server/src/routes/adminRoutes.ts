@@ -1,5 +1,5 @@
 import express from "express";
-import type { Request, Response } from "express";
+import type { Request, Response, Router } from "express";
 import { HotelModel } from "../models/Hotel.js";
 import { NotificationModel } from "../models/Notification.js";
 import { parseAddress } from "../utils/addressUtils.js";
@@ -16,7 +16,7 @@ interface AuthRequest extends Request {
 /**
  * @description 路由
  */
-const router = express.Router();
+const router: Router = express.Router();
 
 /**
  * @description 获取已发布酒店列表（无需鉴权）

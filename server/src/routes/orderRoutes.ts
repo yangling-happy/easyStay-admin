@@ -1,6 +1,7 @@
 import express from "express";
 import type { Request } from "express";
 import type { Response } from "express";
+import type { Router } from "express";
 import { OrderModel } from "../models/Order.js";
 import { auth } from "../middleware/authMiddleware.js";
 import { HotelModel } from "../models/Hotel.js";
@@ -12,7 +13,7 @@ interface AuthRequest extends Request {
   };
 }
 
-const router = express.Router();
+const router: Router = express.Router();
 
 router.get("/list", auth, async (req: AuthRequest, res: Response) => {
   try {
@@ -30,7 +31,9 @@ router.get("/list", auth, async (req: AuthRequest, res: Response) => {
       if (hotelIds.includes(hotelId as string)) {
         query.hotelId = hotelId;
       } else {
-        return res.status(403).json({ success: false, message: "无权访问该酒店的订单" });
+        return res
+          .status(403)
+          .json({ success: false, message: "无权访问该酒店的订单" });
       }
     } else {
       query.hotelId = { $in: hotelIds };
@@ -58,7 +61,9 @@ router.get("/detail/:id", auth, async (req: AuthRequest, res: Response) => {
     const hotelIds = hotels.map((hotel) => hotel._id.toString());
 
     if (!hotelIds.includes(order.hotelId)) {
-      return res.status(403).json({ success: false, message: "无权访问该订单" });
+      return res
+        .status(403)
+        .json({ success: false, message: "无权访问该订单" });
     }
 
     res.json({ success: true, data: order });
@@ -72,10 +77,19 @@ router.get("/detail/:id", auth, async (req: AuthRequest, res: Response) => {
 router.patch("/:id/status", auth, async (req: AuthRequest, res: Response) => {
   try {
     const { status } = req.body;
-    const validStatuses = ["pending", "confirmed", "checkin", "checkout", "cancelled", "refunded"];
+    const validStatuses = [
+      "pending",
+      "confirmed",
+      "checkin",
+      "checkout",
+      "cancelled",
+      "refunded",
+    ];
 
     if (!validStatuses.includes(status)) {
-      return res.status(400).json({ success: false, message: "无效的订单状态" });
+      return res
+        .status(400)
+        .json({ success: false, message: "无效的订单状态" });
     }
 
     const order = await OrderModel.findById(req.params.id);
@@ -88,13 +102,15 @@ router.patch("/:id/status", auth, async (req: AuthRequest, res: Response) => {
     const hotelIds = hotels.map((hotel) => hotel._id.toString());
 
     if (!hotelIds.includes(order.hotelId)) {
-      return res.status(403).json({ success: false, message: "无权修改该订单" });
+      return res
+        .status(403)
+        .json({ success: false, message: "无权修改该订单" });
     }
 
     const updatedOrder = await OrderModel.findByIdAndUpdate(
       req.params.id,
       { status, updateTime: new Date() },
-      { new: true }
+      { new: true },
     );
 
     res.json({ success: true, message: "订单状态已更新", data: updatedOrder });

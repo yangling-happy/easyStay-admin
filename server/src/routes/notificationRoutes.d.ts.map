@@ -1,1 +1,1 @@
-{"version":3,"file":"notificationRoutes.d.ts","sourceRoot":"","sources":["notificationRoutes.ts"],"names":[],"mappings":"AAOA,QAAA,MAAM,MAAM,4CAAmB,CAAC;AAmPhC,eAAe,MAAM,CAAC"}
+{"version":3,"file":"notificationRoutes.d.ts","sourceRoot":"","sources":["notificationRoutes.ts"],"names":[],"mappings":"AACA,OAAO,KAAK,EAAE,MAAM,EAAE,MAAM,SAAS,CAAC;AAOtC,QAAA,MAAM,MAAM,EAAE,MAAyB,CAAC;AA0PxC,eAAe,MAAM,CAAC"}

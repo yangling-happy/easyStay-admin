@@ -56,7 +56,7 @@ router.get("/", async (req, res) => {
         const total = await NotificationModel.countDocuments(query);
         // 调试：检查数据库中的所有通知（仅用于调试）
         const allNotifications = await NotificationModel.find({}).limit(5);
-        console.log(`📋 数据库中的通知示例（前5条）:`, allNotifications.map(n => ({
+        console.log(`📋 数据库中的通知示例（前5条）:`, allNotifications.map((n) => ({
             id: n._id.toString(),
             ownerId: n.ownerId,
             ownerIdType: typeof n.ownerId,
@@ -69,8 +69,8 @@ router.get("/", async (req, res) => {
         // 添加缓存控制头，防止 304 缓存问题
         res.set({
             "Cache-Control": "no-cache, no-store, must-revalidate",
-            "Pragma": "no-cache",
-            "Expires": "0",
+            Pragma: "no-cache",
+            Expires: "0",
         });
         console.log(`📬 查询通知 - ownerId: ${ownerId}, 总数: ${total}, 未读: ${unreadCount}`);
         res.json({
@@ -166,14 +166,16 @@ router.get("/:id", async (req, res) => {
             success: true,
             data: {
                 notification,
-                relatedFeedback: relatedFeedback ? {
-                    id: relatedFeedback._id.toString(),
-                    content: relatedFeedback.content,
-                    reply: relatedFeedback.reply,
-                    status: relatedFeedback.status,
-                    createdAt: relatedFeedback.createdAt,
-                    repliedAt: relatedFeedback.repliedAt,
-                } : null,
+                relatedFeedback: relatedFeedback
+                    ? {
+                        id: relatedFeedback._id.toString(),
+                        content: relatedFeedback.content,
+                        reply: relatedFeedback.reply,
+                        status: relatedFeedback.status,
+                        createdAt: relatedFeedback.createdAt,
+                        repliedAt: relatedFeedback.repliedAt,
+                    }
+                    : null,
             },
         });
     }

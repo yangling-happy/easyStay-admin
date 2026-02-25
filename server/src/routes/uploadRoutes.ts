@@ -1,4 +1,5 @@
 import express from "express";
+import type { Router } from "express";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -8,7 +9,7 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const router = express.Router();
+const router: Router = express.Router();
 
 // 上传目录
 const uploadsDir = path.join(__dirname, "../../public/uploads");

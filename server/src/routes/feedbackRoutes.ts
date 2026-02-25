@@ -4,7 +4,7 @@ import { NotificationModel } from "../models/Notification.js";
 import { HotelModel } from "../models/Hotel.js";
 import { User } from "../models/User.js";
 
-const router = Router();
+const router: Router = Router();
 
 /**
  * @description 通知管理员新反馈

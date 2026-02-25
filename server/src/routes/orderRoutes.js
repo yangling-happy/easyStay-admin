@@ -17,7 +17,9 @@ router.get("/list", auth, async (req, res) => {
                 query.hotelId = hotelId;
             }
             else {
-                return res.status(403).json({ success: false, message: "无权访问该酒店的订单" });
+                return res
+                    .status(403)
+                    .json({ success: false, message: "无权访问该酒店的订单" });
             }
         }
         else {
@@ -41,7 +43,9 @@ router.get("/detail/:id", auth, async (req, res) => {
         const hotels = await HotelModel.find({ ownerId: req.user?.userId });
         const hotelIds = hotels.map((hotel) => hotel._id.toString());
         if (!hotelIds.includes(order.hotelId)) {
-            return res.status(403).json({ success: false, message: "无权访问该订单" });
+            return res
+                .status(403)
+                .json({ success: false, message: "无权访问该订单" });
         }
         res.json({ success: true, data: order });
     }
@@ -54,9 +58,18 @@ router.get("/detail/:id", auth, async (req, res) => {
 router.patch("/:id/status", auth, async (req, res) => {
     try {
         const { status } = req.body;
-        const validStatuses = ["pending", "confirmed", "checkin", "checkout", "cancelled", "refunded"];
+        const validStatuses = [
+            "pending",
+            "confirmed",
+            "checkin",
+            "checkout",
+            "cancelled",
+            "refunded",
+        ];
         if (!validStatuses.includes(status)) {
-            return res.status(400).json({ success: false, message: "无效的订单状态" });
+            return res
+                .status(400)
+                .json({ success: false, message: "无效的订单状态" });
         }
         const order = await OrderModel.findById(req.params.id);
         if (!order) {
@@ -65,7 +78,9 @@ router.patch("/:id/status", auth, async (req, res) => {
         const hotels = await HotelModel.find({ ownerId: req.user?.userId });
         const hotelIds = hotels.map((hotel) => hotel._id.toString());
         if (!hotelIds.includes(order.hotelId)) {
-            return res.status(403).json({ success: false, message: "无权修改该订单" });
+            return res
+                .status(403)
+                .json({ success: false, message: "无权修改该订单" });
         }
         const updatedOrder = await OrderModel.findByIdAndUpdate(req.params.id, { status, updateTime: new Date() }, { new: true });
         res.json({ success: true, message: "订单状态已更新", data: updatedOrder });

@@ -1,11 +1,12 @@
 import express from "express";
+import type { Router } from "express";
 import { NotificationModel } from "../models/Notification.js";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 
 dotenv.config();
 
-const router = express.Router();
+const router: Router = express.Router();
 
 // 辅助函数：从请求头获取用户 ID
 const getUserIdFromToken = (req: express.Request): string | null => {
@@ -57,7 +58,10 @@ router.get("/", async (req, res) => {
     const limit = Number(pageSize);
 
     // 添加调试日志
-    console.log(`🔍 查询通知 - ownerId: ${ownerIdStr}, query:`, JSON.stringify(query));
+    console.log(
+      `🔍 查询通知 - ownerId: ${ownerIdStr}, query:`,
+      JSON.stringify(query),
+    );
 
     const notifications = await NotificationModel.find(query)
       .sort({ createdAt: -1 })
@@ -68,12 +72,15 @@ router.get("/", async (req, res) => {
 
     // 调试：检查数据库中的所有通知（仅用于调试）
     const allNotifications = await NotificationModel.find({}).limit(5);
-    console.log(`📋 数据库中的通知示例（前5条）:`, allNotifications.map(n => ({
-      id: n._id.toString(),
-      ownerId: n.ownerId,
-      ownerIdType: typeof n.ownerId,
-      message: n.message,
-    })));
+    console.log(
+      `📋 数据库中的通知示例（前5条）:`,
+      allNotifications.map((n) => ({
+        id: n._id.toString(),
+        ownerId: n.ownerId,
+        ownerIdType: typeof n.ownerId,
+        message: n.message,
+      })),
+    );
 
     const unreadCount = await NotificationModel.countDocuments({
       ownerId: ownerIdStr,
@@ -83,12 +90,13 @@ router.get("/", async (req, res) => {
     // 添加缓存控制头，防止 304 缓存问题
     res.set({
       "Cache-Control": "no-cache, no-store, must-revalidate",
-      "Pragma": "no-cache",
-      "Expires": "0",
+      Pragma: "no-cache",
+      Expires: "0",
     });
 
-    console.log(`📬 查询通知 - ownerId: ${ownerId}, 总数: ${total}, 未读: ${unreadCount}`);
-
+    console.log(
+      `📬 查询通知 - ownerId: ${ownerId}, 总数: ${total}, 未读: ${unreadCount}`,
+    );
 
     res.json({
       success: true,
@@ -193,14 +201,16 @@ router.get("/:id", async (req, res) => {
       success: true,
       data: {
         notification,
-        relatedFeedback: relatedFeedback ? {
-          id: relatedFeedback._id.toString(),
-          content: relatedFeedback.content,
-          reply: relatedFeedback.reply,
-          status: relatedFeedback.status,
-          createdAt: relatedFeedback.createdAt,
-          repliedAt: relatedFeedback.repliedAt,
-        } : null,
+        relatedFeedback: relatedFeedback
+          ? {
+              id: relatedFeedback._id.toString(),
+              content: relatedFeedback.content,
+              reply: relatedFeedback.reply,
+              status: relatedFeedback.status,
+              createdAt: relatedFeedback.createdAt,
+              repliedAt: relatedFeedback.repliedAt,
+            }
+          : null,
       },
     });
   } catch (error: any) {
@@ -212,8 +222,6 @@ router.get("/:id", async (req, res) => {
     });
   }
 });
-
-
 
 // PATCH /api/notifications/read-all - 标记所有通知为已读
 router.patch("/read-all", async (req, res) => {
@@ -228,7 +236,7 @@ router.patch("/read-all", async (req, res) => {
 
     const result = await NotificationModel.updateMany(
       { ownerId, status: "unread" },
-      { status: "read" }
+      { status: "read" },
     );
 
     res.json({

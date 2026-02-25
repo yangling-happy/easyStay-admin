@@ -1,1 +1,1 @@
-{"version":3,"file":"hotelRoutes.d.ts","sourceRoot":"","sources":["hotelRoutes.ts"],"names":[],"mappings":"AA2CA,QAAA,MAAM,MAAM,4CAAmB,CAAC;AA2qBhC,eAAe,MAAM,CAAC"}
+{"version":3,"file":"hotelRoutes.d.ts","sourceRoot":"","sources":["hotelRoutes.ts"],"names":[],"mappings":"AAGA,OAAO,KAAK,EAAE,MAAM,EAAE,MAAM,SAAS,CAAC;AAyCtC,QAAA,MAAM,MAAM,EAAE,MAAyB,CAAC;AA2qBxC,eAAe,MAAM,CAAC"}

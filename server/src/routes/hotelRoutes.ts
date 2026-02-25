@@ -1,6 +1,7 @@
 import express from "express";
 import type { Request } from "express";
 import type { Response } from "express";
+import type { Router } from "express";
 import { HotelModel } from "../models/Hotel.js";
 import { NotificationModel } from "../models/Notification.js";
 import { User } from "../models/User.js";
@@ -41,7 +42,7 @@ interface AuthRequest extends Request {
   };
 }
 
-const router = express.Router();
+const router: Router = express.Router();
 
 /**
  * @description 创建酒店
@@ -210,7 +211,7 @@ router.get("/public/:id", async (req: Request, res: Response) => {
       photos: hotel.photos,
       roomTypes: {
         available,
-        unavailable
+        unavailable,
       },
       amenities: hotel.amenities,
       status: hotel.status,
