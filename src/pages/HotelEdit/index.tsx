@@ -26,7 +26,9 @@ const HotelEdit: React.FC = () => {
 
   const [current, setCurrent] = useState(loadSavedStep());
   const [showBatchImport, setShowBatchImport] = useState(false);
-  const [lastSaveTime, setLastSaveTime] = useState<string>("");
+  const [lastSaveTime, setLastSaveTime] = useState<string>(() => {
+    return localStorage.getItem("last_save_time") || "";
+  });
   const {
     form,
     handleSaveDraft,
@@ -42,7 +44,7 @@ const HotelEdit: React.FC = () => {
     setCurrent(step);
   };
 
-  //自动保存：每3秒保存一次表单数据到本地
+  // 自动保存：每3秒保存一次表单数据到本地
   useEffect(() => {
     const interval = setInterval(() => {
       const values = form.getFieldsValue();
@@ -50,7 +52,10 @@ const HotelEdit: React.FC = () => {
       // 更新最后保存时间
       const now = new Date();
       const timeStr = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}:${now.getSeconds().toString().padStart(2, "0")}`;
+
+      // 同步更新状态和 localStorage
       setLastSaveTime(timeStr);
+      localStorage.setItem("last_save_time", timeStr); // 写入 localStorage
     }, 3000);
 
     return () => clearInterval(interval);
