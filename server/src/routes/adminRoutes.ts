@@ -39,15 +39,29 @@ router.get("/hotels/published", async (req, res) => {
       const { codes, streetAddress } = parseAddress(String(location));
       console.log("市区编码======", codes, streetAddress);
 
+      // 构建地址相关的查询条件（OR 关系）
+      const addressConditions: any[] = [];
+      
       // 如果匹配到编码，使用编码匹配 location 字段
       if (codes.length > 0) {
         // 匹配包含任意一个编码的 location 数组
-        query.location = { $in: codes };
+        addressConditions.push({ location: { $in: codes } });
       }
 
       // 如果有剩余的街道信息，匹配 address 字段
       if (streetAddress) {
-        query.address = { $regex: streetAddress, $options: "i" };
+        addressConditions.push({ address: { $regex: streetAddress, $options: "i" } });
+      }
+      
+      // 如果有地址相关的查询条件，使用 OR 关系
+      if (addressConditions.length > 0) {
+        if (query.$or) {
+          // 如果已经有 OR 条件，合并
+          query.$or = [...query.$or, ...addressConditions];
+        } else {
+          // 如果没有 OR 条件，直接设置
+          query.$or = addressConditions;
+        }
       }
     }
 
