@@ -23,9 +23,11 @@ const router: Router = express.Router();
  */
 router.get("/hotels/published", async (req, res) => {
   try {
-    const { location, keyword, rooms, guests, minPrice, maxPrice, stars } =
-      req.query;
+    const { location, keyword, rooms, guests, minPrice, maxPrice, stars, page, limit } = req.query;
 
+    // 检查是否有分页参数
+    const isPaginationRequest = page || limit;
+    
     // 构建查询条件
     const query: any = {
       status: "approved",
@@ -95,8 +97,28 @@ router.get("/hotels/published", async (req, res) => {
       }
     }
 
-    // 获取酒店列表
-    let hotels = await HotelModel.find(query).sort({ createTime: -1 });
+    // 数据库查询
+    let hotels;
+    let total = 0;
+    
+    if (isPaginationRequest) {
+      // 分页参数
+      const pageNum = parseInt(page as string) || 1;
+      const limitNum = parseInt(limit as string) || 15;
+      const skip = (pageNum - 1) * limitNum;
+
+      // 获取总数
+      total = await HotelModel.countDocuments(query);
+
+      // 分页查询
+      hotels = await HotelModel.find(query)
+        .sort({ createTime: -1 })
+        .skip(skip)
+        .limit(limitNum);
+    } else {
+      // 无分页查询
+      hotels = await HotelModel.find(query).sort({ createTime: -1 });
+    }
 
     // 4. 价格范围过滤（应用层过滤，因为价格在 roomTypes 数组中）
     if (minPrice || maxPrice) {
@@ -140,13 +162,47 @@ router.get("/hotels/published", async (req, res) => {
       };
     });
 
-    res.json(hotelsWithId);
+    // 根据请求类型返回不同格式的响应
+    if (isPaginationRequest) {
+      const pageNum = parseInt(page as string) || 1;
+      const limitNum = parseInt(limit as string) || 15;
+      const skip = (pageNum - 1) * limitNum;
+      
+      // 构建分页响应
+      const response = {
+        success: true,
+        data: hotelsWithId,
+        pagination: {
+          total,
+          page: pageNum,
+          limit: limitNum,
+          totalPages: Math.ceil(total / limitNum),
+          hasMore: skip + limitNum < total
+        }
+      };
+      res.json(response);
+    } else {
+      // 保持向后兼容，直接返回酒店数组
+      res.json(hotelsWithId);
+    }
   } catch (error) {
     console.error("获取已发布酒店列表失败:", error);
-    res.status(500).json({
-      message: "获取已发布酒店列表失败",
-      error,
-    });
+    // 检查是否需要分页响应
+    const isPaginationRequest = req.query.page || req.query.limit;
+    if (isPaginationRequest) {
+      // 分页请求的错误响应
+      res.status(500).json({
+        success: false,
+        message: "获取已发布酒店列表失败",
+        error: error instanceof Error ? error.message : "未知错误",
+      });
+    } else {
+      // 保持向后兼容的错误响应
+      res.status(500).json({
+        message: "获取已发布酒店列表失败",
+        error,
+      });
+    }
   }
 });
 
