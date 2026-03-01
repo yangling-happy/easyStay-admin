@@ -20,19 +20,16 @@ const areas = areasRaw as RawNode[];
  * @returns 包含省市区编码和剩余街道信息的对象
  */
 export const parseAddress = (addressText: string) => {
-  // 分割地址文本
-  const parts = addressText.split(/[,，\s]+/).filter(part => part.trim());
-  
   // 存储匹配到的编码
   let provinceCode = '';
   let cityCode = '';
   let areaCode = '';
   
   // 存储剩余的街道信息
-  const remainingParts: string[] = [];
+  let streetAddress = '';
   
   // 首先尝试直接匹配完整地址，提高匹配准确率
-  const fullAddress = parts.join('');
+  const fullAddress = addressText;
   
   // 尝试匹配区（优先级最高，因为区是最具体的）
   let bestAreaMatch: string = '';
@@ -94,6 +91,12 @@ export const parseAddress = (addressText: string) => {
         provinceCode = province.code;
       }
     }
+    
+    // 直接以"区"字为分界，将"区"字之后的内容划分为 streetAddress
+    const areaIndex = fullAddress.indexOf('区');
+    if (areaIndex !== -1) {
+      streetAddress = fullAddress.substring(areaIndex + 1).trim();
+    }
   } else {
     // 如果没有匹配到区，尝试匹配城市
     for (const city of cities) {
@@ -107,54 +110,9 @@ export const parseAddress = (addressText: string) => {
         break;
       }
     }
-  }
-  
-  // 提取剩余的街道信息
-  // 首先获取省市区的完整名称
-  const provinceName = provinceCode ? provinces.find(p => p.code === provinceCode)?.name || '' : '';
-  const cityName = cityCode ? cities.find(c => c.code === cityCode)?.name || '' : '';
-  const areaName = areaCode ? areas.find(a => a.code === areaCode)?.name || '' : '';
-  
-  // 处理地址没有被分割的情况
-  if (parts.length === 1) {
-    const fullPart = parts[0];
-    let streetPart = fullPart;
     
-    // 尝试移除省市区名称
-    if (areaName && streetPart.includes(areaName)) {
-      streetPart = streetPart.replace(areaName, '').trim();
-    } else if (areaName && areaName.includes('区') && streetPart.includes(areaName.replace('区', ''))) {
-      streetPart = streetPart.replace(areaName.replace('区', ''), '').trim();
-    }
-    
-    if (cityName && streetPart.includes(cityName)) {
-      streetPart = streetPart.replace(cityName, '').trim();
-    } else if (cityName && cityName.includes('市') && streetPart.includes(cityName.replace('市', ''))) {
-      streetPart = streetPart.replace(cityName.replace('市', ''), '').trim();
-    }
-    
-    if (provinceName && streetPart.includes(provinceName)) {
-      streetPart = streetPart.replace(provinceName, '').trim();
-    }
-    
-    // 移除可能的省市区关键词
-    streetPart = streetPart.replace(/[省市县区]$/g, '').trim();
-    if (streetPart) {
-      remainingParts.push(streetPart);
-    }
-  } else {
-    // 逐部分处理
-    for (const part of parts) {
-      // 检查该部分是否是省市区名称的一部分
-      const isProvincePart = provinceName.includes(part) || part.includes(provinceName) || part.includes('省');
-      const isCityPart = cityName.includes(part) || part.includes(cityName) || part.includes('市');
-      const isAreaPart = areaName.includes(part) || part.includes(areaName) || part.includes('区');
-      
-      // 如果不是省市区的部分，添加到剩余街道信息中
-      if (!isProvincePart && !isCityPart && !isAreaPart) {
-        remainingParts.push(part);
-      }
-    }
+    // 如果没有匹配到区，将整个地址作为街道信息
+    streetAddress = fullAddress.trim();
   }
   
   // 构建编码数组 - 只返回最详细的编码
@@ -166,9 +124,6 @@ export const parseAddress = (addressText: string) => {
   } else if (provinceCode) {
     locationCodes.push(provinceCode);
   }
-  
-  // 构建剩余的街道地址
-  const streetAddress = remainingParts.join(' ');
   
   return {
     codes: locationCodes,
