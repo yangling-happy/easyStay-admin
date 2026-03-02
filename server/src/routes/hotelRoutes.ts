@@ -5,6 +5,7 @@ import type { Router } from "express";
 import { HotelModel } from "../models/Hotel.js";
 import { NotificationModel } from "../models/Notification.js";
 import { User } from "../models/User.js";
+import { calculateDynamicPrices } from "../utils/priceUtils.js";
 import { auth } from "../middleware/authMiddleware.js";
 
 /**
@@ -183,6 +184,30 @@ router.get("/public/:id", async (req: Request, res: Response) => {
     // 从请求参数中获取 rooms 和 guests
     const rooms = parseInt(req.query.rooms as string) || 1;
     const guests = parseInt(req.query.guests as string) || 1;
+    let startDate = req.query.startDate as string;
+    let endDate = req.query.endDate as string;
+
+    // 处理日期格式，确保格式为 MM-DD
+    if (startDate && startDate.includes('-')) {
+      const parts = startDate.split('-');
+      if (parts.length === 3) {
+        // 格式为 YYYY-MM-DD，提取 MM-DD
+        startDate = `${parts[1]}-${parts[2]}`;
+      }
+    }
+    
+    if (endDate && endDate.includes('-')) {
+      const parts = endDate.split('-');
+      if (parts.length === 3) {
+        // 格式为 YYYY-MM-DD，提取 MM-DD
+        endDate = `${parts[1]}-${parts[2]}`;
+      }
+    }
+
+    // 应用动态定价机制
+    if (hotel.roomTypes && Array.isArray(hotel.roomTypes)) {
+      (hotel as any).roomTypes = calculateDynamicPrices(hotel.roomTypes, startDate, endDate);
+    }
 
     // 将房型分为 available 和 unavailable 两个数组
     const available: any[] = [];
