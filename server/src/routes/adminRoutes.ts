@@ -194,7 +194,7 @@ router.get("/hotels/published", async (req, res) => {
             }
 
             // 应用价格调整
-            hotelObj.roomTypes = hotelObj.roomTypes.map((room: any) => {
+            (hotelObj as any).roomTypes = hotelObj.roomTypes.map((room: any) => {
               let adjustedPrice = room.price;
               // 周末比例越高，价格调整幅度越大
               if (weekendRatio > 0) {
