@@ -1,8 +1,11 @@
 import axios from "axios";
 
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api";
+
 // 创建axios实例
 const axiosInstance = axios.create({
-  baseURL: "https://easystay-admin-production.up.railway.app/api", // 后端API地址
+  baseURL: API_BASE_URL, // 后端API地址（开发默认本地）
   timeout: 10000, // 请求超时时间
   headers: {
     "Content-Type": "application/json",

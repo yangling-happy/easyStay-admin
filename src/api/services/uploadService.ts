@@ -1,9 +1,12 @@
 import axios from "axios";
 import { compressImages, compressImage } from "../../utils/imageCompressor";
 
+const SERVER_BASE_URL =
+  import.meta.env.VITE_SERVER_BASE_URL || "http://localhost:3000";
+
 // 创建配置好的 axios 实例
 const api = axios.create({
-  baseURL: "https://easystay-admin-production.up.railway.app",
+  baseURL: SERVER_BASE_URL,
   timeout: 30000,
 });
 
@@ -16,7 +19,7 @@ const ensureFullUrl = (url: string): string => {
 
   // 如果是相对路径（以 /uploads/ 开头），加上 baseURL
   if (url.startsWith("/uploads/")) {
-    return `https://easystay-admin-production.up.railway.app${url}`;
+    return `${SERVER_BASE_URL}${url}`;
   }
 
   // 其他情况，直接返回（可能是文件名）

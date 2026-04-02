@@ -20,20 +20,43 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const app = express();
 
-// 1. CORS 配置（增强版）
-app.use(cors({
-  origin: [
-    'https://easy-stay-admin.vercel.app', 
-    'http://localhost:5173', 
-    'http://localhost:3000'
-  ],
-  // 关键：显式列出 PATCH 和 PUT，默认配置有时不包含它们
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
-  credentials: true,
-  optionsSuccessStatus: 200
-}));
+const defaultAllowedOrigins = [
+  "https://easy-stay-admin.vercel.app",
+  "http://localhost:5173",
+  "http://localhost:3000",
+];
 
+const envAllowedOrigins = (process.env.CORS_ORIGINS || "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+const allowedOrigins =
+  envAllowedOrigins.length > 0 ? envAllowedOrigins : defaultAllowedOrigins;
+
+const corsOptions: cors.CorsOptions = {
+  origin: (origin, callback) => {
+    // 允许 Postman / curl / 同源请求（无 Origin）
+    if (!origin) {
+      callback(null, true);
+      return;
+    }
+
+    const isAllowed =
+      allowedOrigins.includes(origin) ||
+      /^http:\/\/localhost:\d+$/.test(origin);
+
+    callback(null, isAllowed);
+  },
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "Accept"],
+  credentials: true,
+  optionsSuccessStatus: 200,
+};
+
+// 1. CORS 配置（增强版）
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 
 // 2. JSON解析（必须在路由之前）
 app.use(express.json({ limit: "50mb" }));
