@@ -56,7 +56,17 @@ const corsOptions: cors.CorsOptions = {
 
 // 1. CORS 配置（增强版）
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
+// 使用中间件处理所有OPTIONS请求
+app.use((req, res, next) => {
+  if (req.method === 'OPTIONS') {
+    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    return res.status(200).end();
+  }
+  next();
+});
 
 // 2. JSON解析（必须在路由之前）
 app.use(express.json({ limit: "50mb" }));
