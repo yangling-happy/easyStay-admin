@@ -76,6 +76,7 @@ router.post("/", async (req, res) => {
 router.get("/list", async (req, res) => {
   try {
     const { status } = req.query;
+
     const filter = status ? { status } : {};
 
     const list = await FeedbackModel.find(filter).sort({ createdAt: -1 }).lean();

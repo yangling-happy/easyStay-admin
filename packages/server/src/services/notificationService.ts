@@ -51,3 +51,62 @@ export async function notifyMerchantHotelOffline(params: {
     console.error("发送下线通知失败:", error);
   }
 }
+
+/**
+ * @description 通知商户审核结果
+ */
+export async function notifyMerchantAuditResult(params: {
+  hotelId: string;
+  hotelName: string;
+  ownerId: string;
+  status: "approved" | "rejected";
+  rejectReason?: string;
+}) {
+  try {
+    const message =
+      params.status === "approved"
+        ? `您的酒店"${params.hotelName}"审核已通过，现已上线`
+        : `您的酒店"${params.hotelName}"审核被拒绝：${params.rejectReason || "未提供原因"}`;
+
+    await NotificationModel.create({
+      type: "audit_result",
+      hotelId: params.hotelId,
+      hotelName: params.hotelName,
+      ownerId: params.ownerId,
+      status: "unread",
+      message,
+    });
+  } catch (error: unknown) {
+    console.error("创建审核通知失败:", error);
+  }
+}
+
+/**
+ * @description 通知商户酒店被管理员上下线
+ */
+export async function notifyMerchantHotelStatusChangedByAdmin(params: {
+  hotelId: string;
+  hotelName: string;
+  ownerId: string;
+  isOnline: boolean;
+  operatorId?: string;
+}) {
+  try {
+    const message = params.isOnline
+      ? `您的酒店"${params.hotelName}"已由管理员上线`
+      : `您的酒店"${params.hotelName}"已由管理员下线`;
+
+    await NotificationModel.create({
+      type: params.isOnline ? "hotel_online" : "hotel_offline",
+      hotelId: params.hotelId,
+      hotelName: params.hotelName,
+      ownerId: params.ownerId,
+      status: "unread",
+      message,
+      operatorId: params.operatorId,
+      operatorRole: "admin",
+    });
+  } catch (error: unknown) {
+    console.error("创建上下线通知失败:", error);
+  }
+}
