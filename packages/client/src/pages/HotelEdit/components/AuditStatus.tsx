@@ -3,29 +3,9 @@ import { Result, Button, Typography, Spin, message } from "antd";
 import { useNavigate } from "react-router-dom";
 import { hotelService } from "../../../api/services/hotelService";
 import type { Hotel } from "../../../types/hotel";
+import { getAuditResultConfig } from "../../../store/hotelAuditFsm";
 
 const { Text, Paragraph } = Typography;
-
-const getStatusConfig = (status?: string) => {
-  const configs = {
-    pending: {
-      status: "info" as const,
-      title: "审核中",
-      message: "您的申请已提交，正在等待审核",
-    },
-    approved: {
-      status: "success" as const,
-      title: "审核通过",
-      message: "恭喜！您的申请已通过审核",
-    },
-    rejected: {
-      status: "warning" as const,
-      title: "审核未通过",
-      message: "很抱歉，您的申请未通过审核",
-    },
-  };
-  return configs[status as keyof typeof configs] || configs.pending;
-};
 
 interface AuditStatusProps {
   hotelId?: string;
@@ -68,7 +48,7 @@ const AuditStatus: React.FC<AuditStatusProps> = ({
     loadHotelData();
   }, [hotelId]);
 
-  const statusConfig = getStatusConfig(hotel?.status);
+  const statusConfig = getAuditResultConfig(hotel);
 
   const handleBack = () => {
     if (onBack) return onBack();

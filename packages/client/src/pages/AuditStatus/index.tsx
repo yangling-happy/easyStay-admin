@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Result, Button, Spin, message } from "antd";
 import { hotelService } from "../../api/services/hotelService";
 import type { Hotel } from "../../types/hotel";
+import { getAuditResultConfig } from "../../store/hotelAuditFsm";
 const AuditStatusPage: React.FC = () => {
   const { hotelId } = useParams<{ hotelId: string }>();
   const navigate = useNavigate();
@@ -41,23 +42,7 @@ const AuditStatusPage: React.FC = () => {
     }
   };
 
-  // 获取状态配置
-  const getStatusConfig = () => {
-    if (!hotel) return { status: "info" as const, title: "审核中" };
-
-    switch (hotel.status) {
-      case "pending":
-        return { status: "info" as const, title: "审核中" };
-      case "approved":
-        return { status: "success" as const, title: "审核通过" };
-      case "rejected":
-        return { status: "warning" as const, title: "审核未通过" };
-      default:
-        return { status: "info" as const, title: "审核中" };
-    }
-  };
-
-  const statusConfig = getStatusConfig();
+  const statusConfig = getAuditResultConfig(hotel);
 
   if (loading) {
     return (
@@ -77,28 +62,31 @@ const AuditStatusPage: React.FC = () => {
           <div>
             {/* 状态信息 */}
             <div>
-              {hotel?.status === "pending" && (
+              {hotel?.isIncomplete ? (
+                <div>
+                  <div>{statusConfig.message}</div>
+                  <div style={{ marginTop: 8, color: "#faad14" }}>
+                    请完善酒店信息后重新提交审核。
+                  </div>
+                </div>
+              ) : hotel?.status === "pending" ? (
                 <>
-                  <div>您的酒店信息已提交审核。</div>
+                  <div>{statusConfig.message}</div>
                   <div style={{ color: "#666", marginTop: 8 }}>
                     审核结果将在24小时内通知您。
                   </div>
                 </>
-              )}
-
-              {hotel?.status === "approved" && (
-                <div>恭喜！您的酒店已通过审核。</div>
-              )}
-
-              {hotel?.status === "rejected" && (
+              ) : hotel?.status === "rejected" ? (
                 <div>
-                  <div>很抱歉，您的酒店未通过审核。</div>
+                  <div>{statusConfig.message}</div>
                   {hotel.rejectReason && (
                     <div style={{ marginTop: 8, color: "#faad14" }}>
                       原因：{hotel.rejectReason}
                     </div>
                   )}
                 </div>
+              ) : (
+                <div>{statusConfig.message}</div>
               )}
             </div>
           </div>

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useEffect, useCallback, useState } from "react";
 import { hotelService } from "../../../api/services/hotelService";
 import dayjs from "dayjs";
+import { getAuditFieldsByEvent } from "../../../store/hotelAuditFsm";
 
 type UseHotelFormOptions = {
   routeHotelId?: string;
@@ -14,7 +15,7 @@ const buildStepKey = (id?: string | number | null) =>
   `hotel_edit_current_step_${id ?? "new"}`;
 
 const debounce = (func: Function, wait: number) => {
-  let timeout: NodeJS.Timeout;
+  let timeout: ReturnType<typeof setTimeout>;
   return (...args: any[]) => {
     clearTimeout(timeout);
     timeout = setTimeout(() => func(...args), wait);
@@ -160,7 +161,7 @@ export const useHotelForm = (options?: UseHotelFormOptions) => {
   /**
    * 构建提交数据
    */
-  const buildPayload = (values: any, statusOptions: any) => {
+  const buildPayload = (values: any, auditFields: any) => {
     let openingDateStr = "";
     if (values.openingDate) {
       openingDateStr =
@@ -189,7 +190,7 @@ export const useHotelForm = (options?: UseHotelFormOptions) => {
       amenities: values.amenities || [],
       star: normalizedStar,
       openingDate: openingDateStr,
-      status: statusOptions.status,
+      status: auditFields.status,
       roomTypes: (values.roomTypes || []).map((room: any) => ({
         name: room.name?.trim() || "",
         price: room.price || 0,
@@ -201,10 +202,11 @@ export const useHotelForm = (options?: UseHotelFormOptions) => {
       })),
       photos: values.photos || [],
       updateTime: new Date().toISOString(),
-      isActive: statusOptions.isActive,
+      isActive: auditFields.isActive,
       isDeleted: false,
-      isIncomplete: statusOptions.isIncomplete,
-      completionStatus: statusOptions.completionStatus,
+      isIncomplete: auditFields.isIncomplete,
+      completionStatus: auditFields.completionStatus,
+      rejectReason: auditFields.rejectReason,
     };
 
     if (!isUpdate) {
@@ -238,12 +240,11 @@ export const useHotelForm = (options?: UseHotelFormOptions) => {
         return false;
       }
 
-      const payload = buildPayload(allValues, {
-        status: "pending",
+      const auditFields = getAuditFieldsByEvent(allValues, {
+        type: "MARK_INCOMPLETE",
         completionStatus: "draft",
-        isIncomplete: true,
-        isActive: false,
       });
+      const payload = buildPayload(allValues, auditFields);
 
       const isUpdate = allValues.id;
       let res;
@@ -306,12 +307,11 @@ export const useHotelForm = (options?: UseHotelFormOptions) => {
       const validationResult = validateCompleteness(values);
       if (!validationResult.isValid) {
         // 标记为信息不全并保存
-        const payload = buildPayload(values, {
-          status: "pending",
+        const auditFields = getAuditFieldsByEvent(values, {
+          type: "MARK_INCOMPLETE",
           completionStatus: "incomplete",
-          isIncomplete: true,
-          isActive: false,
         });
+        const payload = buildPayload(values, auditFields);
 
         if (values.id) {
           await hotelService.updateHotel(values.id, payload);
@@ -333,12 +333,10 @@ export const useHotelForm = (options?: UseHotelFormOptions) => {
       }
 
       // 信息完整，提交审核
-      const payload = buildPayload(values, {
-        status: "pending",
-        completionStatus: undefined, // 清除完善状态
-        isIncomplete: false,
-        isActive: false,
+      const auditFields = getAuditFieldsByEvent(values, {
+        type: "SUBMIT_FOR_REVIEW",
       });
+      const payload = buildPayload(values, auditFields);
 
       let res;
       let hotelId;
@@ -410,43 +408,21 @@ export const useHotelForm = (options?: UseHotelFormOptions) => {
 
       const isUpdate =
         values.id !== undefined && values.id !== null && values.id !== "";
-      const payload: any = {
-        ...values,
-        name: values.name?.trim() || "",
-        nameEn: values.nameEn?.trim() || "",
-        address: values.address?.trim() || "",
-        phone: values.phone?.trim() || "",
-        location: values.location || [],
-        amenities: values.amenities || [],
-        star:
-          typeof values.star === "string"
-            ? parseInt(values.star, 10)
-            : values.star,
-        openingDate: openingDateStr,
-        status: "pending" as const,
-        roomTypes: (values.roomTypes || []).map((room: any) => ({
-          name: room.name?.trim() || "",
-          price: room.price || 0,
-          stock: room.stock || 0,
-          capacity: room.capacity !== undefined ? room.capacity : null,
-          bedType: room.bedType || "",
-          tags: room.tags || [],
-          photos: room.photos || [],
-        })),
-        photos: values.photos || [],
-        updateTime: new Date().toISOString(),
-        isActive: false,
-        isDeleted: false,
-      };
 
-      if (!isUpdate) {
-        payload.createTime = new Date().toISOString();
-        payload.isIncomplete = true;
-        payload.completionStatus = "draft";
-      } else {
-        payload.isIncomplete = false;
-        payload.completionStatus = null;
-      }
+      const auditFields = getAuditFieldsByEvent(
+        values,
+        isUpdate
+          ? { type: "SUBMIT_FOR_REVIEW" }
+          : {
+              type: "MARK_INCOMPLETE",
+              completionStatus: "draft",
+            },
+      );
+
+      const payload = buildPayload(
+        { ...values, openingDate: openingDateStr },
+        auditFields,
+      );
 
       if (values.version !== undefined && values.version !== null) {
         payload.version = values.version;

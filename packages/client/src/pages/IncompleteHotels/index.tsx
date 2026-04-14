@@ -19,20 +19,28 @@ import {
   CopyOutlined,
   EyeOutlined,
 } from "@ant-design/icons";
-import { hotelService } from "@/api/services/hotelService";
-import { getFullAddress } from "@/utils/addressData";
-import { formatDateTime } from "@/utils/dateUtils";
-import HotelDetailView from "@/components/HotelDetailView";
-import HotelSearchInput from "@/components/HotelSearchInput";
-import BatchDelete from "@/components/BatchDelete";
+import { hotelService } from "../../api/services/hotelService";
+import { getFullAddress } from "../../utils/addressData";
+import { formatDateTime } from "../../utils/dateUtils";
+import HotelDetailView from "../../components/HotelDetailView";
+import HotelSearchInput from "../../components/HotelSearchInput";
+import BatchDelete from "../../components/BatchDelete";
+import {
+  getCompletionStatusDisplay,
+  matchIncompleteFilter,
+  type IncompleteFilter,
+} from "../../store/hotelAuditFsm";
+import type { Hotel } from "../../types/hotel";
+
+type HotelRecord = Hotel & { _id?: string };
 
 const IncompleteHotels: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const statusFilter = searchParams.get("status") || "all";
 
-  const [incompleteHotels, setIncompleteHotels] = useState<any[]>([]);
-  const [filteredHotels, setFilteredHotels] = useState<any[]>([]);
+  const [incompleteHotels, setIncompleteHotels] = useState<HotelRecord[]>([]);
+  const [filteredHotels, setFilteredHotels] = useState<HotelRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [isDetailVisible, setIsDetailVisible] = useState(false);
   const [selectedHotel, setSelectedHotel] = useState<any>(null);
@@ -44,16 +52,14 @@ const IncompleteHotels: React.FC = () => {
     setLoading(true);
     try {
       // 直接调用获取所有酒店的接口，然后在前端过滤
-      const hotels = await hotelService.getMyHotels();
-      const filteredHotels = hotels.filter(
-        (h) => h.isIncomplete === true && h.isDeleted === false,
+      const hotels = (await hotelService.getMyHotels()) as HotelRecord[];
+
+      const filteredHotels = hotels.filter((hotel) =>
+        matchIncompleteFilter(hotel, statusFilter as IncompleteFilter),
       );
 
       // 进一步按状态过滤
-      const finalHotels =
-        statusFilter === "all"
-          ? filteredHotels
-          : filteredHotels.filter((h) => h.completionStatus === statusFilter);
+      const finalHotels = filteredHotels;
 
       setIncompleteHotels(finalHotels);
 
@@ -61,7 +67,6 @@ const IncompleteHotels: React.FC = () => {
       filterHotelsBySearch(finalHotels);
 
       // 添加日志以便调试
-     
     } catch (error) {
       message.error("获取待完善酒店失败，请重试");
     } finally {
@@ -77,7 +82,7 @@ const IncompleteHotels: React.FC = () => {
     filterHotelsBySearch(incompleteHotels);
   }, [searchText, incompleteHotels]);
 
-  const handleCompleteInfo = (record: any) => {
+  const handleCompleteInfo = (record: HotelRecord) => {
     const hotelId = record._id || record.id;
     const formData = {
       id: hotelId,
@@ -108,7 +113,7 @@ const IncompleteHotels: React.FC = () => {
     navigate(`/hotels/edit/${hotelId}`);
   };
 
-  const handleDelete = (record: any) => {
+  const handleDelete = (record: HotelRecord) => {
     Modal.confirm({
       title: "确认删除",
       icon: <ExclamationCircleOutlined />,
@@ -119,6 +124,10 @@ const IncompleteHotels: React.FC = () => {
       onOk: async () => {
         try {
           const hotelId = record._id || record.id;
+          if (!hotelId) {
+            message.error("酒店编号缺失，无法删除");
+            return;
+          }
           await hotelService.deleteHotel(hotelId);
           message.success("酒店已删除");
           loadIncompleteHotels();
@@ -167,12 +176,12 @@ const IncompleteHotels: React.FC = () => {
     }
   };
 
-  const showDetail = (record: any) => {
+  const showDetail = (record: HotelRecord) => {
     setSelectedHotel(record);
     setIsDetailVisible(true);
   };
 
-  const filterHotelsBySearch = (hotels: any[]) => {
+  const filterHotelsBySearch = (hotels: HotelRecord[]) => {
     if (!searchText.trim()) {
       setFilteredHotels(hotels);
       return;
@@ -191,13 +200,8 @@ const IncompleteHotels: React.FC = () => {
     setFilteredHotels(filtered);
   };
 
-  const getCompletionStatusTag = (status: string) => {
-    const statusMap: Record<string, { color: string; text: string }> = {
-      draft: { color: "default", text: "草稿" },
-      incomplete: { color: "warning", text: "信息不全" },
-      rejected: { color: "error", text: "被驳回" },
-    };
-    const config = statusMap[status] || { color: "default", text: "未知" };
+  const getCompletionStatusTag = (status: Hotel["completionStatus"]) => {
+    const config = getCompletionStatusDisplay(status);
     return <Tag color={config.color}>{config.text}</Tag>;
   };
 
@@ -207,10 +211,10 @@ const IncompleteHotels: React.FC = () => {
       dataIndex: "id",
       key: "id",
       width: 120,
-      render: (id: string, record: any) => {
+      render: (id: string, record: HotelRecord) => {
         const displayId = id || record._id;
         const shortId = displayId?.slice(-6).toUpperCase();
-        const fullId = displayId;
+        const fullId = displayId || "";
 
         return (
           <Tooltip title={`完整编号: ${fullId}`}>
@@ -244,7 +248,7 @@ const IncompleteHotels: React.FC = () => {
       dataIndex: "name",
       key: "name",
       width: 200,
-      render: (name: string, record: any) => (
+      render: (name: string, record: HotelRecord) => (
         <div>
           <div>{name}</div>
           {record.nameEn && (
@@ -260,7 +264,7 @@ const IncompleteHotels: React.FC = () => {
       dataIndex: "address",
       key: "address",
       width: 250,
-      render: (address: string, record: any) => (
+      render: (address: string, record: HotelRecord) => (
         <div>
           <div>{address || "-"}</div>
           {record.location && record.location.length > 0 && (
@@ -276,7 +280,8 @@ const IncompleteHotels: React.FC = () => {
       dataIndex: "completionStatus",
       key: "completionStatus",
       width: 120,
-      render: (status: string) => getCompletionStatusTag(status),
+      render: (status: Hotel["completionStatus"]) =>
+        getCompletionStatusTag(status),
     },
     {
       title: "创建时间",
@@ -289,7 +294,7 @@ const IncompleteHotels: React.FC = () => {
       title: "操作",
       key: "action",
       width: 250,
-      render: (_: unknown, record: any) => (
+      render: (_: unknown, record: HotelRecord) => (
         <Space size="middle">
           <Button
             type="link"
@@ -341,8 +346,10 @@ const IncompleteHotels: React.FC = () => {
               dataSource={filteredHotels}
               onBatchDelete={handleBatchDelete}
               itemName="酒店"
-              getDisplayName={(item) => item.name}
-              getDisplayInfo={(item) => item.address || "无地址信息"}
+              getDisplayName={(item: HotelRecord) => item.name}
+              getDisplayInfo={(item: HotelRecord) =>
+                item.address || "无地址信息"
+              }
               loading={batchDeleteLoading}
             />
             {/* 状态筛选 */}
@@ -355,15 +362,15 @@ const IncompleteHotels: React.FC = () => {
               options={[
                 { value: "all", label: "全部" },
                 { value: "draft", label: "草稿" },
-                // { value: "incomplete", label: "信息不全" },
+                { value: "incomplete", label: "信息不全" },
                 { value: "rejected", label: "被驳回" },
               ]}
             />
             {/* 搜索组件 */}
             <HotelSearchInput
               placeholder="搜索酒店名称或编号"
-              onSearch={(value) => setSearchText(value)}
-              onChange={(value) => setSearchText(value)}
+              onSearch={(value: string) => setSearchText(value)}
+              onChange={(value: string) => setSearchText(value)}
               style={{ width: 300 }}
             />
           </Space>
@@ -372,7 +379,9 @@ const IncompleteHotels: React.FC = () => {
         <Table
           columns={columns}
           dataSource={filteredHotels}
-          rowKey={(record) => record._id || record.id}
+          rowKey={(record) =>
+            record._id || record.id || `${record.name}-${record.createTime}`
+          }
           loading={loading}
           pagination={{ pageSize: 10 }}
           rowSelection={{

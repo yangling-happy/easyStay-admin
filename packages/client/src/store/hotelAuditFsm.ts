@@ -29,6 +29,159 @@ export const getAuditFlowNode = (
   return "pending_review";
 };
 
+export const getAuditResultConfig = (
+  hotel?: Pick<
+    Hotel,
+    "status" | "isActive" | "isIncomplete" | "completionStatus" | "rejectReason"
+  > | null,
+) => {
+  if (!hotel) {
+    return {
+      status: "info" as const,
+      title: "审核中",
+      message: "您的酒店信息已提交审核。",
+    };
+  }
+
+  const node = getAuditFlowNode(hotel);
+
+  if (node === "editing_incomplete") {
+    return {
+      status: "warning" as const,
+      title: "信息待完善",
+      message: "您的酒店信息尚未完善，补全后可再次提交审核。",
+    };
+  }
+
+  if (node === "rejected") {
+    return {
+      status: "warning" as const,
+      title: "审核未通过",
+      message: hotel.rejectReason
+        ? `很抱歉，您的酒店未通过审核。原因：${hotel.rejectReason}`
+        : "很抱歉，您的酒店未通过审核。",
+    };
+  }
+
+  if (node === "approved_online" || node === "approved_offline") {
+    return {
+      status: "success" as const,
+      title: "审核通过",
+      message:
+        node === "approved_online"
+          ? "恭喜！您的酒店已通过审核并上线。"
+          : "恭喜！您的酒店已通过审核，当前为下线状态。",
+    };
+  }
+
+  return {
+    status: "info" as const,
+    title: "审核中",
+    message: "您的酒店信息已提交审核，审核结果将在24小时内通知您。",
+  };
+};
+
+export const getCompletionStatusDisplay = (
+  completionStatus?: CompletionStatus,
+): { color: string; text: string } => {
+  const statusMap: Record<CompletionStatus, { color: string; text: string }> = {
+    draft: { color: "default", text: "草稿" },
+    incomplete: { color: "warning", text: "信息不全" },
+    rejected: { color: "error", text: "被驳回" },
+  };
+
+  if (!completionStatus) {
+    return { color: "default", text: "未知" };
+  }
+
+  return statusMap[completionStatus] || { color: "default", text: "未知" };
+};
+
+export type IncompleteFilter = "all" | CompletionStatus;
+
+export const matchIncompleteFilter = (
+  hotel: Pick<
+    Hotel,
+    "status" | "isActive" | "isIncomplete" | "isDeleted" | "completionStatus"
+  >,
+  filter: IncompleteFilter,
+) => {
+  if (!hotel.isIncomplete || hotel.isDeleted) return false;
+  if (filter === "all") return true;
+  return hotel.completionStatus === filter;
+};
+
+export const getAuditFieldsByEvent = (
+  source: Partial<
+    Pick<
+      Hotel,
+      | "status"
+      | "isActive"
+      | "isIncomplete"
+      | "completionStatus"
+      | "rejectReason"
+    >
+  > = {},
+  event: AuditFlowEvent,
+) => {
+  const base = {
+    status: source.status ?? ("pending" as HotelStatus),
+    isActive: source.isActive ?? false,
+    isIncomplete: source.isIncomplete ?? false,
+    completionStatus: source.completionStatus,
+    rejectReason: source.rejectReason,
+  };
+
+  switch (event.type) {
+    case "MARK_INCOMPLETE":
+      return {
+        ...base,
+        status: "pending",
+        isIncomplete: true,
+        completionStatus: event.completionStatus ?? "incomplete",
+        isActive: false,
+      };
+    case "SUBMIT_FOR_REVIEW":
+      return {
+        ...base,
+        status: "pending",
+        isIncomplete: false,
+        completionStatus: undefined,
+      };
+    case "APPROVE":
+      return {
+        ...base,
+        status: "approved",
+        isIncomplete: false,
+        completionStatus: undefined,
+        rejectReason: undefined,
+        isActive: true,
+      };
+    case "REJECT":
+      return {
+        ...base,
+        status: "rejected",
+        isIncomplete: false,
+        rejectReason: event.reason ?? base.rejectReason,
+        isActive: false,
+      };
+    case "OFFLINE":
+      return {
+        ...base,
+        status: "approved",
+        isActive: false,
+      };
+    case "RESTORE":
+      return {
+        ...base,
+        status: "approved",
+        isActive: true,
+      };
+    default:
+      return base;
+  }
+};
+
 const transitionMap: Record<AuditFlowNode, AuditFlowEvent["type"][]> = {
   editing_incomplete: ["SUBMIT_FOR_REVIEW", "MARK_INCOMPLETE"],
   pending_review: ["APPROVE", "REJECT", "MARK_INCOMPLETE"],
