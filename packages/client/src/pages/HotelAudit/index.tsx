@@ -1,97 +1,66 @@
 // src/pages/HotelAudit/index.tsx
 import { Table, Modal, message, Space, Select } from "antd";
-import { useState, useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { getColumns } from "./columns";
 import RejectModal from "./components/RejectModal";
 import HotelDetailDrawer from "./components/HotelDetailDrawer";
-import { auditService } from "@/api/services/auditService";
-import { useHotelStore } from "@/store/useHotelStore";
-import type { Hotel, HotelStatus } from "@/types/hotel";
-import HotelSearchInput from "@/components/HotelSearchInput";
-import { filterHotelsByKeyword } from "@/utils/filterHotelsByKeyword.";
+import type { Hotel } from "../../types/hotel";
+import HotelSearchInput from "../../components/HotelSearchInput";
+import { filterHotelsByKeyword } from "../../utils/filterHotelsByKeyword.";
+import {
+  approveHotel,
+  closeDetailDrawer,
+  closeRejectModal,
+  fetchAuditHotels,
+  openDetailDrawer,
+  openRejectModal,
+  rejectHotel,
+  setSearchText,
+  setStatusFilter,
+  toggleHotelOnlineStatus,
+} from "../../store/hotelAuditSlice";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
+import { getAuditFlowNode } from "../../store/hotelAuditFsm";
 const HotelAudit = () => {
-  const [loading, setLoading] = useState(false);
-  const [rejectOpen, setRejectOpen] = useState(false);
-  const [detailOpen, setDetailOpen] = useState(false);
-  const [currentHotel, setCurrentHotel] = useState<Hotel | null>(null);
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [searchText, setSearchText] = useState("");
+  const dispatch = useAppDispatch();
+  const {
+    hotels,
+    loading,
+    statusFilter,
+    searchText,
+    rejectOpen,
+    detailOpen,
+    currentHotelId,
+    error,
+  } = useAppSelector((state) => state.hotelAudit);
 
-  const { hotels, setHotels, updateHotel } = useHotelStore();
+  const currentHotel = useMemo(
+    () => hotels.find((hotel) => hotel.id === currentHotelId) || null,
+    [hotels, currentHotelId],
+  );
 
   // 初始化数据
   useEffect(() => {
-    loadHotels();
-  }, [statusFilter]);
+    dispatch(fetchAuditHotels(statusFilter));
+  }, [dispatch, statusFilter]);
 
-  // 加载数据
-  const loadHotels = async () => {
-    setLoading(true);
-    try {
-      let data: Hotel[] = [];
-
-      // 根据筛选条件调用不同的 API
-      switch (statusFilter) {
-        case "pending":
-          data = await auditService.getPendingHotels();
-          break;
-        case "published":
-          data = await auditService.getPublishedHotels();
-          break;
-        case "rejected":
-          data = await auditService.getRejectedHotels();
-          break;
-        case "offline":
-          data = await auditService.getOfflineHotels();
-          break;
-        case "all":
-        default:
-          // 获取全部数据，需要合并多个接口
-          const [pending, published, rejected, offline] = await Promise.all([
-            auditService.getPendingHotels(),
-            auditService.getPublishedHotels(),
-            auditService.getRejectedHotels(),
-            auditService.getOfflineHotels(),
-          ]);
-          data = [...pending, ...published, ...rejected, ...offline];
-          break;
-      }
-
-      // 将 _id 转换为 id
-      const normalizedData = data.map((hotel: any) => ({
-        ...hotel,
-        id: hotel.id || hotel._id?.toString() || hotel._id,
-      }));
-
-      // 确保数据格式正确，过滤掉无效数据
-      const validData = normalizedData.filter(
-        (hotel) =>
-          hotel && (hotel.id || hotel._id) && hotel.name && hotel.status,
-      );
-      setHotels(validData);
-    } catch (error) {
-      console.error("加载数据失败:", error);
-      message.error("加载数据失败");
-      setHotels([]);
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    if (error) {
+      message.error(error);
     }
-  };
+  }, [error]);
 
   // 筛选后的数据
   const filteredData = hotels.filter((hotel) => {
+    const flowNode = getAuditFlowNode(hotel);
+
     // 筛选状态
     const matchStatus =
       statusFilter === "all" ||
-      (statusFilter === "pending" && hotel.status === "pending") ||
-      (statusFilter === "published" &&
-        hotel.status === "approved" &&
-        hotel.isActive &&
-        !hotel.isDeleted) || //使用 isDeleted 判断酒店是否删除
-      (statusFilter === "offline" &&
-        hotel.status === "approved" &&
-        !hotel.isActive) || //使用 isActive 判断酒店是否下线
-      (statusFilter === "rejected" && hotel.status === "rejected");
+      (statusFilter === "pending" && flowNode === "pending_review") ||
+      (statusFilter === "published" && flowNode === "approved_online") ||
+      (statusFilter === "offline" && flowNode === "approved_offline") ||
+      (statusFilter === "rejected" && flowNode === "rejected");
 
     const matchSearch =
       !searchText || filterHotelsByKeyword([hotel], searchText).length > 0;
@@ -105,13 +74,8 @@ const HotelAudit = () => {
       content: "确定要通过该酒店的审核吗？",
       onOk: async () => {
         try {
-          const result = await auditService.submitAudit(id, "approved");
-          updateHotel(id, {
-            status: "approved" as HotelStatus,
-            isActive: true,
-          });
-          message.success(result.message || "审核通过成功");
-          loadHotels(); // 重新加载数据
+          const result = await dispatch(approveHotel(id)).unwrap();
+          message.success(result.result.message || "审核通过成功");
         } catch (error) {
           console.error("审核通过失败:", error);
           message.error("操作失败");
@@ -122,27 +86,19 @@ const HotelAudit = () => {
 
   // 拒绝审核
   const handleReject = (hotel: Hotel) => {
-    setCurrentHotel(hotel); // 设置当前酒店
-    setRejectOpen(true); // 设置拒绝模态框显示
+    if (!hotel.id) return;
+    dispatch(openRejectModal(hotel.id));
   };
   // 提交拒绝
   const submitReject = async (reason: string) => {
-    if (!currentHotel || !currentHotel.id) return;
+    if (!currentHotelId) return;
 
     try {
-      const result = await auditService.submitAudit(
-        currentHotel.id,
-        "rejected",
-        reason,
-      );
-      updateHotel(currentHotel.id, {
-        status: "rejected" as HotelStatus,
-        rejectReason: reason,
-      });
-      message.success(result.message || "已拒绝该酒店");
-      setRejectOpen(false);
-      setCurrentHotel(null);
-      loadHotels(); // 重新加载数据
+      const result = await dispatch(
+        rejectHotel({ id: currentHotelId, reason }),
+      ).unwrap();
+      message.success(result.result.message || "已拒绝该酒店");
+      dispatch(closeRejectModal());
     } catch (error) {
       console.error("拒绝酒店失败:", error);
       message.error("操作失败");
@@ -156,10 +112,10 @@ const HotelAudit = () => {
       content: "确定要下线该酒店吗？下线后用户将无法看到该酒店。",
       onOk: async () => {
         try {
-          const result = await auditService.toggleHotelStatus(id);
-          updateHotel(id, { isActive: false });
-          message.success(result.message || "酒店已下线");
-          loadHotels(); // 重新加载数据
+          const result = await dispatch(
+            toggleHotelOnlineStatus({ id, toActive: false }),
+          ).unwrap();
+          message.success(result.result.message || "酒店已下线");
         } catch (error) {
           console.error("下线酒店失败:", error);
           message.error("操作失败");
@@ -175,10 +131,10 @@ const HotelAudit = () => {
       content: "确定要恢复该酒店上线吗？",
       onOk: async () => {
         try {
-          const result = await auditService.toggleHotelStatus(id);
-          updateHotel(id, { isActive: true });
-          message.success(result.message || "酒店已恢复上线");
-          loadHotels(); // 重新加载数据
+          const result = await dispatch(
+            toggleHotelOnlineStatus({ id, toActive: true }),
+          ).unwrap();
+          message.success(result.result.message || "酒店已恢复上线");
         } catch (error) {
           console.error("恢复酒店失败:", error);
           message.error("操作失败");
@@ -189,8 +145,8 @@ const HotelAudit = () => {
 
   // 查看详情
   const handleViewDetail = (hotel: Hotel) => {
-    setCurrentHotel(hotel);
-    setDetailOpen(true);
+    if (!hotel.id) return;
+    dispatch(openDetailDrawer(hotel.id));
   };
 
   return (
@@ -209,7 +165,7 @@ const HotelAudit = () => {
           {/* 状态筛选 */}
           <Select
             value={statusFilter}
-            onChange={setStatusFilter}
+            onChange={(value) => dispatch(setStatusFilter(value))}
             style={{ width: 150 }}
             options={[
               { label: "全部", value: "all" },
@@ -222,8 +178,8 @@ const HotelAudit = () => {
           {/* 搜索组件 */}
           <HotelSearchInput
             placeholder="搜索酒店名称或编号"
-            onSearch={(value) => setSearchText(value)}
-            onChange={(value) => setSearchText(value)}
+            onSearch={(value) => dispatch(setSearchText(value))}
+            onChange={(value) => dispatch(setSearchText(value))}
             style={{ width: 300 }}
           />
         </Space>
@@ -251,8 +207,7 @@ const HotelAudit = () => {
       <RejectModal
         open={rejectOpen}
         onCancel={() => {
-          setRejectOpen(false);
-          setCurrentHotel(null);
+          dispatch(closeRejectModal());
         }}
         onSubmit={submitReject}
       />
@@ -262,8 +217,7 @@ const HotelAudit = () => {
         open={detailOpen}
         hotel={currentHotel}
         onClose={() => {
-          setDetailOpen(false);
-          setCurrentHotel(null);
+          dispatch(closeDetailDrawer());
         }}
       />
     </div>
