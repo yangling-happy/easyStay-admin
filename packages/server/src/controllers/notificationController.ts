@@ -1,5 +1,7 @@
-import type { Request, Response } from "express";
+import type { NextFunction, Request, Response } from "express";
 import { NotificationModel } from "../models/Notification.js";
+import { AppError } from "../middleware/errorMiddleware.js";
+import { logger } from "../services/logger.js";
 import {
   buildNotificationQuery,
   getPagination,
@@ -8,11 +10,15 @@ import {
   setNoCacheHeaders,
 } from "../services/notificationQueryService.js";
 
-export async function getNotifications(req: Request, res: Response) {
+export async function getNotifications(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   try {
     const ownerId = getUserIdFromToken(req);
     if (!ownerId) {
-      return res.status(401).json({ success: false, message: "请先登录" });
+      return next(new AppError("请先登录", 401));
     }
 
     const { type, status } = req.query;
@@ -21,10 +27,7 @@ export async function getNotifications(req: Request, res: Response) {
     );
     const query = buildNotificationQuery({ ownerId, type, status });
 
-    console.log(
-      `🔍 查询通知 - ownerId: ${ownerId}, query:`,
-      JSON.stringify(query),
-    );
+    logger.debug("查询通知", { ownerId, query });
 
     const notifications = await NotificationModel.find(query)
       .sort({ createdAt: -1 })
@@ -33,17 +36,6 @@ export async function getNotifications(req: Request, res: Response) {
 
     const total = await NotificationModel.countDocuments(query);
     const unreadCount = await getUnreadNotificationCount(ownerId);
-
-    const allNotifications = await NotificationModel.find({}).limit(5);
-    console.log(
-      "📋 数据库中的通知示例（前5条）:",
-      allNotifications.map((n) => ({
-        id: n._id.toString(),
-        ownerId: n.ownerId,
-        ownerIdType: typeof n.ownerId,
-        message: n.message,
-      })),
-    );
 
     setNoCacheHeaders(res);
 
@@ -60,27 +52,27 @@ export async function getNotifications(req: Request, res: Response) {
         unreadCount,
       },
     });
-  } catch (error: any) {
-    console.error("获取通知列表失败:", error);
-    return res.status(500).json({
-      success: false,
-      message: "获取通知列表失败",
-      error: error.message,
-    });
+  } catch (error) {
+    logger.error("获取通知列表失败", error);
+    return next(error);
   }
 }
 
-export async function markNotificationAsRead(req: Request, res: Response) {
+export async function markNotificationAsRead(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   try {
     const ownerId = getUserIdFromToken(req);
     if (!ownerId) {
-      return res.status(401).json({ success: false, message: "请先登录" });
+      return next(new AppError("请先登录", 401));
     }
 
     const { id } = req.params;
     const notification = await NotificationModel.findOne({ _id: id, ownerId });
     if (!notification) {
-      return res.status(404).json({ success: false, message: "通知不存在" });
+      return next(new AppError("通知不存在", 404));
     }
 
     notification.status = "read";
@@ -91,21 +83,21 @@ export async function markNotificationAsRead(req: Request, res: Response) {
       message: "已标记为已读",
       data: notification,
     });
-  } catch (error: any) {
-    console.error("标记通知已读失败:", error);
-    return res.status(500).json({
-      success: false,
-      message: "标记通知已读失败",
-      error: error.message,
-    });
+  } catch (error) {
+    logger.error("标记通知已读失败", error);
+    return next(error);
   }
 }
 
-export async function getNotificationDetail(req: Request, res: Response) {
+export async function getNotificationDetail(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   try {
     const ownerId = getUserIdFromToken(req);
     if (!ownerId) {
-      return res.status(401).json({ success: false, message: "请先登录" });
+      return next(new AppError("请先登录", 401));
     }
 
     const { id } = req.params;
@@ -115,7 +107,7 @@ export async function getNotificationDetail(req: Request, res: Response) {
     });
 
     if (!notification) {
-      return res.status(404).json({ success: false, message: "通知不存在" });
+      return next(new AppError("通知不存在", 404));
     }
 
     let relatedFeedback = null;
@@ -140,21 +132,21 @@ export async function getNotificationDetail(req: Request, res: Response) {
           : null,
       },
     });
-  } catch (error: any) {
-    console.error("获取通知详情失败:", error);
-    return res.status(500).json({
-      success: false,
-      message: "获取通知详情失败",
-      error: error.message,
-    });
+  } catch (error) {
+    logger.error("获取通知详情失败", error);
+    return next(error);
   }
 }
 
-export async function markAllNotificationsAsRead(req: Request, res: Response) {
+export async function markAllNotificationsAsRead(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   try {
     const ownerId = getUserIdFromToken(req);
     if (!ownerId) {
-      return res.status(401).json({ success: false, message: "请先登录" });
+      return next(new AppError("请先登录", 401));
     }
 
     const result = await NotificationModel.updateMany(
@@ -167,12 +159,8 @@ export async function markAllNotificationsAsRead(req: Request, res: Response) {
       message: `已标记 ${result.modifiedCount} 条通知为已读`,
       data: { modifiedCount: result.modifiedCount },
     });
-  } catch (error: any) {
-    console.error("批量标记已读失败:", error);
-    return res.status(500).json({
-      success: false,
-      message: "批量标记已读失败",
-      error: error.message,
-    });
+  } catch (error) {
+    logger.error("批量标记已读失败", error);
+    return next(error);
   }
 }

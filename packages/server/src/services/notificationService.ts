@@ -1,5 +1,6 @@
 import { NotificationModel } from "../models/Notification.js";
 import { User } from "../models/User.js";
+import { logger } from "./logger.js";
 
 /**
  * @description 通知管理员有新的酒店待审核
@@ -24,7 +25,7 @@ export async function notifyAdminsOfPendingHotel(
       })),
     );
   } catch (error: unknown) {
-    console.error("通知管理员待审核失败:", error);
+    logger.error("通知管理员待审核失败", error);
   }
 }
 
@@ -48,7 +49,7 @@ export async function notifyMerchantHotelOffline(params: {
       message,
     });
   } catch (error: unknown) {
-    console.error("发送下线通知失败:", error);
+    logger.error("发送下线通知失败", error);
   }
 }
 
@@ -77,7 +78,7 @@ export async function notifyMerchantAuditResult(params: {
       message,
     });
   } catch (error: unknown) {
-    console.error("创建审核通知失败:", error);
+    logger.error("创建审核通知失败", error);
   }
 }
 
@@ -107,7 +108,7 @@ export async function notifyMerchantHotelStatusChangedByAdmin(params: {
       operatorRole: "admin",
     });
   } catch (error: unknown) {
-    console.error("创建上下线通知失败:", error);
+    logger.error("创建上下线通知失败", error);
   }
 }
 
@@ -139,7 +140,7 @@ export async function notifyAdminsOfNewFeedback(params: {
       })),
     );
   } catch (error: unknown) {
-    console.error("通知管理员新反馈失败:", error);
+    logger.error("通知管理员新反馈失败", error);
   }
 }
 
@@ -167,7 +168,7 @@ export async function notifyMerchantFeedbackReply(params: {
       relatedId: params.feedbackId,
     });
 
-    console.log("已为商户创建反馈回复通知:", {
+    logger.info("已为商户创建反馈回复通知", {
       notificationId: notification._id.toString(),
       ownerId: params.ownerId,
       ownerIdType: typeof params.ownerId,
@@ -175,7 +176,7 @@ export async function notifyMerchantFeedbackReply(params: {
       message,
     });
   } catch (error: unknown) {
-    console.error("❌ 创建反馈回复通知失败:", {
+    logger.error("创建反馈回复通知失败", {
       error: error instanceof Error ? error.message : error,
       ownerId: params.ownerId,
       feedbackId: params.feedbackId,

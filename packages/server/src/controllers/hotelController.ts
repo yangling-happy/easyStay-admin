@@ -1,4 +1,4 @@
-import type { Request, Response } from "express";
+import type { NextFunction, Request, Response } from "express";
 import { HotelModel } from "../models/Hotel.js";
 import { calculateDynamicPrices } from "../utils/priceUtils.js";
 import {
@@ -12,17 +12,9 @@ import {
   notifyAdminsOfPendingHotel,
   notifyMerchantHotelOffline,
 } from "../services/notificationService.js";
-
-interface AuthRequest extends Request {
-  user?: {
-    userId: string;
-    role?: string;
-  };
-}
-
-function getErrorMessage(error: unknown) {
-  return error instanceof Error ? error.message : "未知错误";
-}
+import type { AuthRequest } from "../types/http.js";
+import { logger } from "../services/logger.js";
+import { AppError } from "../middleware/errorMiddleware.js";
 
 function toPositiveInt(value: unknown, fallback: number) {
   const parsed = Number.parseInt(String(value), 10);
@@ -30,7 +22,11 @@ function toPositiveInt(value: unknown, fallback: number) {
   return parsed;
 }
 
-export async function createHotel(req: AuthRequest, res: Response) {
+export async function createHotel(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) {
   try {
     const hotelData = createHotelPayload({
       body: req.body || {},
@@ -44,7 +40,7 @@ export async function createHotel(req: AuthRequest, res: Response) {
       await notifyAdminsOfPendingHotel(String(savedHotel._id), savedHotel.name);
     }
 
-    console.log("酒店保存成功:", {
+    logger.info("酒店保存成功", {
       id: savedHotel._id,
       name: savedHotel.name,
       isIncomplete: savedHotel.isIncomplete,
@@ -52,14 +48,18 @@ export async function createHotel(req: AuthRequest, res: Response) {
       status: savedHotel.status,
     });
 
-    res.status(201).json({ success: true, data: savedHotel });
+    return res.status(201).json({ success: true, data: savedHotel });
   } catch (error: unknown) {
-    console.error("保存酒店失败:", error);
-    res.status(500).json({ success: false, message: getErrorMessage(error) });
+    logger.error("保存酒店失败", error);
+    return next(error);
   }
 }
 
-export async function getMerchantHotelRecords(req: AuthRequest, res: Response) {
+export async function getMerchantHotelRecords(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) {
   try {
     const { scope } = req.query as { scope?: string };
 
@@ -73,14 +73,18 @@ export async function getMerchantHotelRecords(req: AuthRequest, res: Response) {
     }
 
     const hotels = await HotelModel.find(query).sort({ createTime: -1 });
-    res.json({ success: true, data: hotels });
+    return res.json({ success: true, data: hotels });
   } catch (error: unknown) {
-    console.error("获取酒店记录失败:", error);
-    res.status(500).json({ success: false, message: getErrorMessage(error) });
+    logger.error("获取酒店记录失败", error);
+    return next(error);
   }
 }
 
-export async function getHotelsByOwnerId(req: Request, res: Response) {
+export async function getHotelsByOwnerId(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   try {
     const { ownerId } = req.params;
 
@@ -91,14 +95,18 @@ export async function getHotelsByOwnerId(req: Request, res: Response) {
       status: { $in: ["pending", "approved", "rejected", "offline"] },
     }).select("_id name");
 
-    res.json({ success: true, data: hotels });
+    return res.json({ success: true, data: hotels });
   } catch (error: unknown) {
-    console.error("获取所有者酒店失败:", error);
-    res.status(500).json({ success: false, message: getErrorMessage(error) });
+    logger.error("获取所有者酒店失败", error);
+    return next(error);
   }
 }
 
-export async function getHotelDetail(req: AuthRequest, res: Response) {
+export async function getHotelDetail(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) {
   try {
     const hotel = await HotelModel.findOne({
       _id: req.params.id,
@@ -106,24 +114,26 @@ export async function getHotelDetail(req: AuthRequest, res: Response) {
     });
 
     if (!hotel) {
-      return res.status(404).json({ success: false, message: "未找到酒店" });
+      return next(new AppError("未找到酒店", 404));
     }
 
     return res.json({ success: true, data: hotel });
   } catch (error: unknown) {
-    console.error("获取酒店详情失败:", error);
-    return res
-      .status(500)
-      .json({ success: false, message: getErrorMessage(error) });
+    logger.error("获取酒店详情失败", error);
+    return next(error);
   }
 }
 
-export async function getPublicHotelDetail(req: Request, res: Response) {
+export async function getPublicHotelDetail(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   try {
     const hotel = await HotelModel.findById(req.params.id);
 
     if (!hotel) {
-      return res.status(404).json({ success: false, message: "未找到酒店" });
+      return next(new AppError("未找到酒店", 404));
     }
 
     const rooms = toPositiveInt(req.query.rooms, 1);
@@ -164,13 +174,15 @@ export async function getPublicHotelDetail(req: Request, res: Response) {
 
     return res.json({ success: true, data: publicHotelData });
   } catch (error: unknown) {
-    return res
-      .status(500)
-      .json({ success: false, message: getErrorMessage(error) });
+    return next(error);
   }
 }
 
-export async function updateHotel(req: AuthRequest, res: Response) {
+export async function updateHotel(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) {
   try {
     const hotel = await HotelModel.findOne({
       _id: req.params.id,
@@ -178,7 +190,7 @@ export async function updateHotel(req: AuthRequest, res: Response) {
     });
 
     if (!hotel) {
-      return res.status(404).json({ success: false, message: "未找到酒店" });
+      return next(new AppError("未找到酒店", 404));
     }
 
     const currentVersion = hotel.version || 0;
@@ -208,7 +220,7 @@ export async function updateHotel(req: AuthRequest, res: Response) {
     );
 
     if (!updatedHotel) {
-      return res.status(404).json({ success: false, message: "未找到酒店" });
+      return next(new AppError("未找到酒店", 404));
     }
 
     const auditEntry = {
@@ -242,7 +254,7 @@ export async function updateHotel(req: AuthRequest, res: Response) {
       );
     }
 
-    console.log("酒店更新成功:", {
+    logger.info("酒店更新成功", {
       id: updatedHotel._id,
       name: updatedHotel.name,
       isIncomplete: updatedHotel.isIncomplete,
@@ -252,14 +264,16 @@ export async function updateHotel(req: AuthRequest, res: Response) {
 
     return res.json({ success: true, data: updatedHotel });
   } catch (error: unknown) {
-    console.error("更新酒店失败:", error);
-    return res
-      .status(500)
-      .json({ success: false, message: getErrorMessage(error) });
+    logger.error("更新酒店失败", error);
+    return next(error);
   }
 }
 
-export async function offlineHotel(req: AuthRequest, res: Response) {
+export async function offlineHotel(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) {
   try {
     const hotel = await HotelModel.findOne({
       _id: req.params.id,
@@ -267,7 +281,7 @@ export async function offlineHotel(req: AuthRequest, res: Response) {
     });
 
     if (!hotel) {
-      return res.status(404).json({ success: false, message: "未找到酒店" });
+      return next(new AppError("未找到酒店", 404));
     }
 
     if (hotel.status !== "approved") {
@@ -319,14 +333,16 @@ export async function offlineHotel(req: AuthRequest, res: Response) {
       message: "酒店已下线",
     });
   } catch (error: unknown) {
-    console.error("下线酒店失败:", error);
-    return res
-      .status(500)
-      .json({ success: false, message: getErrorMessage(error) });
+    logger.error("下线酒店失败", error);
+    return next(error);
   }
 }
 
-export async function onlineHotel(req: AuthRequest, res: Response) {
+export async function onlineHotel(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) {
   try {
     const hotel = await HotelModel.findOne({
       _id: req.params.id,
@@ -334,7 +350,7 @@ export async function onlineHotel(req: AuthRequest, res: Response) {
     });
 
     if (!hotel) {
-      return res.status(404).json({ success: false, message: "未找到酒店" });
+      return next(new AppError("未找到酒店", 404));
     }
 
     if (hotel.status !== "offline" && hotel.status !== "approved") {
@@ -354,7 +370,7 @@ export async function onlineHotel(req: AuthRequest, res: Response) {
     );
 
     if (!updatedHotel) {
-      return res.status(404).json({ success: false, message: "更新酒店失败" });
+      return next(new AppError("更新酒店失败", 404));
     }
 
     await notifyAdminsOfPendingHotel(
@@ -385,14 +401,16 @@ export async function onlineHotel(req: AuthRequest, res: Response) {
 
     return res.json({ success: true, data: updatedHotel });
   } catch (error: unknown) {
-    console.error("上线酒店失败:", error);
-    return res
-      .status(500)
-      .json({ success: false, message: getErrorMessage(error) });
+    logger.error("上线酒店失败", error);
+    return next(error);
   }
 }
 
-export async function reApplyHotel(req: AuthRequest, res: Response) {
+export async function reApplyHotel(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) {
   try {
     const hotel = await HotelModel.findOne({
       _id: req.params.id,
@@ -400,7 +418,7 @@ export async function reApplyHotel(req: AuthRequest, res: Response) {
     });
 
     if (!hotel) {
-      return res.status(404).json({ success: false, message: "未找到酒店" });
+      return next(new AppError("未找到酒店", 404));
     }
 
     if (hotel.status !== "rejected" && hotel.status !== "offline") {
@@ -421,7 +439,7 @@ export async function reApplyHotel(req: AuthRequest, res: Response) {
     );
 
     if (!updatedHotel) {
-      return res.status(404).json({ success: false, message: "更新酒店失败" });
+      return next(new AppError("更新酒店失败", 404));
     }
 
     await notifyAdminsOfPendingHotel(
@@ -456,14 +474,16 @@ export async function reApplyHotel(req: AuthRequest, res: Response) {
       message: "申请已提交，请关注审核记录",
     });
   } catch (error: unknown) {
-    console.error("申请恢复上线失败:", error);
-    return res
-      .status(500)
-      .json({ success: false, message: getErrorMessage(error) });
+    logger.error("申请恢复上线失败", error);
+    return next(error);
   }
 }
 
-export async function restoreHotel(req: AuthRequest, res: Response) {
+export async function restoreHotel(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) {
   try {
     const { id } = req.body as { id: string };
 
@@ -474,9 +494,7 @@ export async function restoreHotel(req: AuthRequest, res: Response) {
     });
 
     if (!hotel) {
-      return res
-        .status(404)
-        .json({ success: false, message: "未找到已删除的酒店" });
+      return next(new AppError("未找到已删除的酒店", 404));
     }
 
     const updatedHotel = await HotelModel.findOneAndUpdate(
@@ -489,7 +507,7 @@ export async function restoreHotel(req: AuthRequest, res: Response) {
     );
 
     if (!updatedHotel) {
-      return res.status(404).json({ success: false, message: "恢复酒店失败" });
+      return next(new AppError("恢复酒店失败", 404));
     }
 
     const auditEntry = {
@@ -513,14 +531,16 @@ export async function restoreHotel(req: AuthRequest, res: Response) {
 
     return res.json({ success: true, data: updatedHotel });
   } catch (error: unknown) {
-    console.error("恢复酒店失败:", error);
-    return res
-      .status(500)
-      .json({ success: false, message: getErrorMessage(error) });
+    logger.error("恢复酒店失败", error);
+    return next(error);
   }
 }
 
-export async function deleteHotel(req: AuthRequest, res: Response) {
+export async function deleteHotel(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) {
   try {
     const hotel = await HotelModel.findOne({
       _id: req.params.id,
@@ -528,7 +548,7 @@ export async function deleteHotel(req: AuthRequest, res: Response) {
     });
 
     if (!hotel) {
-      return res.status(404).json({ success: false, message: "未找到酒店" });
+      return next(new AppError("未找到酒店", 404));
     }
 
     await HotelModel.findOneAndUpdate(
@@ -541,13 +561,15 @@ export async function deleteHotel(req: AuthRequest, res: Response) {
 
     return res.json({ success: true, message: "酒店已删除" });
   } catch (error: unknown) {
-    return res
-      .status(500)
-      .json({ success: false, message: getErrorMessage(error) });
+    return next(error);
   }
 }
 
-export async function batchDeleteHotels(req: AuthRequest, res: Response) {
+export async function batchDeleteHotels(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) {
   try {
     const { ids } = req.body as { ids: string[] };
 
@@ -568,9 +590,7 @@ export async function batchDeleteHotels(req: AuthRequest, res: Response) {
 
     const hotels = await HotelModel.find(query);
     if (hotels.length === 0) {
-      return res
-        .status(404)
-        .json({ success: false, message: "未找到可删除的酒店" });
+      return next(new AppError("未找到可删除的酒店", 404));
     }
 
     let successCount = 0;
@@ -600,13 +620,13 @@ export async function batchDeleteHotels(req: AuthRequest, res: Response) {
 
         successCount++;
       } catch (error) {
-        console.error(`删除酒店 ${hotel._id} 失败:`, error);
+        logger.error(`删除酒店 ${hotel._id} 失败`, error);
         failedCount++;
         failedIds.push(String(hotel._id));
       }
     }
 
-    console.log("批量删除日志:", {
+    logger.info("批量删除日志", {
       totalCount: ids.length,
       successCount,
       failedCount,
@@ -624,9 +644,7 @@ export async function batchDeleteHotels(req: AuthRequest, res: Response) {
       },
     });
   } catch (error: unknown) {
-    console.error("批量删除失败:", error);
-    return res
-      .status(500)
-      .json({ success: false, message: getErrorMessage(error) });
+    logger.error("批量删除失败", error);
+    return next(error);
   }
 }

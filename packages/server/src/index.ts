@@ -12,6 +12,11 @@ import feedbackRoutes from "./routes/feedbackRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
 import fs from "fs";
+import { logger } from "./services/logger.js";
+import {
+  globalErrorHandler,
+  notFoundHandler,
+} from "./middleware/errorMiddleware.js";
 
 dotenv.config();
 
@@ -58,11 +63,17 @@ const corsOptions: cors.CorsOptions = {
 app.use(cors(corsOptions));
 // 使用中间件处理所有OPTIONS请求
 app.use((req, res, next) => {
-  if (req.method === 'OPTIONS') {
-    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
-    res.header('Access-Control-Allow-Credentials', 'true');
+  if (req.method === "OPTIONS") {
+    res.header("Access-Control-Allow-Origin", req.headers.origin || "*");
+    res.header(
+      "Access-Control-Allow-Methods",
+      "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+    );
+    res.header(
+      "Access-Control-Allow-Headers",
+      "Content-Type, Authorization, Accept",
+    );
+    res.header("Access-Control-Allow-Credentials", "true");
     return res.status(200).end();
   }
   next();
@@ -73,16 +84,16 @@ app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
 const publicDir = path.join(__dirname, "../public");
-console.log("静态文件目录:", publicDir);
+logger.info("静态文件目录", { publicDir });
 // 在 JSON 解析之后，路由之前添加
 app.use((req, res, next) => {
-  console.log(`=== 请求日志 ===`);
-  console.log(`时间: ${new Date().toISOString()}`);
-  console.log(`方法: ${req.method}`);
-  console.log(`路径: ${req.url}`);
-  console.log(`Content-Type: ${req.headers["content-type"]}`);
-  console.log(`请求体:`, req.body);
-  console.log(`=== 结束日志 ===\n`);
+  logger.debug("请求日志", {
+    time: new Date().toISOString(),
+    method: req.method,
+    path: req.url,
+    contentType: req.headers["content-type"],
+    body: req.body,
+  });
   next();
 });
 // 3. 静态文件中间件
@@ -108,8 +119,8 @@ const MONGODB_URI =
   process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/easyStay";
 mongoose
   .connect(MONGODB_URI)
-  .then(() => console.log("✅ MongoDB Connected"))
-  .catch((err) => console.error("❌ MongoDB Connection Error:", err));
+  .then(() => logger.info("MongoDB 连接成功"))
+  .catch((err) => logger.error("MongoDB 连接失败", err));
 
 // 基础路由测试
 app.get("/health", (req, res) =>
@@ -172,12 +183,18 @@ app.use("/api/upload", uploadRoutes);
 app.use("/api/feedback", feedbackRoutes);
 app.use("/api/notification", notificationRoutes);
 app.use("/api/orders", orderRoutes);
+
+app.use(notFoundHandler);
+app.use(globalErrorHandler);
+
 const PORT = process.env.PORT || 3000;
 
 // 显式加上 "0.0.0.0"，这是云端部署的“万能钥匙”
 app.listen(Number(PORT), "0.0.0.0", () => {
-  console.log(`✅ 服务器启动成功，端口: ${PORT}`);
-  console.log(`📁 上传目录: ${uploadsDir}`);
-  console.log(`🖼️  静态文件: http://localhost:${PORT}/uploads/`);
-  console.log(`🔐 认证接口: http://localhost:${PORT}/api/auth/register`);
+  logger.info("服务器启动成功", { port: PORT });
+  logger.info("上传目录", { uploadsDir });
+  logger.info("静态文件地址", { url: `http://localhost:${PORT}/uploads/` });
+  logger.info("认证接口地址", {
+    url: `http://localhost:${PORT}/api/auth/register`,
+  });
 });

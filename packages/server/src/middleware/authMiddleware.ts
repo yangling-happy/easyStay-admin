@@ -1,13 +1,7 @@
 import jwt from "jsonwebtoken";
 import type { Request, Response, NextFunction } from "express";
-
-// 扩展 Express 的 Request 类型，以便我们可以把 user 挂载上去
-interface AuthRequest extends Request {
-  user?: {
-    userId: string;
-    role: string;
-  };
-}
+import type { AuthRequest } from "../types/http.js";
+import { logger } from "../services/logger.js";
 
 export const auth = (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -33,6 +27,9 @@ export const auth = (req: AuthRequest, res: Response, next: NextFunction) => {
 
     next(); // 校验通过，放行！
   } catch (error) {
+    logger.warn("Token 校验失败", {
+      error: error instanceof Error ? error.message : error,
+    });
     return res
       .status(401)
       .json({ success: false, message: "Token 无效或已过期" });

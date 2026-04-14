@@ -1,5 +1,6 @@
-import type { Request, Response } from "express";
+import type { NextFunction, Request, Response } from "express";
 import { HotelModel } from "../models/Hotel.js";
+import { logger } from "../services/logger.js";
 import {
   buildPublishedHotelQuery,
   filterHotelsByPriceAndCapacity,
@@ -8,7 +9,11 @@ import {
   parsePaginationParams,
 } from "../services/auditService.js";
 
-export async function getPublishedHotels(req: Request, res: Response) {
+export async function getPublishedHotels(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   try {
     const {
       location,
@@ -68,15 +73,16 @@ export async function getPublishedHotels(req: Request, res: Response) {
       },
     });
   } catch (error) {
-    console.error("获取已发布酒店列表失败:", error);
-    return res.status(500).json({
-      message: "获取已发布酒店列表失败",
-      error,
-    });
+    logger.error("获取已发布酒店列表失败", error);
+    return next(error);
   }
 }
 
-export async function getPendingHotels(_req: Request, res: Response) {
+export async function getPendingHotels(
+  _req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   try {
     const hotels = await HotelModel.find({
       status: "pending",
@@ -86,15 +92,16 @@ export async function getPendingHotels(_req: Request, res: Response) {
 
     return res.json(mapHotelsWithId(hotels));
   } catch (error) {
-    console.error("获取待审核列表失败:", error);
-    return res.status(500).json({
-      message: "获取待审核列表失败",
-      error,
-    });
+    logger.error("获取待审核列表失败", error);
+    return next(error);
   }
 }
 
-export async function getRejectedHotels(_req: Request, res: Response) {
+export async function getRejectedHotels(
+  _req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   try {
     const hotels = await HotelModel.find({
       status: "rejected",
@@ -103,15 +110,16 @@ export async function getRejectedHotels(_req: Request, res: Response) {
 
     return res.json(mapHotelsWithId(hotels));
   } catch (error) {
-    console.error("获取已拒绝酒店列表失败:", error);
-    return res.status(500).json({
-      message: "获取已拒绝酒店列表失败",
-      error,
-    });
+    logger.error("获取已拒绝酒店列表失败", error);
+    return next(error);
   }
 }
 
-export async function getOfflineHotels(_req: Request, res: Response) {
+export async function getOfflineHotels(
+  _req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   try {
     const hotels = await HotelModel.find({
       status: "approved",
@@ -121,10 +129,7 @@ export async function getOfflineHotels(_req: Request, res: Response) {
 
     return res.json(mapHotelsWithId(hotels));
   } catch (error) {
-    console.error("获取已下线酒店列表失败:", error);
-    return res.status(500).json({
-      message: "获取已下线酒店列表失败",
-      error,
-    });
+    logger.error("获取已下线酒店列表失败", error);
+    return next(error);
   }
 }

@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { NotificationModel } from "../models/Notification.js";
+import { logger } from "./logger.js";
 
 export function getUserIdFromToken(req: Request): string | null {
   try {
@@ -13,12 +14,12 @@ export function getUserIdFromToken(req: Request): string | null {
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
     const userId = decoded.userId ? String(decoded.userId) : null;
     if (userId) {
-      console.log(`🔑 从 Token 解析 userId: ${userId}`);
+      logger.debug("从 Token 解析 userId", { userId });
     }
 
     return userId;
   } catch (error) {
-    console.error("解析 Token 失败:", error);
+    logger.warn("解析 Token 失败", error);
     return null;
   }
 }

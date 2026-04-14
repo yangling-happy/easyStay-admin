@@ -1,11 +1,7 @@
-import type { NextFunction, Request, Response } from "express";
+import type { NextFunction, Response } from "express";
+import type { AuthRequest } from "../types/http.js";
 
-export interface AdminAuthRequest extends Request {
-  user?: {
-    userId: string;
-    role?: string;
-  };
-}
+export type AdminAuthRequest = AuthRequest;
 
 export function requireAdmin(
   req: AdminAuthRequest,

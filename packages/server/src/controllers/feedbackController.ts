@@ -1,15 +1,21 @@
-import type { Request, Response } from "express";
+import type { NextFunction, Request, Response } from "express";
 import { FeedbackModel } from "../models/Feedback.js";
+import { AppError } from "../middleware/errorMiddleware.js";
 import {
   getHotelNameById,
   mapFeedbackListWithHotelInfo,
 } from "../services/feedbackService.js";
+import { logger } from "../services/logger.js";
 import {
   notifyAdminsOfNewFeedback,
   notifyMerchantFeedbackReply,
 } from "../services/notificationService.js";
 
-export async function submitFeedback(req: Request, res: Response) {
+export async function submitFeedback(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   try {
     const { hotelId, ownerId, content, notificationId, images } = req.body;
 
@@ -34,15 +40,16 @@ export async function submitFeedback(req: Request, res: Response) {
 
     return res.status(201).json({ success: true, data: newFeedback });
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: "提交反馈失败",
-      error,
-    });
+    logger.error("提交反馈失败", error);
+    return next(error);
   }
 }
 
-export async function getFeedbackList(req: Request, res: Response) {
+export async function getFeedbackList(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   try {
     const { status } = req.query;
     const statusValue = Array.isArray(status) ? status[0] : status;
@@ -57,19 +64,24 @@ export async function getFeedbackList(req: Request, res: Response) {
     const listWithHotelName = await mapFeedbackListWithHotelInfo(list as any[]);
 
     return res.json({ success: true, data: listWithHotelName });
-  } catch {
-    return res.status(500).json({ success: false, message: "获取列表失败" });
+  } catch (error) {
+    logger.error("获取反馈列表失败", error);
+    return next(error);
   }
 }
 
-export async function replyFeedback(req: Request, res: Response) {
+export async function replyFeedback(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   try {
     const id = String(req.params.id || "");
     const { reply } = req.body;
 
     const feedback = await FeedbackModel.findById(id);
     if (!feedback) {
-      return res.status(404).json({ success: false, message: "反馈不存在" });
+      return next(new AppError("反馈不存在", 404));
     }
 
     const updated = await FeedbackModel.findByIdAndUpdate(
@@ -83,7 +95,7 @@ export async function replyFeedback(req: Request, res: Response) {
     );
 
     if (!updated) {
-      return res.status(404).json({ success: false, message: "反馈不存在" });
+      return next(new AppError("反馈不存在", 404));
     }
 
     const hotelName = await getHotelNameById(
@@ -98,7 +110,8 @@ export async function replyFeedback(req: Request, res: Response) {
     });
 
     return res.json({ success: true, data: updated });
-  } catch {
-    return res.status(500).json({ success: false, message: "回复操作失败" });
+  } catch (error) {
+    logger.error("回复反馈失败", error);
+    return next(error);
   }
 }
