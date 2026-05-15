@@ -76,9 +76,10 @@
 
 ### 环境要求
 
-- **Node.js** >= 18
+- **Node.js** >= 18（前端构建仍依赖它）
 - **MongoDB** 本地或 [MongoDB Atlas](https://cloud.mongodb.com)
 - **pnpm**（推荐）或 npm
+- **Bun**（可选，用于服务端直接运行）
 
 ### 1. 克隆项目
 
@@ -121,6 +122,17 @@ pnpm dev:server
 pnpm dev:client
 ```
 
+**使用 Bun 启动后端：**
+
+```bash
+# 方式 1：直接运行服务端源文件
+cd packages/server
+bun --watch src/index.ts
+
+# 方式 2：通过 package.json 脚本
+pnpm --filter server run dev:bun
+```
+
 **生产构建：**
 
 ```bash
@@ -135,6 +147,9 @@ pnpm build:server
 
 # 启动后端生产服务
 pnpm --filter server start
+
+# 使用 Bun 启动已构建的后端
+pnpm --filter server run start:bun
 ```
 
 - 前端：<http://localhost:5173>
